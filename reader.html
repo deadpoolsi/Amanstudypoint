@@ -25,17 +25,16 @@
 
 <div id="toast"></div>
 
-<!-- Firebase Scripts -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
-</body>
-</html>
+
 <script>
-  // Right-click ਬੰਦ ਕਰੋ
+  // Right Click Disable
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // ਕਾਪੀ, ਪ੍ਰਿੰਟ ਅਤੇ ਸੇਵ ਸ਼ਾਰਟਕੱਟ ਬੰਦ ਕਰੋ (Ctrl+P, Ctrl+S, Ctrl+C)
+  // Download / Print Shortcut Disable
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
       e.preventDefault();
@@ -43,4 +42,5 @@
     }
   });
 </script>
-
+</body>
+</html>

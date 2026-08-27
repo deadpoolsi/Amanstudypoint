@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#e8590c">
-<title>Login — Aman Study Point</title>
+<title>Login / Register — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .forgot-link { display: block; text-align: right; margin: 8px 0 14px; font-size: 0.88rem; color: #e8590c; text-decoration: none; cursor: pointer; }
@@ -18,6 +18,7 @@
     <div class="login-logo">📘 AMAN STUDY POINT</div>
     <p class="login-sub" id="formSubtitle">Log in to your account or create a new one</p>
 
+    <!-- ਟੈਬਸ -->
     <div class="tabs" id="authTabs">
       <button class="tab active" id="tabLogin" type="button">Login</button>
       <button class="tab" id="tabReg" type="button">New Account</button>
@@ -39,7 +40,7 @@
       <button class="btn btn-primary btn-block" type="submit">⬅ Login</button>
     </form>
 
-    <!-- 2. ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਫਾਰਮ (ਸਿੱਧਾ ਅਤੇ ਆਸਾਨ) -->
+    <!-- 2. ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਫਾਰਮ -->
     <form id="formReg" style="display:none">
       <div class="field">
         <label for="regName">👤 Your Name</label>
@@ -56,14 +57,14 @@
       <button class="btn btn-primary btn-block" type="submit">✅ Create Account</button>
     </form>
 
-    <!-- 3. ਫਾਰਗੌਟ ਪਾਸਵਰਡ (WhatsApp ਰਾਹੀਂ) -->
+    <!-- 3. ਫਾਰਗੌਟ ਪਾਸਵਰਡ (WhatsApp ਸਪੋਰਟ) -->
     <div id="formForgot" style="display:none">
       <div class="field">
         <label for="forgotPhone">📱 Registered Mobile Number</label>
         <input id="forgotPhone" inputmode="numeric" maxlength="10" placeholder="9876543210">
       </div>
       <button class="btn btn-primary btn-block" onclick="sendForgotWhatsApp()" type="button" style="margin-top:10px;">
-        📲 Reset via WhatsApp (ਪਾਸਵਰਡ ਮੰਗਵਾਓ)
+        📲 Get Password via WhatsApp
       </button>
       <a class="forgot-link" onclick="cancelForgot()" style="text-align:center; margin-top:15px;">← Back to Login</a>
     </div>
@@ -80,4 +81,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-

@@ -24,7 +24,7 @@ const INSTITUTE = {
 
 const BOOKS = [
   { id: "punjabi",      emoji: "📖", title: "Punjabi Grammar",        sub: "SSC • Patwari • TET",        pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" },
-  { id: "gk",           emoji: "🌏", title: "General Knowledge (GK)",   sub: "All Competitive Exams",      pdf: "https://drive.google.com/file/d/1-8L7de7HycNScAsbCfuziI6SlzgVmJQ1/preview" },
+  { id: "gk",           emoji: "🌏", title: "General Knowledge (GK)",   sub: "All Competitive Exams",      pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" },
   { id: "maths",        emoji: "🔢", title: "Mathematics",            sub: "Banking • SSC",              pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" },
   { id: "reasoning",    emoji: "🧩", title: "Reasoning Ability",      sub: "SSC • Police • Banking",     pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" },
   { id: "history",      emoji: "🏛️", title: "History of Punjab",      sub: "General Preparation",        pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" },
@@ -33,7 +33,7 @@ const BOOKS = [
   { id: "computer",     emoji: "💻", title: "Computer Awareness",     sub: "All Competitive Exams",      pdf: "https://drive.google.com/file/d/YOUR_DRIVE_ID/preview" }
 ];
 
-/* ---------- Storage & Session ---------- */
+/* ---------- Session Management ---------- */
 const session = () => localStorage.getItem("pp_session");
 const setSession = (p) => localStorage.setItem("pp_session", p);
 const clearSession = () => localStorage.removeItem("pp_session");
@@ -60,7 +60,7 @@ function logout() {
   setTimeout(() => location.href = "index.html", 600);
 }
 
-/* ---------- Realtime Book Renderer ---------- */
+/* ---------- Realtime Book Display ---------- */
 function renderAccount() {
   const btn = document.getElementById("accountBtn");
   if (!btn) return;
@@ -146,7 +146,7 @@ function drawMyBooks(myBookIds) {
   }).join("");
 }
 
-/* ---------- Purchase & Request Approval ---------- */
+/* ---------- Purchase Modal & Requests ---------- */
 function openBuy(id) {
   const u = currentUser();
   if (!u) {
@@ -209,13 +209,13 @@ function closeModal() {
   }
 }
 
-/* ---------- Login, Registration & Forgot Password ---------- */
+/* ---------- Authentication & Password Reset ---------- */
 function showForgotForm() {
   document.getElementById("formLogin").style.display = "none";
   document.getElementById("formReg").style.display = "none";
   document.getElementById("authTabs").style.display = "none";
   document.getElementById("formForgot").style.display = "block";
-  document.getElementById("formSubtitle").textContent = "Reset your account password";
+  document.getElementById("formSubtitle").textContent = "Get your account password";
   document.getElementById("loginError").style.display = "none";
 }
 
@@ -244,7 +244,7 @@ function sendForgotWhatsApp() {
       return;
     }
     const u = snap.val();
-    const msg = encodeURIComponent(`Hello Sir,\nI forgot my password for Aman Study Point.\nName: ${u.name}\nRegistered Mobile: ${phone}\nPlease help me reset my password.`);
+    const msg = encodeURIComponent(`Hello Sir,\nI forgot my password for Aman Study Point.\nName: ${u.name}\nRegistered Mobile: ${phone}\nPlease help me with my password.`);
     window.open(`https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${msg}`, '_blank');
   });
 }
@@ -270,7 +270,6 @@ function initLogin() {
 
   if (session()) { location.replace("index.html"); return; }
 
-  // ਸਿੱਧਾ ਨਵਾਂ ਖਾਤਾ ਬਣਾਓ
   formReg.addEventListener("submit", e => {
     e.preventDefault();
     const name = document.getElementById("regName").value.trim();
@@ -298,7 +297,6 @@ function initLogin() {
     });
   });
 
-  // ਲੌਗਇਨ ਹੈਂਡਲਰ
   formLogin.addEventListener("submit", e => {
     e.preventDefault();
     const phone = document.getElementById("loginPhone").value.trim();
@@ -318,7 +316,166 @@ function initLogin() {
   });
 }
 
-/* ---------- PDF Reader Protection ---------- */
+/* ---------- 30 Questions Daily Quiz (Strict 1-Attempt Lock) ---------- */
+let activeQuizQuestions = [
+  {
+    q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?",
+    options: ["ਮੋਰ", "ਬਾਜ਼ (Northern Goshawk)", "ਤੋਤਾ", "ਕਬੂਤਰ"],
+    answer: 1
+  }
+];
+let currentQuizVersion = "v_default";
+let quizCurrentIndex = 0;
+let quizScore = 0;
+let quizAnswered = false;
+
+function initQuiz() {
+  const box = document.getElementById("quizBox");
+  if (!box) return;
+
+  const u = currentUser();
+
+  if (!u) {
+    box.innerHTML = `
+      <div style="text-align:center; padding: 25px 15px;">
+        <div style="font-size:3rem; margin-bottom:10px;">🔐</div>
+        <h3 style="font-size:1.2rem; margin-bottom:6px;">Login Required for Daily Test</h3>
+        <p style="color:#666; font-size:0.92rem; max-width:380px; margin: 0 auto 18px;">
+          ਟੈਸਟ ਸ਼ੁਰੂ ਕਰਨ ਅਤੇ ਆਪਣਾ ਰਿਜ਼ਲਟ ਅਧਿਆਪਕ ਕੋਲ ਦਰਜ ਕਰਵਾਉਣ ਲਈ ਪਹਿਲਾਂ ਆਪਣਾ ਖਾਤਾ ਲੌਗਇਨ ਕਰੋ।
+        </p>
+        <a class="btn btn-primary" href="login.html" style="padding:10px 24px;">🔐 Login / Register Now</a>
+      </div>`;
+    return;
+  }
+
+  db.ref("quizVersion").on("value", (vSnap) => {
+    currentQuizVersion = vSnap.val() || "v_default";
+
+    db.ref("userAttempts/" + u.phone + "/" + currentQuizVersion).once("value", (attemptSnap) => {
+      if (attemptSnap.exists()) {
+        const prev = attemptSnap.val();
+        box.innerHTML = `
+          <div class="quiz-score-card">
+            <div style="font-size:3rem;">✅</div>
+            <h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਪਹਿਲਾਂ ਹੀ ਦੇ ਚੁੱਕੇ ਹੋ!</h3>
+            <p style="color:#666; margin-top:5px;">Student: <b>${u.name}</b> (📱 ${u.phone})</p>
+            <div class="quiz-score-num">${prev.score} / ${prev.total}</div>
+            <p style="color:#2b8a3e; font-weight:700; margin-bottom:8px;">Marks: ${Math.round((prev.score/prev.total)*100)}%</p>
+            <p style="color:#888; font-size:0.88rem; margin-bottom:20px;">
+              ⏳ ਅਗਲਾ ਟੈਸਟ ਅਧਿਆਪਕ ਵੱਲੋਂ ਨਵੇਂ ਸਵਾਲ ਅੱਪਡੇਟ ਕਰਨ ਤੋਂ ਬਾਅਦ ਖੁੱਲ੍ਹੇਗਾ।
+            </p>
+            <a class="btn btn-primary btn-small" href="#books">📚 Explore Books (₹99)</a>
+          </div>`;
+      } else {
+        db.ref("dailyQuiz").once("value", (qSnap) => {
+          if (qSnap.exists() && Array.isArray(qSnap.val()) && qSnap.val().length > 0) {
+            activeQuizQuestions = qSnap.val();
+          }
+          quizCurrentIndex = 0;
+          quizScore = 0;
+          renderQuizQuestion();
+        });
+      }
+    });
+  });
+}
+
+function renderQuizQuestion() {
+  const box = document.getElementById("quizBox");
+  if (!box) return;
+
+  const u = currentUser();
+
+  if (quizCurrentIndex >= activeQuizQuestions.length) {
+    db.ref("quizResults").push({
+      name: u.name,
+      phone: u.phone,
+      score: quizScore,
+      total: activeQuizQuestions.length,
+      version: currentQuizVersion,
+      time: new Date().toLocaleString()
+    });
+
+    db.ref("userAttempts/" + u.phone + "/" + currentQuizVersion).set({
+      score: quizScore,
+      total: activeQuizQuestions.length,
+      time: new Date().toLocaleString()
+    });
+
+    box.innerHTML = `
+      <div class="quiz-score-card">
+        <div style="font-size:3rem;">🏆</div>
+        <h3>Test Completed!</h3>
+        <p style="color:#666; margin-top:5px;">Student: <b>${u.name}</b> (📱 ${u.phone})</p>
+        <div class="quiz-score-num">${quizScore} / ${activeQuizQuestions.length}</div>
+        <p style="margin-bottom:10px; font-size:0.95rem; font-weight:600; color:#2b8a3e;">
+          ${quizScore >= (activeQuizQuestions.length * 0.7) ? "🔥 ਸ਼ਾਨਦਾਰ ਤਿਆਰੀ!" : "💡 ਹੋਰ ਮਿਹਨਤ ਦੀ ਲੋੜ ਹੈ — ਕਿਤਾਬਾਂ ਪੜ੍ਹੋ।"}
+        </p>
+        <p style="color:#2b8a3e; font-size:0.88rem; margin-bottom:18px;">
+          ✅ ਤੁਹਾਡਾ ਰਿਜ਼ਲਟ ਸੇਵ ਹੋ ਚੁੱਕਾ ਹੈ। ਅਗਲਾ ਟੈਸਟ ਨਵੇਂ ਸਵਾਲ ਅੱਪਡੇਟ ਹੋਣ 'ਤੇ ਖੁੱਲ੍ਹੇਗਾ।
+        </p>
+
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <a class="btn btn-primary btn-small" href="#books">📚 Explore Books (₹99)</a>
+        </div>
+      </div>`;
+    return;
+  }
+
+  quizAnswered = false;
+  const current = activeQuizQuestions[quizCurrentIndex];
+
+  box.innerHTML = `
+    <div class="quiz-header">
+      <span>Question ${quizCurrentIndex + 1} of ${activeQuizQuestions.length}</span>
+      <span>Score: ${quizScore}</span>
+    </div>
+    <div class="quiz-q">${current.q}</div>
+    <div class="quiz-opts" id="quizOpts">
+      ${current.options.map((opt, idx) => `
+        <button class="quiz-opt-btn" onclick="handleQuizAnswer(${idx})">
+          ${String.fromCharCode(65 + idx)}) ${opt}
+        </button>
+      `).join("")}
+    </div>
+    <div class="quiz-footer" id="quizFooter" style="display:none;">
+      <span id="quizFeedback" style="font-weight:600;"></span>
+      <button class="btn btn-primary btn-small" onclick="nextQuizQuestion()">Next ➔</button>
+    </div>`;
+}
+
+function handleQuizAnswer(selectedIndex) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  const current = activeQuizQuestions[quizCurrentIndex];
+  const buttons = document.querySelectorAll("#quizOpts .quiz-opt-btn");
+  const footer = document.getElementById("quizFooter");
+  const feedback = document.getElementById("quizFeedback");
+
+  buttons.forEach(btn => btn.disabled = true);
+
+  if (selectedIndex === current.answer) {
+    buttons[selectedIndex].classList.add("correct");
+    feedback.textContent = "✅ ਬਿਲਕੁਲ ਸਹੀ ਜਵਾਬ!";
+    feedback.style.color = "#2b8a3e";
+    quizScore++;
+  } else {
+    buttons[selectedIndex].classList.add("wrong");
+    buttons[current.answer].classList.add("correct");
+    feedback.textContent = "❌ ਗ਼ਲਤ ਜਵਾਬ!";
+    feedback.style.color = "#c92a2a";
+  }
+
+  footer.style.display = "flex";
+}
+
+function nextQuizQuestion() {
+  quizCurrentIndex++;
+  renderQuizQuestion();
+}
+
+/* ---------- PDF Viewer Protection ---------- */
 function initReader() {
   const body = document.getElementById("readerBody");
   if (!body) return;
@@ -359,16 +516,15 @@ function initReader() {
   });
 }
 
-/* ---------- Start ---------- */
+/* ---------- App Start ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   renderAccount();
   renderBooksRealtime();
   initReader();
   initLogin();
+  initQuiz();
   const m = document.getElementById("modal");
   if (m) m.addEventListener("click", e => { if (e.target === m) closeModal(); });
   const mc = document.getElementById("modalClose");
   if (mc) mc.addEventListener("click", closeModal);
 });
-
-

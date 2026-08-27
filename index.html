@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#e8590c">
-<title>AMAN STUDY POINT — Books for Exams (₹99)</title>
-<meta name="description" content="Books for competitive exams in easy Punjabi — Every book only ₹99">
+<title>AMAN STUDY POINT — Exam Books (₹99)</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +14,7 @@
     <a class="logo" href="index.html">📘 Aman Study Point</a>
     <nav id="navLinks">
       <a href="#books">📚 Books</a>
+      <a href="#quiz">🎯 Daily Quiz</a>
       <a href="#how">⚙️ How It Works</a>
       <a href="#contact">📞 Contact</a>
       <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
@@ -29,7 +29,7 @@
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
       <a href="#books" class="btn btn-primary">📚 View Books</a>
-      <a href="#how" class="btn btn-ghost">How It Works</a>
+      <a href="#quiz" class="btn btn-ghost">🎯 Daily Quiz (30 Qs)</a>
     </div>
   </div>
 </section>
@@ -61,6 +61,7 @@
   </div>
 </section>
 
+<!-- Books Section -->
 <section id="books" class="section">
   <div class="container">
     <h2>📚 Our Books</h2>
@@ -69,6 +70,7 @@
   </div>
 </section>
 
+<!-- My Books Section -->
 <section id="myBooks" class="section section-alt" hidden>
   <div class="container">
     <h2>🎒 My Books</h2>
@@ -77,31 +79,44 @@
   </div>
 </section>
 
-<section id="how" class="section">
+<!-- Daily Quiz Section (30 Questions) -->
+<section id="quiz" class="section">
+  <div class="container">
+    <h2>🎯 Daily Free Mock Test</h2>
+    <p class="section-sub">ਰੋਜ਼ਾਨਾ 30 ਸਵਾਲ ਹੱਲ ਕਰੋ — ਤੁਹਾਡਾ ਨਤੀਜਾ ਸਿੱਧਾ ਅਧਿਆਪਕ ਕੋਲ ਜਾਵੇਗਾ</p>
+    <div class="quiz-box" id="quizBox">
+      <p style="text-align:center;">Loading today's test...</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how" class="section section-alt">
   <div class="container">
     <h2>⚙️ How Does It Work?</h2>
     <p class="section-sub">Very simple — just 3 steps</p>
     <div class="steps">
       <div class="step">
         <div class="num">1</div>
-        <h3>Create an Account</h3>
-        <p>Register in 1 minute — only your name and mobile number are required</p>
+        <h3>Create Account</h3>
+        <p>Register in 30 seconds with your mobile number</p>
       </div>
       <div class="step">
         <div class="num">2</div>
         <h3>Pay & Request</h3>
-        <p>Pay ₹99 via UPI, send payment screenshot and click the request button</p>
+        <p>Pay ₹99 via UPI and submit your payment request</p>
       </div>
       <div class="step">
         <div class="num">3</div>
         <h3>Read Instantly</h3>
-        <p>As soon as approved, your book unlocks automatically on your device</p>
+        <p>Book unlocks automatically on your device upon approval</p>
       </div>
     </div>
   </div>
 </section>
 
-<section id="contact" class="section section-alt">
+<!-- Contact -->
+<section id="contact" class="section">
   <div class="container">
     <h2>📞 Contact Us</h2>
     <p class="section-sub">Have any questions? Get in touch with us</p>
@@ -132,7 +147,7 @@
 
 <div id="toast"></div>
 
-<!-- Firebase Scripts -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>

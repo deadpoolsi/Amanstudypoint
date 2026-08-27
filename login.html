@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e8590c">
+<title>Login — Aman Study Point</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .forgot-link { display: block; text-align: right; margin: 8px 0 14px; font-size: 0.88rem; color: #e8590c; text-decoration: none; cursor: pointer; }
+  .forgot-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">📘 AMAN STUDY POINT</div>
+    <p class="login-sub" id="formSubtitle">Log in to your account or create a new one</p>
+
+    <div class="tabs" id="authTabs">
+      <button class="tab active" id="tabLogin" type="button">Login</button>
+      <button class="tab" id="tabReg" type="button">New Account</button>
+    </div>
+
+    <div class="error-msg" id="loginError"></div>
+
+    <!-- 1. ਲੌਗਇਨ ਫਾਰਮ -->
+    <form id="formLogin">
+      <div class="field">
+        <label for="loginPhone">📱 Mobile Number</label>
+        <input id="loginPhone" inputmode="numeric" maxlength="10" placeholder="9876543210" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">🔒 Password</label>
+        <input id="loginPass" type="password" placeholder="••••••" required>
+      </div>
+      <span class="forgot-link" onclick="showForgotForm()">Forgot Password? (ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?)</span>
+      <button class="btn btn-primary btn-block" type="submit">⬅ Login</button>
+    </form>
+
+    <!-- 2. ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਫਾਰਮ (ਸਿੱਧਾ ਅਤੇ ਆਸਾਨ) -->
+    <form id="formReg" style="display:none">
+      <div class="field">
+        <label for="regName">👤 Your Name</label>
+        <input id="regName" placeholder="e.g., Harpreet Singh" required>
+      </div>
+      <div class="field">
+        <label for="regPhone">📱 Mobile Number</label>
+        <input id="regPhone" inputmode="numeric" maxlength="10" placeholder="9876543210" required>
+      </div>
+      <div class="field">
+        <label for="regPass">🔒 Create Password</label>
+        <input id="regPass" type="password" placeholder="Min 4 characters" required>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">✅ Create Account</button>
+    </form>
+
+    <!-- 3. ਫਾਰਗੌਟ ਪਾਸਵਰਡ (WhatsApp ਰਾਹੀਂ) -->
+    <div id="formForgot" style="display:none">
+      <div class="field">
+        <label for="forgotPhone">📱 Registered Mobile Number</label>
+        <input id="forgotPhone" inputmode="numeric" maxlength="10" placeholder="9876543210">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="sendForgotWhatsApp()" type="button" style="margin-top:10px;">
+        📲 Reset via WhatsApp (ਪਾਸਵਰਡ ਮੰਗਵਾਓ)
+      </button>
+      <a class="forgot-link" onclick="cancelForgot()" style="text-align:center; margin-top:15px;">← Back to Login</a>
+    </div>
+
+    <a class="back-link" href="index.html">← Back to Home</a>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,159 @@
+/* ================= ਪੰਜਾਬ ਪਾਠਸ਼ਾਲਾ — E-Book Website ================= */
+
+:root{
+  --orange:#e8590c;
+  --orange-dark:#d9480f;
+  --gold:#f59f00;
+  --bg:#fffaf2;
+  --card:#ffffff;
+  --ink:#2b2118;
+  --muted:#7a6a5a;
+  --green:#2f9e44;
+  --red:#e03131;
+  --line:#f0e4d4;
+  --radius:16px;
+  --shadow:0 6px 20px rgba(80,50,20,.08);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Noto Sans Gurmukhi","Mukta Mahee","Raavi","Segoe UI",system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:16.5px;
+  line-height:1.7;
+}
+img{max-width:100%}
+.container{max-width:1100px;margin:0 auto;padding:0 20px}
+
+/* ---------- Header ---------- */
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:50}
+.header-inner{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:10px 0;gap:12px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:1.15rem;white-space:nowrap;text-decoration:none;color:var(--ink)}
+nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+nav a{padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+nav a:hover{background:var(--bg)}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-block;padding:12px 22px;border-radius:12px;font-weight:700;font-size:1rem;text-decoration:none;border:none;cursor:pointer;font-family:inherit;line-height:1.4}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--orange));color:#fff;box-shadow:0 4px 14px rgba(232,89,12,.35)}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-ghost{background:#fff;border:2px solid var(--orange);color:var(--orange-dark)}
+.btn-ghost:hover{background:#fff4e3}
+.btn-small{padding:8px 14px;font-size:.9rem}
+.btn-block{display:block;width:100%;text-align:center}
+.btn-read{background:#e6fcf0;color:var(--green);border:2px solid #b2f2bb}
+.btn-buy{background:linear-gradient(135deg,var(--gold),var(--orange));color:#fff}
+
+/* ---------- Hero ---------- */
+.hero{background:linear-gradient(160deg,#fff4e3 0%,#ffe8cc 100%);padding:64px 0 72px;text-align:center}
+.badge{display:inline-block;background:#fff;border:2px solid #ffd8a8;color:var(--orange-dark);font-weight:700;padding:8px 18px;border-radius:999px;margin-bottom:22px;box-shadow:var(--shadow)}
+.hero h1{font-size:clamp(1.9rem,5.5vw,3.2rem);line-height:1.35;font-weight:800;max-width:850px;margin:0 auto 18px}
+.hero h1 span{color:var(--orange-dark)}
+.hero-sub{max-width:640px;margin:0 auto 30px;color:var(--muted);font-size:1.1rem}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- Features ---------- */
+.features{padding:56px 0}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.feature{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+.feature .icon{font-size:2rem;margin-bottom:10px}
+.feature h3{font-size:1.05rem;margin-bottom:6px}
+.feature p{color:var(--muted);font-size:.93rem}
+
+/* ---------- Sections ---------- */
+.section{padding:56px 0}
+.section-alt{background:#fff}
+.section h2{font-size:clamp(1.5rem,4vw,2.1rem);text-align:center;margin-bottom:8px}
+.section-sub{text-align:center;color:var(--muted);margin-bottom:34px}
+
+/* ---------- Book grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.book-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:transform .15s}
+.book-card:hover{transform:translateY(-3px)}
+.book-emoji{font-size:2.6rem;margin-bottom:12px}
+.book-title{font-weight:800;font-size:1.12rem;margin-bottom:4px}
+.book-sub{color:var(--muted);font-size:.88rem;margin-bottom:14px}
+.book-bottom{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.price{font-weight:800;font-size:1.25rem;color:var(--orange-dark)}
+.price small{font-size:.75rem;color:var(--muted);font-weight:600}
+.pill{display:inline-block;background:#e6fcf0;color:var(--green);font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:10px}
+
+/* ---------- Steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;text-align:center;box-shadow:var(--shadow)}
+.step .num{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--orange));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:1.2rem}
+.step h3{margin-bottom:6px;font-size:1.05rem}
+.step p{color:var(--muted);font-size:.93rem}
+
+/* ---------- Contact ---------- */
+.contact-card{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px;text-align:center;box-shadow:var(--shadow)}
+.contact-card .big{font-size:2.4rem;margin-bottom:8px}
+.contact-card h3{margin-bottom:8px}
+.contact-card p{margin:6px 0;color:var(--muted)}
+.contact-card b{color:var(--ink)}
+.contact-card .btn{margin-top:16px}
+
+/* ---------- Footer ---------- */
+footer{background:#2b2118;color:#e9dcc9;text-align:center;padding:26px 20px;font-size:.92rem;margin-top:20px}
+
+/* ---------- Modal ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(40,25,10,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:#fff;border-radius:20px;max-width:460px;width:100%;padding:28px;position:relative;max-height:90vh;overflow:auto}
+.modal-close{position:absolute;top:12px;right:14px;background:var(--bg);border:none;width:34px;height:34px;border-radius:50%;font-size:1rem;cursor:pointer;font-weight:700;color:var(--ink)}
+.pay-book{font-weight:800;font-size:1.15rem}
+.pay-price{color:var(--orange-dark);font-weight:800;margin-bottom:16px;font-size:1.05rem}
+.pay-steps{background:var(--bg);border:1px dashed #ffd8a8;border-radius:12px;padding:16px;margin-bottom:18px}
+.pay-steps div{margin:10px 0;font-size:.95rem}
+.pay-note{text-align:center;color:var(--muted);font-size:.85rem;margin-top:12px}
+.copy-link{background:none;border:none;color:var(--orange-dark);font-weight:700;cursor:pointer;font-family:inherit;font-size:.9rem;text-decoration:underline;padding:0}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#2b2118;color:#fff;padding:13px 22px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:.3s;z-index:200;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Login page ---------- */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fff4e3,#ffe3c2)}
+.login-card{background:#fff;border-radius:20px;max-width:430px;width:100%;padding:34px 28px;box-shadow:0 12px 40px rgba(80,50,20,.15)}
+.login-logo{text-align:center;font-size:1.4rem;font-weight:800;margin-bottom:6px}
+.login-sub{text-align:center;color:var(--muted);margin-bottom:22px;font-size:.95rem}
+.tabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:22px}
+.tab{flex:1;text-align:center;padding:10px;border:none;background:transparent;border-radius:9px;font-weight:700;font-family:inherit;font-size:.98rem;color:var(--muted);cursor:pointer}
+.tab.active{background:#fff;color:var(--orange-dark);box-shadow:var(--shadow)}
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+.field input{width:100%;padding:13px 14px;border:2px solid var(--line);border-radius:12px;font-size:1rem;font-family:inherit;background:var(--bg)}
+.field input:focus{outline:none;border-color:var(--orange);background:#fff}
+.error-msg{background:#ffe3e3;color:var(--red);padding:11px 14px;border-radius:10px;font-size:.9rem;margin-bottom:14px;display:none}
+.back-link{display:block;text-align:center;margin-top:16px;color:var(--muted);text-decoration:none;font-size:.9rem}
+.back-link:hover{color:var(--orange-dark)}
+
+/* ---------- Reader page ---------- */
+.reader-wrap{max-width:760px;margin:0 auto;padding:26px 20px 60px}
+.reader-head{background:linear-gradient(135deg,#fff4e3,#ffe3c2);border-radius:20px;padding:30px;text-align:center;margin-bottom:26px}
+.reader-head .emoji{font-size:3rem}
+.reader-head h1{font-size:1.7rem;margin:8px 0 4px}
+.reader-head .meta{color:var(--muted)}
+.lesson{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.lesson h3{color:var(--orange-dark);margin-bottom:10px;font-size:1.08rem}
+.lesson p{margin-bottom:10px}
+.lesson p:last-child{margin-bottom:0}
+.reader-note{background:#fff8e1;border:1px dashed #ffd43b;border-radius:12px;padding:14px;font-size:.92rem;color:#8a6d1a;text-align:center;margin-top:8px}
+
+/* ---------- Mobile ---------- */
+@media (max-width:640px){
+  nav a{font-size:.85rem;padding:6px 8px}
+  .logo{font-size:1rem}
+  .hero{padding:48px 0 56px}
+  .login-card{padding:26px 20px}
+  
+  [hidden], .modal-backdrop[hidden] {
+  display: none !important;
+}
+
+.modal-backdrop[hidden], [hidden] {
+  display: none !important;
+}
+
+}

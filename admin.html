@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Panel — Aman Study Point</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .admin-wrap { max-width: 850px; margin: 30px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .req-card { background: #fdfdfd; padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+  .user-card { background: #f8f9fa; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+  .req-info b { font-size: 1.05rem; color: #111; }
+  .btn-approve { background: #2b8a3e; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  .btn-reject { background: #e03131; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-left: 6px; font-weight: 600; }
+  .sec-title { margin-top: 30px; margin-bottom: 10px; color: #e8590c; font-size: 1.3rem; border-bottom: 2px solid #ffe8cc; padding-bottom: 6px; }
+  .pwd-badge { background: #e7f5ff; color: #1c7ed6; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; }
+  
+  /* Admin Lock Screen Styling */
+  #adminAuthBox { max-width: 380px; margin: 60px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; border: 1px solid #eee; }
+  .pin-input { width: 100%; padding: 12px; font-size: 1.1rem; text-align: center; border: 1.5px solid #ccc; border-radius: 8px; margin: 15px 0; letter-spacing: 4px; }
+  .pin-input:focus { border-color: #e8590c; outline: none; }
+</style>
+</head>
+<body style="background:#f4f5f7;">
+
+<!-- 1. ਐਡਮਿਨ ਪਾਸਵਰਡ ਲਾਕ ਸਕ੍ਰੀਨ -->
+<div id="adminAuthBox">
+  <h2>🔒 Admin Verification</h2>
+  <p style="color:#666; font-size:0.9rem; margin-top:5px;">Enter your Secret Master PIN to access panel</p>
+  <input type="password" id="adminPinInput" class="pin-input" placeholder="••••••" maxlength="10">
+  <button class="btn btn-primary btn-block" onclick="checkAdminPin()">🔓 Unlock Panel</button>
+  <div id="pinError" style="color:#e03131; margin-top:10px; font-size:0.9rem; display:none;">⚠️ Invalid PIN Code!</div>
+</div>
+
+<!-- 2. ਅਸਲ ਐਡਮਿਨ ਪੈਨਲ (ਜੋ ਲਾਕ ਖੁੱਲ੍ਹਣ ਤੋਂ ਬਾਅਦ ਦਿਖੇਗਾ) -->
+<div class="admin-wrap" id="adminDashboard" style="display:none;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>🔐 Admin Panel — Aman Study Point</h2>
+    <button class="btn btn-ghost btn-small" onclick="adminLogout()" style="background:#ffe3e3; color:#c92a2a;">🚪 Lock Panel</button>
+  </div>
+  <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+
+  <!-- ਕਿਤਾਬਾਂ ਦੀਆਂ ਬੇਨਤੀਆਂ -->
+  <div class="sec-title">📥 Pending Book Requests</div>
+  <div id="requestsList">Loading pending requests...</div>
+
+  <!-- ਰਜਿਸਟਰਡ ਯੂਜ਼ਰਾਂ ਦੀ ਲਿਸਟ -->
+  <div class="sec-title">👥 Registered Students (<span id="userCount">0</span>)</div>
+  <div id="usersList">Loading registered users...</div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// @ts-nocheck
+
+/* ===================================================
+   ਤੁਹਾਡਾ ਗੁਪਤ ਐਡਮਿਨ ਪਾਸਵਰਡ / ਪਿੰਨ
+   (ਤੁਸੀਂ ਆਪਣੀ ਮਰਜ਼ੀ ਨਾਲ ਇਸਨੂੰ ਬਦਲ ਸਕਦੇ ਹੋ)
+=================================================== */
+const ADMIN_SECRET_PIN = "73503"; // ਤੁਸੀਂ ਕੋਈ ਵੀ 4 ਜਾਂ 6 ਅੰਕਾਂ ਦਾ ਪਿੰਨ ਰੱਖ ਸਕਦੇ ਹੋ
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  storageBucket: "aman-study-point.firebasestorage.app",
+  messagingSenderId: "1059866846804",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1",
+  measurementId: "G-2V2R173QC3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ਪਿੰਨ ਚੈੱਕ ਫੰਕਸ਼ਨ
+function checkAdminPin() {
+  const inputPin = document.getElementById("adminPinInput").value;
+  const err = document.getElementById("pinError");
+
+  if (inputPin === ADMIN_SECRET_PIN) {
+    sessionStorage.setItem("asp_admin_auth", "true");
+    showDashboard();
+  } else {
+    err.style.display = "block";
+    document.getElementById("adminPinInput").value = "";
+  }
+}
+
+function showDashboard() {
+  document.getElementById("adminAuthBox").style.display = "none";
+  document.getElementById("adminDashboard").style.display = "block";
+  loadFirebaseData();
+}
+
+function adminLogout() {
+  sessionStorage.removeItem("asp_admin_auth");
+  location.reload();
+}
+
+// ਜੇਕਰ ਪਹਿਲਾਂ ਹੀ ਲੌਗਇਨ ਹੈ ਤਾਂ ਸਿੱਧਾ ਡੈਸ਼ਬੋਰਡ ਖੋਲ੍ਹੋ
+if (sessionStorage.getItem("asp_admin_auth") === "true") {
+  showDashboard();
+}
+
+// ਡਾਟਾ ਲੋਡ ਕਰਨ ਦਾ ਫੰਕਸ਼ਨ
+function loadFirebaseData() {
+  // 1. ਕਿਤਾਬਾਂ ਦੀਆਂ ਬੇਨਤੀਆਂ
+  db.ref("requests").on("value", (snap) => {
+    const list = document.getElementById("requestsList");
+    const data = snap.val();
+    if (!data) {
+      list.innerHTML = "<p>✅ No pending requests right now.</p>";
+      return;
+    }
+
+    const items = Object.values(data).filter(r => r.status === "pending");
+    if (items.length === 0) {
+      list.innerHTML = "<p>✅ All requests have been processed!</p>";
+      return;
+    }
+
+    list.innerHTML = items.map(r => `
+      <div class="req-card">
+        <div class="req-info">
+          <div><b>${r.name}</b> (📱 ${r.phone})</div>
+          <div>📚 Book: <b>${r.bookTitle}</b></div>
+          <small style="color:#777;">Time: ${r.time}</small>
+        </div>
+        <div>
+          <button class="btn-approve" onclick="approveBook('${r.phone}', '${r.bookId}', '${r.reqId}')">✅ Approve</button>
+          <button class="btn-reject" onclick="rejectBook('${r.reqId}')">❌ Reject</button>
+        </div>
+      </div>
+    `).join("");
+  });
+
+  // 2. ਸਾਰੇ ਯੂਜ਼ਰਾਂ ਦੀ ਲਿਸਟ
+  db.ref("accounts").on("value", (snap) => {
+    const uList = document.getElementById("usersList");
+    const countSpan = document.getElementById("userCount");
+    const users = snap.val();
+
+    if (!users) {
+      uList.innerHTML = "<p>No registered students yet.</p>";
+      countSpan.textContent = "0";
+      return;
+    }
+
+    const userArray = Object.values(users);
+    countSpan.textContent = userArray.length;
+
+    uList.innerHTML = userArray.map((u, index) => `
+      <div class="user-card">
+        <div>
+          <b>${index + 1}. ${u.name}</b> (📱 ${u.phone})
+        </div>
+        <div>
+          Password: <span class="pwd-badge">${u.pass}</span>
+        </div>
+      </div>
+    `).join("");
+  });
+}
+
+function approveBook(phone, bookId, reqId) {
+  db.ref("users/" + phone + "/books/" + bookId).set(true);
+  db.ref("requests/" + reqId).update({ status: "approved" });
+  alert("Book approved and unlocked for student!");
+}
+
+function rejectBook(reqId) {
+  if (confirm("Are you sure you want to reject this request?")) {
+    db.ref("requests/" + reqId).remove();
+  }
+}
+</script>
+
+</body>
+</html>
+
+
+

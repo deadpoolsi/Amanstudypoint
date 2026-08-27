@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e8590c">
+<title>AMAN STUDY POINT — Books for Exams (₹99)</title>
+<meta name="description" content="Books for competitive exams in easy Punjabi — Every book only ₹99">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="container header-inner">
+    <a class="logo" href="index.html">📘 Aman Study Point</a>
+    <nav id="navLinks">
+      <a href="#books">📚 Books</a>
+      <a href="#how">⚙️ How It Works</a>
+      <a href="#contact">📞 Contact</a>
+      <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <div class="badge">🔥 Every Book Only <b>₹99</b></div>
+    <h1>Complete Exam Preparation <span>in Punjabi</span></h1>
+    <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
+    <div class="hero-btns">
+      <a href="#books" class="btn btn-primary">📚 View Books</a>
+      <a href="#how" class="btn btn-ghost">How It Works</a>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="icon">🗣️</div>
+        <h3>Simple Punjabi Language</h3>
+        <p>Complete books in mother tongue — easy to understand</p>
+      </div>
+      <div class="feature">
+        <div class="icon">💰</div>
+        <h3>Only ₹99</h3>
+        <p>Every book for only ₹99 — for any competitive exam</p>
+      </div>
+      <div class="feature">
+        <div class="icon">⚡</div>
+        <h3>Instant Access</h3>
+        <p>Start reading immediately on mobile after approval</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🎯</div>
+        <h3>Exam Preparation</h3>
+        <p>Essential strategies for SSC, Banking, Police, Patwari, and TET</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="books" class="section">
+  <div class="container">
+    <h2>📚 Our Books</h2>
+    <p class="section-sub">Every book only ₹99</p>
+    <div id="bookGrid" class="grid"></div>
+  </div>
+</section>
+
+<section id="myBooks" class="section section-alt" hidden>
+  <div class="container">
+    <h2>🎒 My Books</h2>
+    <p class="section-sub">Your unlocked books are here — read anytime</p>
+    <div id="myBooksGrid" class="grid"></div>
+  </div>
+</section>
+
+<section id="how" class="section">
+  <div class="container">
+    <h2>⚙️ How Does It Work?</h2>
+    <p class="section-sub">Very simple — just 3 steps</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Create an Account</h3>
+        <p>Register in 1 minute — only your name and mobile number are required</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Pay & Request</h3>
+        <p>Pay ₹99 via UPI, send payment screenshot and click the request button</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Read Instantly</h3>
+        <p>As soon as approved, your book unlocks automatically on your device</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="section section-alt">
+  <div class="container">
+    <h2>📞 Contact Us</h2>
+    <p class="section-sub">Have any questions? Get in touch with us</p>
+    <div class="contact-card">
+      <div class="big">🏫</div>
+      <h3>Aman Study Point</h3>
+      <p>Mansa, Punjab</p>
+      <p>📱 WhatsApp: <b>+91 90413-21843</b></p>
+      <p>💰 UPI: <b>amritpalsingh735031234-1@oksbi</b></p>
+      <p>📧 Email: <b>amanstudypoint70@gmail.com</b></p>
+      <a class="btn btn-primary" href="https://wa.me/919041321843" target="_blank" rel="noopener">💬 Ask on WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>📘 <b>Aman Study Point</b></div>
+  <div>© 2026 — All Rights Reserved | Partner in Exam Preparation</div>
+</footer>
+
+<!-- Purchase Modal -->
+<div id="modal" class="modal-backdrop" style="display:none;" hidden>
+  <div class="modal">
+    <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

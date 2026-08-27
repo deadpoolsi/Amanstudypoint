@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e8590c">
+<title>Reader — Aman Study Point</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="container header-inner">
+    <a class="logo" href="index.html">📘 AMAN STUDY POINT</a>
+    <nav id="navLinks">
+      <a href="index.html#books">← All Books</a>
+    </nav>
+  </div>
+</header>
+
+<div class="reader-wrap">
+  <div class="reader-head" id="readerHead"></div>
+  <div id="readerBody"></div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+<script>
+  // Right-click ਬੰਦ ਕਰੋ
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // ਕਾਪੀ, ਪ੍ਰਿੰਟ ਅਤੇ ਸੇਵ ਸ਼ਾਰਟਕੱਟ ਬੰਦ ਕਰੋ (Ctrl+P, Ctrl+S, Ctrl+C)
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
+      e.preventDefault();
+      alert("⚠️ Content is protected. Downloading and printing is disabled.");
+    }
+  });
+</script>
+

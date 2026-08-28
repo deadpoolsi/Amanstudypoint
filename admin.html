@@ -67,7 +67,17 @@
     <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:90px; padding:8px; border:1px solid #ccc; border-radius:6px; font-weight:700; text-align:center;">
     <button class="btn btn-primary btn-small" onclick="saveTimerSetting()">💾 Save Timer</button>
   </div>
-
+  
+<!-- Top Announcement Update Card -->
+<div class="card" style="margin-bottom: 24px; padding: 20px; background: #fff; border-radius: 12px; border: 1px solid #e9ecef;">
+  <h3 style="margin-bottom: 8px;">📢 Top Notification Bar (ਉੱਪਰਲਾ ਨੋਟਿਸ ਬਦਲੋ)</h3>
+  <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">ਇੱਥੇ ਲਿਖਿਆ ਮੈਸੇਜ ਸਿੱਧਾ ਵੈੱਬਸਾਈਟ ਦੇ ਸਭ ਤੋਂ ਉੱਪਰ ਲਾਈਵ ਹੋ ਜਾਵੇਗਾ:</p>
+  <div style="display: flex; gap: 10px;">
+    <input type="text" id="announcementInput" placeholder="ਜਿਵੇਂ: 🔥 ਅੱਜ ਸ਼ਾਮ 7 ਵਜੇ ਪੰਜਾਬ ਪੁਲਿਸ ਦਾ ਮੌਕ ਟੈਸਟ ਲਾਈਵ ਹੋਵੇਗਾ..." style="flex: 1; padding: 10px 14px; border: 1.5px solid #dee2e6; border-radius: 8px;">
+    <button class="btn btn-primary" onclick="updateAnnouncement()">💾 Update Note</button>
+  </div>
+</div>
+  
   <!-- 4. Bulk Quiz Importer -->
   <div class="sec-title">⚡ Quick Bulk Upload Daily Quiz</div>
   <div class="bulk-box">
@@ -384,5 +394,30 @@ function deleteStudentAccount(phone, name) {
   }
 }
 </script>
+  
+  <script>
+function updateAnnouncement() {
+  const textInput = document.getElementById('announcementInput');
+  if (!textInput) return;
+  const text = textInput.value.trim();
+  
+  if (!text) {
+    alert('ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!');
+    return;
+  }
+
+  if (typeof db === 'undefined') {
+    alert('ਡਾਟਾਬੇਸ ਕਨੈਕਸ਼ਨ ਨਹੀਂ ਮਿਲਿਆ! ਕਿਰਪਾ ਕਰਕੇ ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।');
+    return;
+  }
+
+  db.ref('siteSettings/announcement').set(text).then(() => {
+    alert('✅ ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਡੇਟ ਹੋ ਗਈ ਹੈ!');
+  }).catch((err) => {
+    alert('ਐਰਰ: ' + err.message);
+  });
+}
+  </script>
+  
 </body>
 </html>

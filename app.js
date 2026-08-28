@@ -77,7 +77,8 @@ function installPWA() {
 
 /* 6. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
-  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਅਤੇ ਸਿਰਫ਼ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਮਿਲ ਰਹੀਆਂ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.netlify.app`);
+  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਅਤੇ ਸਿਰਫ਼ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਮਿਲ ਰਹੀਆਂ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app
+  `);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 

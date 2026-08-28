@@ -5,18 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#e8590c">
 <title>AMAN STUDY POINT — Exam Books (₹99)</title>
+
+<!-- 2. WhatsApp & Social Media Preview Tags -->
+<meta property="og:title" content="Aman Study Point — Punjab Exam Preparation (₹99)">
+<meta property="og:description" content="ਪੰਜਾਬ ਪੁਲਿਸ, ਪਟਵਾਰੀ, SSC ਅਤੇ ਬੈਂਕਿੰਗ ਦੀਆਂ ਕਿਤਾਬਾਂ ਅਤੇ ਡੇਲੀ ਮੌਕ ਟੈਸਟ ਸਿਰਫ਼ ₹99 ਵਿੱਚ।">
+<meta property="og:image" content="https://i.postimg.cc/FsFy1W75/qr.png">
+<meta property="og:url" content="https://amanstudypoint.netlify.app">
+<meta property="og:type" content="website">
+
+<!-- 1. PWA Manifest -->
+<link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<div class="top-announcement">
+  📢 🔥 ਅੱਜ ਦਾ ਨਵਾਂ ਮੌਕ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ — ਹੁਣੇ ਅਟੈਮਪਟ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਦੇਖੋ!
+</div>
 
 <header>
   <div class="container header-inner">
     <a class="logo" href="index.html">📘 Aman Study Point</a>
     <nav id="navLinks">
       <a href="#books">📚 Books</a>
-      <a href="#quiz">🎯 Daily Quiz</a>
-      <a href="#how">⚙️ How It Works</a>
-      <a href="#contact">📞 Contact</a>
+      <a href="#quiz">🎯 Daily Test</a>
+      <a href="#referral">🎁 Refer & Earn</a>
+      <a href="#leaderboard">🏆 Top Rankers</a>
+      <button id="installAppBtn" class="btn btn-small btn-buy" style="display:none;" onclick="installPWA()">📲 Install App</button>
       <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
     </nav>
   </div>
@@ -29,48 +44,45 @@
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
       <a href="#books" class="btn btn-primary">📚 View Books</a>
-      <a href="#quiz" class="btn btn-ghost">🎯 Daily Quiz (30 Qs)</a>
+      <a href="#quiz" class="btn btn-ghost">🎯 Daily Mock Test</a>
     </div>
   </div>
 </section>
 
-<section class="features">
-  <div class="container">
-    <div class="feature-grid">
-      <div class="feature">
-        <div class="icon">🗣️</div>
-        <h3>Simple Punjabi Language</h3>
-        <p>Complete books in mother tongue — easy to understand</p>
-      </div>
-      <div class="feature">
-        <div class="icon">💰</div>
-        <h3>Only ₹99</h3>
-        <p>Every book for only ₹99 — for any competitive exam</p>
-      </div>
-      <div class="feature">
-        <div class="icon">⚡</div>
-        <h3>Instant Access</h3>
-        <p>Start reading immediately on mobile after approval</p>
-      </div>
-      <div class="feature">
-        <div class="icon">🎯</div>
-        <h3>Exam Preparation</h3>
-        <p>Essential strategies for SSC, Banking, Police, Patwari, and TET</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Books Section -->
+<!-- Books Section with 5. Category Filters -->
 <section id="books" class="section">
   <div class="container">
     <h2>📚 Our Books</h2>
     <p class="section-sub">Every book only ₹99</p>
+
+    <!-- Mega Combo Offer -->
+    <div class="combo-card">
+      <div class="combo-tag">🔥 BEST VALUE OFFER</div>
+      <div class="combo-content">
+        <div>
+          <h3>🎁 All-in-One Mega Combo Pack</h3>
+          <p>Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
+        </div>
+        <div class="combo-price-box">
+          <div class="combo-price">₹499 <small><s>₹792</s> (Save ₹293)</small></div>
+          <button class="btn btn-primary" onclick="openBuyCombo()">🛒 Unlock All 8 Books</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="cat-filters">
+      <button class="cat-btn active" onclick="filterBooks('all', this)">All Books</button>
+      <button class="cat-btn" onclick="filterBooks('gk', this)">🏛️ GK & History</button>
+      <button class="cat-btn" onclick="filterBooks('maths', this)">🔢 Maths & Reasoning</button>
+      <button class="cat-btn" onclick="filterBooks('language', this)">📖 Punjabi & English</button>
+    </div>
+
     <div id="bookGrid" class="grid"></div>
   </div>
 </section>
 
-<!-- My Books Section -->
+<!-- My Books -->
 <section id="myBooks" class="section section-alt" hidden>
   <div class="container">
     <h2>🎒 My Books</h2>
@@ -79,44 +91,48 @@
   </div>
 </section>
 
-<!-- Daily Quiz Section (30 Questions) -->
+<!-- Daily Quiz -->
 <section id="quiz" class="section">
   <div class="container">
     <h2>🎯 Daily Free Mock Test</h2>
-    <p class="section-sub">ਰੋਜ਼ਾਨਾ 30 ਸਵਾਲ ਹੱਲ ਕਰੋ — ਤੁਹਾਡਾ ਨਤੀਜਾ ਸਿੱਧਾ ਅਧਿਆਪਕ ਕੋਲ ਜਾਵੇਗਾ</p>
+    <p class="section-sub">ਅਸਲ ਪੇਪਰ ਵਾਂਗ ਟਾਈਮਰ ਨਾਲ ਟੈਸਟ ਹੱਲ ਕਰੋ</p>
     <div class="quiz-box" id="quizBox">
-      <p style="text-align:center;">Loading today's test...</p>
+      <p style="text-align:center;">Loading test...</p>
     </div>
   </div>
 </section>
 
-<!-- How it works -->
-<section id="how" class="section section-alt">
+<!-- 6. Referral & Share Section -->
+<section id="referral" class="section section-alt">
   <div class="container">
-    <h2>⚙️ How Does It Work?</h2>
-    <p class="section-sub">Very simple — just 3 steps</p>
-    <div class="steps">
-      <div class="step">
-        <div class="num">1</div>
-        <h3>Create Account</h3>
-        <p>Register in 30 seconds with your mobile number</p>
-      </div>
-      <div class="step">
-        <div class="num">2</div>
-        <h3>Pay & Request</h3>
-        <p>Pay ₹99 via UPI and submit your payment request</p>
-      </div>
-      <div class="step">
-        <div class="num">3</div>
-        <h3>Read Instantly</h3>
-        <p>Book unlocks automatically on your device upon approval</p>
-      </div>
+    <h2>🎁 Refer & Share with Friends</h2>
+    <p class="section-sub">ਆਪਣੇ ਦੋਸਤਾਂ ਨੂੰ ਜੋੜੋ ਅਤੇ ਤਿਆਰੀ ਵਿੱਚ ਮਦਦ ਕਰੋ</p>
+    <div class="referral-box">
+      <div style="font-size:2.5rem; margin-bottom:8px;">🤝</div>
+      <h3>Share Aman Study Point</h3>
+      <p style="color:#666; font-size:0.92rem; margin:6px 0 15px;">
+        ਆਪਣੇ ਦੋਸਤਾਂ ਨਾਲ ਇਹ ਵੈੱਬਸਾਈਟ ਸ਼ੇਅਰ ਕਰੋ ਤਾਂ ਜੋ ਉਹ ਵੀ ਮੁਫ਼ਤ ਡੇਲੀ ਮੌਕ ਟੈਸਟ ਦੇ ਸਕਣ ਅਤੇ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਪੜ੍ਹ ਸਕਣ।
+      </p>
+      <button class="btn btn-primary" onclick="shareReferralWhatsApp()" style="background:#25D366; color:#fff;">
+        📲 Share on WhatsApp with Friends
+      </button>
     </div>
   </div>
 </section>
 
-<!-- Contact Section -->
-<section id="contact" class="section">
+<!-- Leaderboard -->
+<section id="leaderboard" class="section">
+  <div class="container">
+    <h2>🏆 Today's Top Rankers</h2>
+    <p class="section-sub">ਅੱਜ ਦੇ ਮੌਕ ਟੈਸਟ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਨੰਬਰ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ</p>
+    <div class="leaderboard-card">
+      <div id="leaderboardList">Loading toppers...</div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section id="contact" class="section section-alt">
   <div class="container">
     <h2>📞 Contact Us</h2>
     <p class="section-sub">Have any questions? Get in touch with us</p>
@@ -128,27 +144,24 @@
       <p>📧 Email: <b>amanstudypoint70@gmail.com</b></p>
       
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px;">
-        <a class="btn btn-primary" href="https://wa.me/919041321843" target="_blank" rel="noopener">
-          💬 Ask on WhatsApp
-        </a>
-        <a class="btn btn-ghost" href="https://www.instagram.com/aman.study.point?igsi=MTlsODhtbXBlYXZyYQ==" target="_blank" rel="noopener" style="background:#fff0f6; color:#d6336c; border-color:#fcc2d7;">
-          📸 Follow on Instagram
-        </a>
-        <a class="btn btn-ghost" href="https://youtube.com/@ak-amandeep?si=8Yq6cyTNlGVyQt6G" target="_blank" rel="noopener" style="background:#fff5f5; color:#e03131; border-color:#ffc9c9;">
-          ▶️ Subscribe on YouTube
-        </a>
+        <a class="btn btn-primary" href="https://wa.me/919041321843" target="_blank" rel="noopener">💬 Ask on WhatsApp</a>
+        <a class="btn btn-ghost" href="https://www.instagram.com/aman.study.point?igsi=MTlsODhtbXBlYXZyYQ==" target="_blank" rel="noopener" style="background:#fff0f6; color:#d6336c;">📸 Follow on Instagram</a>
+        <a class="btn btn-ghost" href="https://youtube.com/@ak-amandeep?si=opSvHp5whzzJNBjt" target="_blank" rel="noopener" style="background:#fff5f5; color:#e03131;">▶️ Subscribe on YouTube</a>
       </div>
     </div>
   </div>
 </section>
-
 
 <footer>
   <div>📘 <b>Aman Study Point</b></div>
   <div>© 2026 — All Rights Reserved | Partner in Exam Preparation</div>
 </footer>
 
-<!-- Purchase Modal -->
+<!-- 4. Floating WhatsApp Quick Help Widget -->
+<a href="https://wa.me/919041321843?text=Hello%20Aman%20Study%20Point,%20I%20need%20help." class="floating-wa-btn" target="_blank" title="Need Help? Chat on WhatsApp">
+  💬
+</a>
+
 <div id="modal" class="modal-backdrop" style="display:none;" hidden>
   <div class="modal">
     <button class="modal-close" id="modalClose" aria-label="Close">✕</button>

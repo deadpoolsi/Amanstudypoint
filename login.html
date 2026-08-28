@@ -163,6 +163,15 @@
 
   <div id="loginError" class="error-msg"></div>
 
+  <!-- Google Login Button (ਦੋਵਾਂ ਟੈਬਾਂ ਲਈ ਹਮੇਸ਼ਾ ਦਿਖੇਗਾ) -->
+  <button type="button" class="btn-ghost" onclick="loginWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px solid #ced4da; padding: 10px; font-weight: 600; margin-bottom: 12px; background: #fff;">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px; height: 18px;"> Continue with Google
+  </button>
+
+  <div style="text-align: center; margin-bottom: 14px;">
+    <span style="color: #888; font-size: 0.85rem;">— ਜਾਂ (OR) —</span>
+  </div>
+
   <!-- 1. Login Form -->
   <form id="formLogin">
     <div class="field">
@@ -176,6 +185,24 @@
     <div class="forgot-link" onclick="showForgotForm()">Forgot Password? (ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?)</div>
     <button type="submit" class="btn-submit">➔ Login</button>
   </form>
+
+  <!-- 2. Register Form -->
+  <form id="formReg" style="display:none;">
+    <div class="field">
+      <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ)</label>
+      <input type="text" id="regName" placeholder="Enter your full name" required>
+    </div>
+    <div class="field">
+      <label>📱 Mobile Number</label>
+      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10" required>
+    </div>
+    <div class="field">
+      <label>🔒 Set Password</label>
+      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" required>
+    </div>
+    <button type="submit" class="btn-submit">🎉 Create Account</button>
+  </form>
+
 
   <!-- 2. Register Form -->
   <form id="formReg" style="display:none;">
@@ -214,7 +241,36 @@
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
+
+<script>
+function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then((result) => {
+      const user = result.user;
+      const name = user.displayName || "Student";
+      const identifier = user.phoneNumber || user.email.split('@')[0];
+
+      // Save to Firebase Database
+      db.ref("accounts/" + identifier).update({
+        name: name,
+        phone: identifier,
+        email: user.email,
+        authType: "google"
+      }).then(() => {
+        localStorage.setItem("pp_session", identifier);
+        localStorage.setItem("pp_name", name);
+        alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+        window.location.href = "index.html";
+      });
+    })
+    .catch((error) => {
+      alert("Google Login Error: " + error.message);
+    });
+}
+</script>
 </body>
 </html>

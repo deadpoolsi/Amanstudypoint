@@ -7,102 +7,126 @@
 <link rel="stylesheet" href="style.css">
 <style>
   .admin-wrap { max-width: 900px; margin: 25px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-  .req-card { background: #fdfdfd; padding: 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
-  .user-card { background: #f8f9fa; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
-  .result-card { background: #fdfdfd; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+  .req-card, .user-card, .result-card, .pyq-item-admin { background: #fdfdfd; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
   .result-score { font-size: 1.15rem; font-weight: 800; color: #e8590c; }
   .btn-approve { background: #2b8a3e; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
   .btn-reject { background: #e03131; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; margin-left: 6px; font-weight: 600; }
-  .btn-del-icon { background: none; border: none; color: #fa5252; cursor: pointer; font-size: 1.15rem; padding: 4px 8px; border-radius: 4px; }
-  .btn-del-icon:hover { background: #ffe3e3; }
+  .btn-del-icon { background: none; border: none; color: #fa5252; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; }
   .sec-title { margin-top: 28px; margin-bottom: 12px; color: #e8590c; font-size: 1.25rem; border-bottom: 2px solid #ffe8cc; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
   .pwd-badge { background: #e7f5ff; color: #1c7ed6; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; }
-  
-  /* Bulk Quiz Importer */
   .bulk-box { background: #fff8f0; border: 1.5px dashed #ffd8a8; padding: 18px; border-radius: 10px; margin-bottom: 20px; }
-  .bulk-textarea { width: 100%; height: 200px; padding: 12px; font-family: monospace; font-size: 0.9rem; border: 1.5px solid #ffc078; border-radius: 8px; resize: vertical; line-height: 1.4; }
-  
-  /* Admin Lock */
+  .bulk-textarea { width: 100%; height: 180px; padding: 12px; font-family: monospace; font-size: 0.9rem; border: 1.5px solid #ffc078; border-radius: 8px; resize: vertical; }
   #adminAuthBox { max-width: 380px; margin: 60px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; border: 1px solid #eee; }
   .pin-input { width: 100%; padding: 12px; font-size: 1.1rem; text-align: center; border: 1.5px solid #ccc; border-radius: 8px; margin: 15px 0; letter-spacing: 4px; }
+  .card-admin { background: #fff; border: 1px solid #e9ecef; border-radius: 12px; padding: 18px; margin-bottom: 20px; }
 </style>
 </head>
 <body style="background:#f4f5f7;">
 
-<!-- ਲਾਕ ਸਕ੍ਰੀਨ -->
+<!-- PIN Lock Screen -->
 <div id="adminAuthBox">
   <h2>🔒 Admin Verification</h2>
-  <p style="color:#666; font-size:0.9rem; margin-top:5px;">Enter your Secret PIN to access panel</p>
+  <p style="color:#666; font-size:0.9rem; margin-top:5px;">Enter Secret PIN to access panel</p>
   <input type="password" id="adminPinInput" class="pin-input" placeholder="••••••" maxlength="10">
   <button class="btn btn-primary btn-block" onclick="checkAdminPin()">🔓 Unlock Panel</button>
   <div id="pinError" style="color:#e03131; margin-top:10px; font-size:0.9rem; display:none;">⚠️ Invalid PIN Code!</div>
 </div>
 
-<!-- ਐਡਮਿਨ ਡੈਸ਼ਬੋਰਡ -->
+<!-- Admin Dashboard -->
 <div class="admin-wrap" id="adminDashboard" style="display:none;">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h2>🔐 Admin Panel — Aman Study Point</h2>
-    <button class="btn btn-ghost btn-small" onclick="adminLogout()" style="background:#ffe3e3; color:#c92a2a;">🚪 Lock Panel</button>
+    <button class="btn btn-ghost btn-small" onclick="adminLogout()" style="background:#ffe3e3; color:#c92a2a;">🚪 Lock</button>
   </div>
   <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
 
-  <!-- 1. ਕਿਤਾਬਾਂ ਦੀ ਅਪਰੂਵਲ (WhatsApp Shortcut Included) -->
+  <!-- 1. ਲਾਈਵ ਨੋਟਿਸ ਬਾਰ -->
+  <div class="card-admin">
+    <h3>📢 Top Notification Bar</h3>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <input type="text" id="announcementInput" placeholder="ਜਿਵੇਂ: 🔥 ਅੱਜ ਸ਼ਾਮ ਦਾ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ..." style="flex: 1; padding: 10px; border: 1.5px solid #dee2e6; border-radius: 8px;">
+      <button class="btn btn-primary" onclick="updateAnnouncement()">💾 Update Note</button>
+    </div>
+  </div>
+
+  <!-- 2. ਡਿਸਕਾਊਂਟ ਕੂਪਨ ਸਿਸਟਮ (Daily Editable Promo Codes) -->
+  <div class="card-admin">
+    <h3>🏷️ Daily Promo / Discount Coupon</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:10px;">ਰੋਜ਼ਾਨਾ ਨਵਾਂ ਕੂਪਨ ਕੋਡ ਬਣਾਓ (ਜਿਵੇਂ: <code>AMAN20</code> ਜਾਂ <code>POLICE50</code>):</p>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+      <input type="text" id="couponCodeInput" placeholder="Coupon Code (e.g. PUNJAB30)" style="padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:700;">
+      <input type="number" id="couponDiscountInput" placeholder="Discount % (e.g. 20)" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+      <select id="couponActiveSelect" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
+        <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Disabled)</option>
+      </select>
+      <button class="btn btn-primary" onclick="saveCouponSetting()">💾 Save Coupon</button>
+    </div>
+  </div>
+
+  <!-- 3. ਕਿਤਾਬਾਂ ਦੇ ਰੇਟ ਅਤੇ ਸਟੇਟਸ (On/Off) ਮੈਨੇਜਰ -->
+  <div class="card-admin">
+    <h3>📚 Manage Books & Pricing (ਸਾਰੀਆਂ 8 ਕਿਤਾਬਾਂ + ਕੰਬੋ)</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਜੋ ਕਿਤਾਬ ਉਪਲਬਧ ਨਹੀਂ ਹੈ ਉਸਨੂੰ "Coming Soon" ਕਰੋ ਅਤੇ ਰੇਟ ਬਦਲੋ:</p>
+    <div style="display:grid; gap:8px;" id="booksConfigContainer">
+      <!-- Generated Dynamically by JS -->
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveBooksConfig()" style="margin-top:14px; padding:12px;">💾 Save All Books Changes</button>
+  </div>
+
+  <!-- 4. ਮੁਫ਼ਤ ਪੁਰਾਣੇ ਪੇਪਰ (PYQs) ਮੈਨੇਜਰ -->
+  <div class="card-admin">
+    <h3>📑 Free Previous Year Papers (PYQ Manager)</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:10px;">ਰੋਜ਼ਾਨਾ ਨਵੇਂ ਪੇਪਰ ਦੀ PDF ਲਿੰਕ ਜੋੜੋ ਜਾਂ ਡਿਲੀਟ ਕਰੋ:</p>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+      <input type="text" id="pyqTitle" placeholder="ਪੇਪਰ ਦਾ ਨਾਮ (ਜਿਵੇਂ: Punjab Police Constable 2023 Paper)" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+      <input type="text" id="pyqExam" placeholder="ਕੈਟਾਗਰੀ (Police, Patwari, SSC, TET)" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <input type="url" id="pyqUrl" placeholder="PDF Direct Drive / Web Link" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      <button class="btn btn-primary" onclick="addPYQPaper()">➕ Add Paper</button>
+    </div>
+    <div class="sec-title" style="font-size:1rem; margin-top:16px;">ਮੌਜੂਦਾ ਅੱਪਲੋਡ ਕੀਤੇ ਪੇਪਰ:</div>
+    <div id="adminPyqList">Loading papers...</div>
+  </div>
+
+  <!-- 5. ਕਿਤਾਬਾਂ ਦੀ ਪੈਂਡਿੰਗ ਅਪਰੂਵਲ -->
   <div class="sec-title">📥 Pending Book Requests</div>
   <div id="requestsList">Loading pending requests...</div>
 
-  <!-- 2. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ (Export to Excel Feature Included) -->
-  <div class="sec-title">
-    <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
-    <div style="display:flex; gap:8px;">
-      <button class="btn btn-primary btn-small" onclick="exportResultsToCSV()" style="font-size:0.78rem; background:#2b8a3e;">📥 Export to Excel</button>
-      <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="font-size:0.78rem; color:#e03131;">🗑️ Clear All</button>
-    </div>
-  </div>
-  <div id="quizResultsList">Loading student test submissions...</div>
-
-  <!-- 3. ਟੈਸਟ ਟਾਈਮਰ ਸੈਟਿੰਗ (Adjustable Timer) -->
+  <!-- 6. ਟਾਈਮਰ ਸੈਟਿੰਗ -->
   <div class="sec-title">⏱️ Adjust Test Timer</div>
   <div style="display:flex; align-items:center; gap:12px; background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #dee2e6;">
     <label style="font-weight:600; font-size:0.95rem;">Test Duration (Minutes):</label>
     <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:90px; padding:8px; border:1px solid #ccc; border-radius:6px; font-weight:700; text-align:center;">
     <button class="btn btn-primary btn-small" onclick="saveTimerSetting()">💾 Save Timer</button>
   </div>
-  
-<!-- Top Announcement Update Card -->
-<div class="card" style="margin-bottom: 24px; padding: 20px; background: #fff; border-radius: 12px; border: 1px solid #e9ecef;">
-  <h3 style="margin-bottom: 8px;">📢 Top Notification Bar (ਉੱਪਰਲਾ ਨੋਟਿਸ ਬਦਲੋ)</h3>
-  <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">ਇੱਥੇ ਲਿਖਿਆ ਮੈਸੇਜ ਸਿੱਧਾ ਵੈੱਬਸਾਈਟ ਦੇ ਸਭ ਤੋਂ ਉੱਪਰ ਲਾਈਵ ਹੋ ਜਾਵੇਗਾ:</p>
-  <div style="display: flex; gap: 10px;">
-    <input type="text" id="announcementInput" placeholder="ਜਿਵੇਂ: 🔥 ਅੱਜ ਸ਼ਾਮ 7 ਵਜੇ ਪੰਜਾਬ ਪੁਲਿਸ ਦਾ ਮੌਕ ਟੈਸਟ ਲਾਈਵ ਹੋਵੇਗਾ..." style="flex: 1; padding: 10px 14px; border: 1.5px solid #dee2e6; border-radius: 8px;">
-    <button class="btn btn-primary" onclick="updateAnnouncement()">💾 Update Note</button>
-  </div>
-</div>
-  
-  <!-- 4. Bulk Quiz Importer -->
+
+  <!-- 7. Bulk Quiz Importer -->
   <div class="sec-title">⚡ Quick Bulk Upload Daily Quiz</div>
   <div class="bulk-box">
-    <p style="font-size:0.88rem; color:#666; margin-bottom:10px;">
-      <b>ਸਾਰੇ ਸਵਾਲ ਇੱਕਠੇ ਪੇਸਟ ਕਰੋ</b> (ਸਵਾਲ, 4 ਆਪਸ਼ਨਾਂ (A, B, C, D) ਅਤੇ Ans: ਲਿਖ ਕੇ 'Auto-Publish' ਦਬਾਓ):
-    </p>
-
     <textarea id="bulkTextInput" class="bulk-textarea" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
 A) ਮੋਰ
 B) ਬਾਜ਼
 C) ਤੋਤਾ
 D) ਕਬੂਤਰ
 Ans: B"></textarea>
-
     <div style="display:flex; gap:10px; margin-top:10px;">
-      <button class="btn btn-primary" onclick="processBulkUpload()" style="flex:1; padding:12px;">
-        🚀 Auto-Convert & Publish Questions
-      </button>
-      <button class="btn btn-ghost" onclick="fillBulkTemplate()" style="font-size:0.85rem;">
-        📝 Sample Template
-      </button>
+      <button class="btn btn-primary" onclick="processBulkUpload()" style="flex:1; padding:12px;">🚀 Auto-Convert & Publish Questions</button>
     </div>
   </div>
 
-  <!-- 5. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
+  <!-- 8. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ -->
+  <div class="sec-title">
+    <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary btn-small" onclick="exportResultsToCSV()" style="font-size:0.78rem; background:#2b8a3e;">📥 Export CSV</button>
+      <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="font-size:0.78rem; color:#e03131;">🗑️ Clear All</button>
+    </div>
+  </div>
+  <div id="quizResultsList">Loading student test submissions...</div>
+
+  <!-- 9. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
   <div class="sec-title">
     <span>👥 Registered Students (<span id="userCount">0</span>)</span>
   </div>
@@ -131,6 +155,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const ALL_BOOKS_META = [
+  { id: "combo", title: "🔥 Mega Combo (All 8 Books)" },
+  { id: "punjabi", title: "1. Punjabi Grammar" },
+  { id: "gk", title: "2. General Knowledge (GK)" },
+  { id: "maths", title: "3. Mathematics" },
+  { id: "reasoning", title: "4. Reasoning Ability" },
+  { id: "history", title: "5. History of Punjab" },
+  { id: "science", title: "6. General Science" },
+  { id: "constitution", title: "7. Indian Constitution" },
+  { id: "computer", title: "8. Computer Awareness" }
+];
+
 let currentResultsData = [];
 
 function checkAdminPin() {
@@ -147,6 +183,9 @@ function showDashboard() {
   document.getElementById("adminDashboard").style.display = "block";
   loadFirebaseData();
   loadTimerSetting();
+  loadBooksConfig();
+  loadCouponConfig();
+  loadAdminPYQs();
 }
 
 function adminLogout() {
@@ -156,30 +195,128 @@ function adminLogout() {
 
 if (sessionStorage.getItem("asp_admin_auth") === "true") showDashboard();
 
+/* 1. Notice Announcement */
+function updateAnnouncement() {
+  const text = document.getElementById('announcementInput').value.trim();
+  if (!text) { alert('ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!'); return; }
+  db.ref('siteSettings/announcement').set(text).then(() => {
+    alert('✅ ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਡੇਟ ਹੋ ਗਈ!');
+  });
+}
+
+/* 2. Promo / Coupon Manager */
+function loadCouponConfig() {
+  db.ref("siteSettings/coupon").on("value", snap => {
+    const c = snap.val() || { code: "AMAN20", discount: 20, active: true };
+    document.getElementById("couponCodeInput").value = c.code || "";
+    document.getElementById("couponDiscountInput").value = c.discount || 0;
+    document.getElementById("couponActiveSelect").value = String(c.active);
+  });
+}
+
+function saveCouponSetting() {
+  const code = document.getElementById("couponCodeInput").value.trim().toUpperCase();
+  const discount = parseInt(document.getElementById("couponDiscountInput").value) || 0;
+  const active = document.getElementById("couponActiveSelect").value === "true";
+
+  if (!code) { alert("ਕਿਰਪਾ ਕਰਕੇ ਕੂਪਨ ਕੋਡ ਦਾ ਨਾਮ ਲਿਖੋ!"); return; }
+
+  db.ref("siteSettings/coupon").set({ code, discount, active }).then(() => {
+    alert("✅ ਕੂਪਨ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ ਹੈ!");
+  });
+}
+
+/* 3. Books Config Manager */
+function loadBooksConfig() {
+  const container = document.getElementById("booksConfigContainer");
+  db.ref("siteSettings/booksConfig").on("value", snap => {
+    const cfg = snap.val() || {};
+    container.innerHTML = ALL_BOOKS_META.map(b => {
+      const item = cfg[b.id] || { price: (b.id === 'combo' ? 499 : 99), status: 'available' };
+      return `
+        <div style="display:flex; align-items:center; justify-content:space-between; background:${b.id==='combo'?'#fff8f1':'#f8f9fa'}; padding:8px 12px; border-radius:8px; border:1px solid #dee2e6;">
+          <div><strong>${b.title}</strong></div>
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="cfg_price_${b.id}" value="${item.price}" style="width:75px; padding:5px; border-radius:6px; border:1px solid #ccc;">
+            <select id="cfg_status_${b.id}" style="padding:5px; border-radius:6px; border:1px solid #ccc;">
+              <option value="available" ${item.status==='available'?'selected':''}>ਉਪਲਬਧ (Available)</option>
+              <option value="unavailable" ${item.status==='unavailable'?'selected':''}>Coming Soon (ਬੰਦ)</option>
+            </select>
+          </div>
+        </div>
+      `;
+    }).join("");
+  });
+}
+
+function saveBooksConfig() {
+  const data = {};
+  ALL_BOOKS_META.forEach(b => {
+    data[b.id] = {
+      price: parseInt(document.getElementById(`cfg_price_${b.id}`).value) || 99,
+      status: document.getElementById(`cfg_status_${b.id}`).value
+    };
+  });
+  db.ref("siteSettings/booksConfig").set(data).then(() => {
+    alert("✅ ਸਾਰੀਆਂ ਕਿਤਾਬਾਂ ਦੇ ਰੇਟ ਅਤੇ ਸਟੇਟਸ ਅੱਪਡੇਟ ਹੋ ਗਏ!");
+  });
+}
+
+/* 4. PYQ Manager */
+function loadAdminPYQs() {
+  const list = document.getElementById("adminPyqList");
+  db.ref("pyqList").on("value", snap => {
+    const data = snap.val();
+    if (!data) { list.innerHTML = "<small style='color:#777;'>ਕੋਈ ਪੇਪਰ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</small>"; return; }
+    list.innerHTML = Object.entries(data).map(([key, val]) => `
+      <div class="pyq-item-admin">
+        <div>
+          <b>${val.title}</b> <small style="background:#e7f5ff; padding:2px 6px; border-radius:4px;">${val.exam}</small>
+          <div style="font-size:0.8rem; color:#666;"><a href="${val.url}" target="_blank">PDF Link ↗</a> • ${val.date}</div>
+        </div>
+        <button class="btn-del-icon" onclick="deletePYQ('${key}')">🗑️</button>
+      </div>
+    `).join("");
+  });
+}
+
+function addPYQPaper() {
+  const title = document.getElementById("pyqTitle").value.trim();
+  const exam = document.getElementById("pyqExam").value.trim() || "Competitive Exam";
+  const url = document.getElementById("pyqUrl").value.trim();
+
+  if (!title || !url) { alert("ਕਿਰਪਾ ਕਰਕੇ ਪੇਪਰ ਦਾ ਨਾਮ ਅਤੇ PDF ਲਿੰਕ ਭਰੋ!"); return; }
+
+  db.ref("pyqList").push({
+    title, exam, url, date: new Date().toLocaleDateString('en-GB')
+  }).then(() => {
+    document.getElementById("pyqTitle").value = "";
+    document.getElementById("pyqUrl").value = "";
+    alert("✅ ਪੇਪਰ ਸਫਲਤਾਪੂਰਵਕ ਜੋੜ ਦਿੱਤਾ ਗਿਆ ਹੈ!");
+  });
+}
+
+function deletePYQ(key) {
+  if (confirm("ਕੀ ਤੁਸੀਂ ਇਸ ਪੇਪਰ ਨੂੰ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")) db.ref("pyqList/" + key).remove();
+}
+
 /* Timer Setting */
 function loadTimerSetting() {
   db.ref("quizTimerMinutes").get().then((snap) => {
-    if (snap.exists()) {
-      document.getElementById("timerMinutesInput").value = snap.val();
-    }
+    if (snap.exists()) document.getElementById("timerMinutesInput").value = snap.val();
   });
 }
 
 function saveTimerSetting() {
   const mins = parseInt(document.getElementById("timerMinutesInput").value);
-  if (!mins || mins < 1) {
-    alert("Please enter a valid time in minutes.");
-    return;
-  }
-  db.ref("quizTimerMinutes").set(mins).then(() => {
-    alert(`✅ Test timer set to ${mins} minutes successfully!`);
-  });
+  if (!mins || mins < 1) return alert("Valid minutes required.");
+  db.ref("quizTimerMinutes").set(mins).then(() => alert(`✅ Timer set to ${mins} minutes!`));
 }
 
 /* Bulk Quiz Auto Parser */
 function processBulkUpload() {
   const text = document.getElementById("bulkTextInput").value.trim();
-  if (!text) { alert("⚠️ Please paste question text first!"); return; }
+  if (!text) return alert("⚠️ Paste questions first.");
 
   const blocks = text.split(/\n\s*\n+/);
   const quizArray = [];
@@ -187,10 +324,7 @@ function processBulkUpload() {
   for (let block of blocks) {
     const lines = block.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length < 5) continue;
-
-    let qText = lines[0];
-    let optA = "", optB = "", optC = "", optD = "";
-    let correctIndex = 0;
+    let qText = lines[0], optA = "", optB = "", optC = "", optD = "", correctIndex = 0;
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
@@ -207,74 +341,23 @@ function processBulkUpload() {
         if (ansChar === "D" || ansChar === "4") correctIndex = 3;
       }
     }
-
     if (qText && optA && optB) {
-      quizArray.push({
-        q: qText,
-        options: [optA, optB, optC || "None", optD || "None"],
-        answer: correctIndex
-      });
+      quizArray.push({ q: qText, options: [optA, optB, optC || "None", optD || "None"], answer: correctIndex });
     }
   }
 
-  if (quizArray.length === 0) {
-    alert("⚠️ Could not read format! Please check sample template.");
-    return;
-  }
-
+  if (quizArray.length === 0) return alert("⚠️ Format not recognized.");
   if (confirm(`✅ ${quizArray.length} questions detected! Publish now?`)) {
-    const newQuizVersion = "v_" + Date.now();
     db.ref("dailyQuiz").set(quizArray);
-    db.ref("quizVersion").set(newQuizVersion).then(() => {
-      alert(`🎉 Successfully published ${quizArray.length} questions!`);
+    db.ref("quizVersion").set("v_" + Date.now()).then(() => {
+      alert(`🎉 Published ${quizArray.length} questions!`);
       document.getElementById("bulkTextInput").value = "";
     });
   }
 }
 
-function fillBulkTemplate() {
-  document.getElementById("bulkTextInput").value = 
-`1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
-A) ਮੋਰ
-B) ਬਾਜ਼
-C) ਤੋਤਾ
-D) ਕਬੂਤਰ
-Ans: B
-
-2. ਪੰਜਾਬ ਵਿੱਚ ਕੁੱਲ ਕਿੰਨੇ ਜ਼ਿਲ੍ਹੇ ਹਨ?
-A) 22
-B) 23
-C) 24
-D) 25
-Ans: B`;
-}
-
-/* Export Results to Excel/CSV */
-function exportResultsToCSV() {
-  if (!currentResultsData || currentResultsData.length === 0) {
-    alert("No student results to export.");
-    return;
-  }
-
-  let csvContent = "data:text/csv;charset=utf-8,Student Name,Mobile Number,Score,Total Marks,Percentage,Time\n";
-
-  currentResultsData.forEach(r => {
-    const pct = Math.round((r.score / r.total) * 100) + "%";
-    csvContent += `"${r.name}","${r.phone}",${r.score},${r.total},"${pct}","${r.time}"\n`;
-  });
-
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Quiz_Results_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
 /* Firebase Data Handlers */
 function loadFirebaseData() {
-  // Pending Requests with WhatsApp Notification button
   db.ref("requests").on("value", (snap) => {
     const list = document.getElementById("requestsList");
     const data = snap.val();
@@ -286,7 +369,7 @@ function loadFirebaseData() {
       <div class="req-card">
         <div>
           <div><b>${r.name}</b> (📱 ${r.phone})</div>
-          <div>📚 Book: <b>${r.bookTitle}</b></div>
+          <div>📚 Book: <b>${r.bookTitle}</b> • Paid: <b>₹${r.paidAmount || '99'}</b></div>
           <small style="color:#777;">Time: ${r.time}</small>
         </div>
         <div style="display:flex; gap:6px;">
@@ -297,19 +380,10 @@ function loadFirebaseData() {
     `).join("");
   });
 
-  // Quiz Results
   db.ref("quizResults").on("value", (snap) => {
-    const list = document.getElementById("quizResultsList");
-    const countSpan = document.getElementById("resultsCount");
+    const list = document.getElementById("quizResultsList"), countSpan = document.getElementById("resultsCount");
     const data = snap.val();
-
-    if (!data) {
-      list.innerHTML = "<p>No test attempts yet.</p>";
-      countSpan.textContent = "0";
-      currentResultsData = [];
-      return;
-    }
-
+    if (!data) { list.innerHTML = "<p>No attempts yet.</p>"; countSpan.textContent = "0"; currentResultsData = []; return; }
     const items = Object.entries(data).reverse();
     countSpan.textContent = items.length;
     currentResultsData = items.map(([_, val]) => val);
@@ -325,18 +399,16 @@ function loadFirebaseData() {
           <div style="display:flex; align-items:center; gap:12px;">
             <div style="text-align:right;">
               <div class="result-score">${r.score} / ${r.total}</div>
-              <small style="color:${percentage >= 50 ? '#2b8a3e' : '#c92a2a'}; font-weight:700;">${percentage}% Marks</small>
+              <small style="color:${percentage >= 50 ? '#2b8a3e' : '#c92a2a'}; font-weight:700;">${percentage}%</small>
             </div>
-            <button class="btn-del-icon" onclick="deleteResult('${key}')" title="Delete Result">🗑️</button>
+            <button class="btn-del-icon" onclick="deleteResult('${key}')">🗑️</button>
           </div>
         </div>`;
     }).join("");
   });
 
-  // Registered Students
   db.ref("accounts").on("value", (snap) => {
-    const uList = document.getElementById("usersList");
-    const countSpan = document.getElementById("userCount");
+    const uList = document.getElementById("usersList"), countSpan = document.getElementById("userCount");
     const users = snap.val();
     if (!users) { uList.innerHTML = "<p>No users yet.</p>"; countSpan.textContent = "0"; return; }
     const userArray = Object.values(users);
@@ -348,76 +420,43 @@ function loadFirebaseData() {
           <b>${index + 1}. ${u.name}</b> (📱 ${u.phone})
           <div style="margin-top:3px;">Password: <span class="pwd-badge">${u.pass}</span></div>
         </div>
-        <div>
-          <button class="btn-del-icon" onclick="deleteStudentAccount('${u.phone}', '${u.name}')" title="Delete Student Account">🗑️ Delete</button>
-        </div>
+        <button class="btn-del-icon" onclick="deleteStudentAccount('${u.phone}', '${u.name}')">🗑️ Delete</button>
       </div>
     `).join("");
   });
 }
 
 function approveBook(phone, bookId, reqId, name, bookTitle) {
-  if (bookId === "all_combo") {
-    // Unlock all 8 books
-    const allBooks = ["punjabi", "gk", "maths", "reasoning", "history", "science", "constitution", "computer"];
-    allBooks.forEach(id => db.ref("users/" + phone + "/books/" + id).set(true));
+  if (bookId === "combo" || bookId === "all_combo") {
+    ["punjabi", "gk", "maths", "reasoning", "history", "science", "constitution", "computer"].forEach(id => {
+      db.ref("users/" + phone + "/books/" + id).set(true);
+    });
   } else {
     db.ref("users/" + phone + "/books/" + bookId).set(true);
   }
-
   db.ref("requests/" + reqId).update({ status: "approved" });
-
-  if (confirm(`Book Approved!\n\nDo you want to send a WhatsApp confirmation to ${name}?`)) {
-    const msg = encodeURIComponent(`ਹੈਲੋ ${name},\nਤੁਹਾਡੀ ਕਿਤਾਬ "${bookTitle}" ਅਨਲੌਕ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ। Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਜਾ ਕੇ ਹੁਣੇ ਪੜ੍ਹਨਾ ਸ਼ੁਰੂ ਕਰੋ:\nhttps://amanstudypoint.netlify.app`);
-    window.open(`https://api.whatsapp.com/send?phone=91${phone}&text=${msg}`, '_blank');
-  }
+  alert(`Book Approved for ${name}!`);
 }
 
-function rejectBook(reqId) {
-  if (confirm("Reject request?")) db.ref("requests/" + reqId).remove();
-}
-
-function deleteResult(key) {
-  if (confirm("Delete this student result?")) db.ref("quizResults/" + key).remove();
-}
-
-function clearAllResults() {
-  if (confirm("Are you sure you want to delete ALL student quiz results?")) db.ref("quizResults").remove();
-}
-
+function rejectBook(reqId) { if (confirm("Reject request?")) db.ref("requests/" + reqId).remove(); }
+function deleteResult(key) { if (confirm("Delete result?")) db.ref("quizResults/" + key).remove(); }
+function clearAllResults() { if (confirm("Delete ALL results?")) db.ref("quizResults").remove(); }
 function deleteStudentAccount(phone, name) {
-  if (confirm(`Delete student account "${name}" (${phone})?`)) {
+  if (confirm(`Delete student account "${name}"?`)) {
     db.ref("accounts/" + phone).remove();
     db.ref("users/" + phone).remove();
     db.ref("userAttempts/" + phone).remove();
-    alert("Account deleted!");
   }
+}
+function exportResultsToCSV() {
+  if (!currentResultsData.length) return alert("No results.");
+  let csv = "data:text/csv;charset=utf-8,Name,Phone,Score,Total,Percentage,Time\n";
+  currentResultsData.forEach(r => csv += `"${r.name}","${r.phone}",${r.score},${r.total},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
+  const a = document.createElement("a");
+  a.href = encodeURI(csv);
+  a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
 }
 </script>
-  
-  <script>
-function updateAnnouncement() {
-  const textInput = document.getElementById('announcementInput');
-  if (!textInput) return;
-  const text = textInput.value.trim();
-  
-  if (!text) {
-    alert('ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!');
-    return;
-  }
-
-  if (typeof db === 'undefined') {
-    alert('ਡਾਟਾਬੇਸ ਕਨੈਕਸ਼ਨ ਨਹੀਂ ਮਿਲਿਆ! ਕਿਰਪਾ ਕਰਕੇ ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।');
-    return;
-  }
-
-  db.ref('siteSettings/announcement').set(text).then(() => {
-    alert('✅ ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਡੇਟ ਹੋ ਗਈ ਹੈ!');
-  }).catch((err) => {
-    alert('ਐਰਰ: ' + err.message);
-  });
-}
-  </script>
-  
 </body>
 </html>

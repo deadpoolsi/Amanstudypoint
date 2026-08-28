@@ -345,3 +345,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const mc = document.getElementById("modalClose");
   if (mc) mc.onclick = closeModal;
 });
+// --- DYNAMIC TOP ANNOUNCEMENT SYSTEM ---
+if (typeof db !== 'undefined') {
+  // Live Announcement Listener on Index Page
+  db.ref('siteSettings/announcement').on('value', (snap) => {
+    const val = snap.val();
+    const bar = document.getElementById('topAnnouncement');
+    if (bar && val) {
+      bar.innerText = val;
+    }
+  });
+}
+
+// Admin Panel Function to Update Top Notice
+function updateAnnouncement() {
+  const textInput = document.getElementById('announcementInput');
+  if (!textInput) return;
+  const text = textInput.value.trim();
+  if (!text) {
+    alert('ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!');
+    return;
+  }
+  db.ref('siteSettings/announcement').set(text).then(() => {
+    alert('✅ ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਫਲਤਾਪੂਰਵਕ ਬਦਲ ਦਿੱਤੀ ਗਈ ਹੈ!');
+    textInput.value = '';
+  }).catch((err) => {
+    alert('ਐਰਰ: ' + err.message);
+  });
+}
+

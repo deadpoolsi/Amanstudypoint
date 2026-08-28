@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login / Register — Aman Study Point</title>
-<link rel="stylesheet" href="style.css">
 <style>
-  /* Login Page Specific Styling */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f5f7;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -17,27 +17,27 @@
   }
   .login-card {
     background: #ffffff;
-    border: 1px solid #e9ecef;
+    border: 1px solid #e0e0e0;
     border-radius: 16px;
     max-width: 400px;
     width: 100%;
-    padding: 28px 24px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 30px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
   .login-logo {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: #e8590c;
     text-align: center;
-    margin-bottom: 4px;
     text-decoration: none;
     display: block;
+    margin-bottom: 4px;
   }
   .login-sub {
     text-align: center;
     color: #666;
     font-size: 0.88rem;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
   }
   .tabs {
     display: flex;
@@ -48,7 +48,7 @@
   }
   .tab {
     flex: 1;
-    padding: 9px;
+    padding: 10px;
     border: none;
     background: transparent;
     border-radius: 8px;
@@ -61,30 +61,80 @@
   .tab.active {
     background: #ffffff;
     color: #e8590c;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
   .field {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
   .field label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.86rem;
     font-weight: 600;
     margin-bottom: 6px;
     color: #333;
   }
   .field input {
     width: 100%;
-    padding: 11px 13px;
-    border: 1.5px solid #dee2e6;
+    padding: 12px 14px;
+    border: 1.5px solid #ced4da;
     border-radius: 8px;
     font-size: 0.95rem;
-    transition: 0.2s;
     outline: none;
+    transition: 0.2s;
   }
   .field input:focus {
     border-color: #e8590c;
     box-shadow: 0 0 0 3px rgba(232, 89, 12, 0.15);
+  }
+  .btn-submit {
+    width: 100%;
+    background: #e8590c;
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: 0.2s;
+  }
+  .btn-submit:hover {
+    background: #d9480f;
+  }
+  .btn-ghost {
+    width: 100%;
+    background: #f8f9fa;
+    border: 1.5px solid #dee2e6;
+    color: #333;
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .forgot-link {
+    display: block;
+    text-align: right;
+    font-size: 0.82rem;
+    color: #e8590c;
+    font-weight: 600;
+    margin-top: -6px;
+    margin-bottom: 18px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .back-home {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #888;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .back-home:hover {
+    color: #e8590c;
   }
   .error-msg {
     background: #ffe3e3;
@@ -97,29 +147,6 @@
     text-align: center;
     font-weight: 600;
   }
-  .forgot-link {
-    display: block;
-    text-align: right;
-    font-size: 0.82rem;
-    color: #e8590c;
-    text-decoration: none;
-    font-weight: 600;
-    margin-top: -6px;
-    margin-bottom: 16px;
-    cursor: pointer;
-  }
-  .back-home {
-    display: block;
-    text-align: center;
-    margin-top: 18px;
-    color: #777;
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 600;
-  }
-  .back-home:hover {
-    color: #e8590c;
-  }
 </style>
 </head>
 <body>
@@ -128,10 +155,10 @@
   <a class="login-logo" href="index.html">📘 AMAN STUDY POINT</a>
   <div class="login-sub" id="formSubtitle">Log in to your account or create a new one</div>
 
-  <!-- Tabs Switcher -->
+  <!-- Switcher Tabs -->
   <div class="tabs" id="authTabs">
-    <button class="tab active" id="tabLogin">Login</button>
-    <button class="tab" id="tabReg">New Account</button>
+    <button class="tab active" id="tabLogin" type="button">Login</button>
+    <button class="tab" id="tabReg" type="button">New Account</button>
   </div>
 
   <div id="loginError" class="error-msg"></div>
@@ -147,45 +174,43 @@
       <input type="password" id="loginPass" placeholder="Enter password" required>
     </div>
     <div class="forgot-link" onclick="showForgotForm()">Forgot Password? (ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?)</div>
-    <button type="submit" class="btn btn-primary btn-block">➔ Login</button>
+    <button type="submit" class="btn-submit">➔ Login</button>
   </form>
 
   <!-- 2. Register Form -->
   <form id="formReg" style="display:none;">
     <div class="field">
       <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ)</label>
-      <input type="text" id="regName" placeholder="Enter your full name">
+      <input type="text" id="regName" placeholder="Enter your full name" required>
     </div>
     <div class="field">
       <label>📱 Mobile Number</label>
-      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10">
+      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10" required>
     </div>
     <div class="field">
       <label>🔒 Set Password</label>
-      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)">
+      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" required>
     </div>
-    <button type="submit" class="btn btn-primary btn-block">🎉 Create Account</button>
+    <button type="submit" class="btn-submit">🎉 Create Account</button>
   </form>
 
   <!-- 3. Forgot Password Form -->
   <div id="formForgot" style="display:none;">
-    <p style="color:#555; font-size:0.88rem; margin-bottom:12px; line-height:1.4;">
+    <p style="color:#555; font-size:0.88rem; margin-bottom:14px; line-height:1.4;">
       ਆਪਣਾ ਰਜਿਸਟਰਡ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ, ਤੁਹਾਡਾ ਪਾਸਵਰਡ ਵਟਸਐਪ 'ਤੇ ਭੇਜ ਦਿੱਤਾ ਜਾਵੇਗਾ:
     </p>
     <div class="field">
       <label>📱 Registered Mobile Number</label>
       <input type="tel" id="forgotPhone" placeholder="10-digit registered number" maxlength="10">
     </div>
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
-      <button class="btn btn-primary btn-block" onclick="sendForgotWhatsApp()">📲 Get Password on WhatsApp</button>
-      <button class="btn btn-ghost btn-block" onclick="cancelForgot()">Cancel</button>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+      <button class="btn-submit" type="button" onclick="sendForgotWhatsApp()">📲 Get Password on WhatsApp</button>
+      <button class="btn-ghost" type="button" onclick="cancelForgot()">Cancel</button>
     </div>
   </div>
 
   <a class="back-home" href="index.html">← Back to Home</a>
 </div>
-
-<div id="toast"></div>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -193,4 +218,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-

@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* Aman Study Point — Main App */
+/* Aman Study Point — Core App */
 const firebaseConfig = {
   apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
   authDomain: "aman-study-point.firebaseapp.com",
@@ -17,24 +17,25 @@ const db = firebase.database();
 const INSTITUTE = {
   name: "Aman Study Point",
   upi: "amritpalsingh735031234-1@oksbi",
-  whatsapp: "9041321843",
-  price: 99,
-  comboPrice: 499
+  whatsapp: "9041321843"
 };
 
 const BOOKS = [
-  { id: "punjabi", cat: "language", emoji: "📖", title: "Punjabi Grammar", sub: "SSC • Patwari • TET", pdf: "", demoPdf: "" },
-  { id: "gk", cat: "gk", emoji: "🌏", title: "General Knowledge (GK)", sub: "All Competitive Exams", pdf: "", demoPdf: "" },
-  { id: "maths", cat: "maths", emoji: "🔢", title: "Mathematics", sub: "Banking • SSC", pdf: "", demoPdf: "" },
-  { id: "reasoning", cat: "maths", emoji: "🧩", title: "Reasoning Ability", sub: "SSC • Police • Banking", pdf: "", demoPdf: "" },
-  { id: "history", cat: "gk", emoji: "🏛️", title: "History of Punjab", sub: "General Preparation", pdf: "", demoPdf: "" },
-  { id: "science", cat: "gk", emoji: "🔬", title: "General Science", sub: "SSC • Patwari", pdf: "", demoPdf: "" },
-  { id: "constitution", cat: "gk", emoji: "⚖️", title: "Indian Constitution", sub: "SSC • Police", pdf: "", demoPdf: "" },
-  { id: "computer", cat: "language", emoji: "💻", title: "Computer Awareness", sub: "All Competitive Exams", pdf: "", demoPdf: "" }
+  { id: "punjabi", cat: "language", emoji: "📖", title: "Punjabi Grammar", sub: "SSC • Patwari • TET", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "gk", cat: "gk", emoji: "🌏", title: "General Knowledge (GK)", sub: "All Competitive Exams", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "maths", cat: "maths", emoji: "🔢", title: "Mathematics", sub: "Banking • SSC", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "reasoning", cat: "maths", emoji: "🧩", title: "Reasoning Ability", sub: "SSC • Police • Banking", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "history", cat: "gk", emoji: "🏛️", title: "History of Punjab", sub: "General Preparation", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "science", cat: "gk", emoji: "🔬", title: "General Science", sub: "SSC • Patwari", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "constitution", cat: "gk", emoji: "⚖️", title: "Indian Constitution", sub: "SSC • Police", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "computer", cat: "language", emoji: "💻", title: "Computer Awareness", sub: "All Competitive Exams", defaultPrice: 99, pdf: "", demoPdf: "" }
 ];
 
 let activeCategory = "all";
 let userUnlockedBookIds = [];
+let liveBooksConfig = {};
+let activeCoupon = null;
+let currentAppliedCoupon = null;
 
 const session = () => localStorage.getItem("pp_session");
 const setSession = (p) => localStorage.setItem("pp_session", p);
@@ -59,7 +60,24 @@ function logout() {
   setTimeout(() => location.href = "index.html", 600);
 }
 
-/* 1. PWA Install Logic */
+/* 1. Dark Mode System */
+function initTheme() {
+  const isDark = localStorage.getItem("asp_theme") === "dark";
+  if (isDark) {
+    document.body.classList.add("dark-mode");
+    const btn = document.getElementById("themeToggleBtn");
+    if (btn) btn.textContent = "☀️ Light";
+  }
+}
+
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle("dark-mode");
+  localStorage.setItem("asp_theme", isDark ? "dark" : "light");
+  const btn = document.getElementById("themeToggleBtn");
+  if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
+}
+
+/* 2. PWA Install */
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -75,19 +93,63 @@ function installPWA() {
   }
 }
 
-/* 6. Referral WhatsApp Share */
+/* 3. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
-  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਅਤੇ ਸਿਰਫ਼ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਮਿਲ ਰਹੀਆਂ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app
-  `);
+  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਅਤੇ ਸਿਰਫ਼ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਮਿਲ ਰਹੀਆਂ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+}
+
+/* 4. Realtime Books & Config Listener */
+function initLiveBooksConfig() {
+  if (typeof db === 'undefined') return;
+  
+  db.ref('siteSettings/coupon').on('value', snap => {
+    activeCoupon = snap.val();
+  });
+
+  db.ref('siteSettings/booksConfig').on('value', snap => {
+    liveBooksConfig = snap.val() || {};
+
+    // Combo Card Update
+    const comboCfg = liveBooksConfig.combo || { price: 499, status: 'available' };
+const cPriceEl = document.getElementById('combo_price_display');
+const cBtn = document.getElementById('buy_btn_combo');
+
+// Auto Calculate Dynamic Savings
+const comboPrice = parseInt(comboCfg.price) || 499;
+let totalMRP = 0;
+BOOKS.forEach(b => {
+  const bPrice = (liveBooksConfig[b.id] && liveBooksConfig[b.id].price) ? parseInt(liveBooksConfig[b.id].price) : (b.defaultPrice || 99);
+  totalMRP += bPrice;
+});
+if (totalMRP <= comboPrice) totalMRP = Math.round(comboPrice * 1.35);
+const saveAmount = totalMRP - comboPrice;
+
+if (cPriceEl) cPriceEl.innerHTML = `₹${comboPrice} <small><s>₹${totalMRP}</s> (Save ₹${saveAmount})</small>`;
+    if (cBtn) {
+      if (comboCfg.status === 'unavailable') {
+        cBtn.innerText = '⏳ Coming Soon (ਜਲਦੀ ਆ ਰਹੀ ਹੈ)';
+        cBtn.disabled = true;
+        cBtn.style.background = '#868e96';
+      } else {
+        cBtn.innerText = '🛒 Unlock All 8 Books';
+        cBtn.disabled = false;
+        cBtn.style.background = '#e8590c';
+      }
+    }
+    drawBooks();
+  });
 }
 
 function renderAccount() {
   const b = document.getElementById("accountBtn"), u = currentUser(), lo = document.getElementById("logoutLink");
+  const anNav = document.getElementById("analyticsNav");
   if (!b) return;
   if (u) {
     b.textContent = "👤 " + u.name;
     b.href = "#myBooks";
+    if (anNav) anNav.style.display = "inline-block";
+    loadUserAnalytics();
     if (!lo) {
       const a = document.createElement("a");
       a.id = "logoutLink";
@@ -102,6 +164,7 @@ function renderAccount() {
     b.textContent = "🔐 Login";
     b.href = "login.html";
     if (lo) lo.remove();
+    if (anNav) anNav.style.display = "none";
   }
 }
 
@@ -115,7 +178,6 @@ function renderBooksRealtime() {
   });
 }
 
-/* 5. Category Filter Logic */
 function filterBooks(cat, btn) {
   activeCategory = cat;
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
@@ -129,18 +191,32 @@ function drawBooks() {
     const filtered = activeCategory === "all" ? BOOKS : BOOKS.filter(b => b.cat === activeCategory);
     g.innerHTML = filtered.map(b => {
       const has = userUnlockedBookIds.includes(b.id);
+      const cfg = liveBooksConfig[b.id] || { price: b.defaultPrice, status: 'available' };
+      const isUnavailable = (cfg.status === 'unavailable');
+      const curPrice = cfg.price || b.defaultPrice;
+
+      let actionBtn = "";
+      if (has) {
+        actionBtn = `<a class="btn btn-read btn-small" href="reader.html?id=${b.id}">📖 Read</a>`;
+      } else if (isUnavailable) {
+        actionBtn = `<button class="btn btn-small" disabled style="background:#868e96; color:#fff; cursor:not-allowed;">⏳ Coming Soon</button>`;
+      } else {
+        actionBtn = `
+          <div style="display:flex;gap:6px;">
+            <a class="btn btn-ghost btn-small" href="reader.html?id=${b.id}&demo=true" style="font-size:0.8rem;padding:5px 8px;">📄 Demo</a>
+            <button class="btn btn-buy btn-small" onclick="openBuy('${b.id}')">🛒 Buy</button>
+          </div>
+        `;
+      }
+
       return `<div class="book-card">
         ${has ? '<span class="pill">✅ Unlocked</span>' : ''}
         <div class="book-emoji">${b.emoji}</div>
         <div class="book-title">${b.title}</div>
         <div class="book-sub">${b.sub}</div>
         <div class="book-bottom">
-          <div class="price">₹${INSTITUTE.price} <small>only</small></div>
-          ${has ? `<a class="btn btn-read btn-small" href="reader.html?id=${b.id}">📖 Read</a>` : `
-            <div style="display:flex;gap:6px;">
-              <a class="btn btn-ghost btn-small" href="reader.html?id=${b.id}&demo=true" style="font-size:0.8rem;padding:5px 8px;">📄 Demo</a>
-              <button class="btn btn-buy btn-small" onclick="openBuy('${b.id}')">🛒 Buy</button>
-            </div>`}
+          <div class="price">₹${curPrice} <small>only</small></div>
+          ${actionBtn}
         </div>
       </div>`;
     }).join("");
@@ -160,31 +236,90 @@ function drawBooks() {
   }
 }
 
+/* 5. Checkout Modal with Coupon Discount System */
 function openBuy(id) {
   const u = currentUser();
   if (!u) { toast("Please login first 👇"); setTimeout(() => location.href = "login.html", 800); return; }
   const b = BOOKS.find(x => x.id === id);
-  if (b) showModal(b.emoji + " " + b.title, INSTITUTE.price, id, b.title);
+  const cfg = liveBooksConfig[id] || { price: b.defaultPrice };
+  currentAppliedCoupon = null;
+  if (b) showModal(b.emoji + " " + b.title, cfg.price, id, b.title);
 }
 
 function openBuyCombo() {
   const u = currentUser();
   if (!u) { toast("Please login first 👇"); setTimeout(() => location.href = "login.html", 800); return; }
-  showModal("🎁 All 8 Books Combo Pack", INSTITUTE.comboPrice, "all_combo", "All 8 Books Combo");
+  const comboCfg = liveBooksConfig.combo || { price: 499 };
+  currentAppliedCoupon = null;
+  showModal("🎁 All 8 Books Combo Pack", comboCfg.price, "combo", "All 8 Books Combo");
 }
 
 function showModal(title, price, id, name) {
-  const u = currentUser(), wa = encodeURIComponent(`Hello,\nI sent ₹${price} for "${name}".\nName: ${u.name}\nPhone: ${u.phone}\nPlease approve.`);
   const mb = document.getElementById("modalBody");
   if (!mb) return;
-  mb.innerHTML = `<div class="pay-book">${title}</div><div class="pay-price">Price: ₹${price}</div><div style="text-align:center;margin:10px 0;"><img src="https://i.postimg.cc/FsFy1W75/qr.png" style="max-width:140px;width:100%;border-radius:8px;border:2px solid #ffd8a8;display:block;margin:0 auto;"><small style="color:#666;display:block;margin-top:4px;">UPI: <b>${INSTITUTE.upi}</b></small></div><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"><a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${wa}" target="_blank">📲 Send Screenshot on WhatsApp</a><button class="btn btn-ghost btn-block" onclick="submitReq('${id}','${name}')" style="background:#e8f5e9;color:#2e7d32;">✅ I Have Paid — Submit</button></div>`;
+
+  mb.innerHTML = `
+    <div class="pay-book">${title}</div>
+    <div class="pay-price" id="modalPriceDisplay">Price: ₹${price}</div>
+
+    <!-- Coupon Box -->
+    <div style="margin: 10px 0; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px dashed #ccc;">
+      <div style="font-size: 0.84rem; font-weight: 600; margin-bottom: 5px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਕੋਡ ਲਗਾਓ):</div>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="couponInput" placeholder="Enter Code" style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #ccc; text-transform:uppercase;">
+        <button class="btn btn-primary btn-small" onclick="applyCoupon(${price}, '${id}', '${name}')">Apply</button>
+      </div>
+      <div id="couponMsg" style="font-size:0.8rem; margin-top:4px;"></div>
+    </div>
+
+    <div style="text-align:center;margin:10px 0;">
+      <img src="https://i.postimg.cc/FsFy1W75/qr.png" style="max-width:130px;width:100%;border-radius:8px;border:2px solid #ffd8a8;display:block;margin:0 auto;">
+      <small style="color:#666;display:block;margin-top:4px;">Scan & Pay via UPI: <b>${INSTITUTE.upi}</b></small>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;" id="modalActionButtons">
+      ${renderModalButtons(price, id, name)}
+    </div>
+  `;
+
   const m = document.getElementById("modal");
   if (m) { m.hidden = false; m.style.display = "flex"; }
 }
 
-function submitReq(bookId, title) {
+function applyCoupon(originalPrice, id, name) {
+  const inp = document.getElementById("couponInput").value.trim().toUpperCase();
+  const msg = document.getElementById("couponMsg");
+  const pDisp = document.getElementById("modalPriceDisplay");
+
+  if (!activeCoupon || !activeCoupon.active || activeCoupon.code !== inp) {
+    msg.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
+    return;
+  }
+
+  const discountAmount = Math.round((originalPrice * activeCoupon.discount) / 100);
+  const finalPrice = originalPrice - discountAmount;
+  currentAppliedCoupon = { code: inp, discount: activeCoupon.discount, finalPrice };
+
+  msg.innerHTML = `<span style="color:#2b8a3e; font-weight:700;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${discountAmount} ਦੀ ਛੋਟ ਮਿਲੀ (${activeCoupon.discount}% Off)</span>`;
+  pDisp.innerHTML = `Price: <s style="color:#888;">₹${originalPrice}</s> <b style="color:#2b8a3e;">₹${finalPrice}</b>`;
+
+  document.getElementById("modalActionButtons").innerHTML = renderModalButtons(finalPrice, id, name);
+}
+
+function renderModalButtons(price, id, name) {
+  const u = currentUser();
+  const wa = encodeURIComponent(`Hello,\nI sent ₹${price} for "${name}".\nName: ${u.name}\nPhone: ${u.phone}\nPlease approve.`);
+  return `
+    <a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${wa}" target="_blank">📲 Send Screenshot on WhatsApp</a>
+    <button class="btn btn-ghost btn-block" onclick="submitReq('${id}','${name}', ${price})" style="background:#e8f5e9;color:#2e7d32;">✅ I Have Paid ₹${price} — Submit</button>
+  `;
+}
+
+function submitReq(bookId, title, price) {
   const u = currentUser(), reqId = u.phone + "_" + bookId;
-  db.ref("requests/" + reqId).set({ reqId, phone: u.phone, name: u.name, bookId, bookTitle: title, time: new Date().toLocaleString(), status: "pending" }).then(() => {
+  db.ref("requests/" + reqId).set({
+    reqId, phone: u.phone, name: u.name, bookId, bookTitle: title, paidAmount: price, time: new Date().toLocaleString(), status: "pending"
+  }).then(() => {
     closeModal(); toast("✅ Request Sent! Book unlocks once approved.");
   });
 }
@@ -194,33 +329,72 @@ function closeModal() {
   if (m) { m.hidden = true; m.style.display = "none"; }
 }
 
-/* Auth */
-function initLogin() {
-  const tL = document.getElementById("tabLogin"), tR = document.getElementById("tabReg"), fL = document.getElementById("formLogin"), fR = document.getElementById("formReg"), err = document.getElementById("loginError");
-  if (!tL || !fL) return;
-  tL.onclick = () => { tL.classList.add("active"); tR.classList.remove("active"); fL.style.display = "block"; fR.style.display = "none"; };
-  tR.onclick = () => { tR.classList.add("active"); tL.classList.remove("active"); fR.style.display = "block"; fL.style.display = "none"; };
-  if (session()) { location.replace("index.html"); return; }
-  fR.onsubmit = e => {
-    e.preventDefault();
-    const name = document.getElementById("regName").value.trim(), phone = document.getElementById("regPhone").value.trim(), pass = document.getElementById("regPass").value;
-    if (phone.length < 10 || pass.length < 4) { err.textContent = "Please fill details correctly"; err.style.display = "block"; return; }
-    db.ref("accounts/" + phone).get().then(s => {
-      if (s.exists()) { err.textContent = "Number already registered!"; err.style.display = "block"; }
-      else { db.ref("accounts/" + phone).set({ name, phone, pass }).then(() => { setSession(phone); localStorage.setItem("pp_name", name); location.href = "index.html"; }); }
-    });
-  };
-  fL.onsubmit = e => {
-    e.preventDefault();
-    const phone = document.getElementById("loginPhone").value.trim(), pass = document.getElementById("loginPass").value;
-    db.ref("accounts/" + phone).get().then(s => {
-      if (s.exists() && s.val().pass === pass) { setSession(phone); localStorage.setItem("pp_name", s.val().name); location.href = "index.html"; }
-      else { err.textContent = "Invalid mobile or password!"; err.style.display = "block"; }
-    });
-  };
+/* 6. Free PYQ Loader */
+function loadPublicPYQs() {
+  const container = document.getElementById("pyqListContainer");
+  if (!container) return;
+  db.ref("pyqList").on("value", snap => {
+    const data = snap.val();
+    if (!data) { container.innerHTML = "<p style='text-align:center;grid-column:1/-1;'>ਕੋਈ ਪੇਪਰ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</p>"; return; }
+    container.innerHTML = Object.values(data).map(p => `
+      <div class="card" style="padding:16px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <span class="pill" style="position:static; margin-bottom:6px; display:inline-block;">${p.exam}</span>
+          <h3 style="font-size:1.05rem; margin:6px 0;">${p.title}</h3>
+          <small style="color:#777;">📅 Added: ${p.date}</small>
+        </div>
+        <a href="${p.url}" target="_blank" class="btn btn-primary btn-small" style="margin-top:12px; background:#1971c2;">📥 Download PDF Paper</a>
+      </div>
+    `).join("");
+  });
 }
 
-/* Quiz */
+/* 7. Student Analytics Progress */
+function loadUserAnalytics() {
+  const u = currentUser();
+  const box = document.getElementById("userAnalyticsBox");
+  const sec = document.getElementById("analytics");
+  if (!u || !box) return;
+
+  db.ref("userAttempts/" + u.phone).on("value", snap => {
+    const attempts = snap.val();
+    if (!attempts) {
+      if (sec) sec.style.display = "none";
+      return;
+    }
+    if (sec) sec.style.display = "block";
+
+    const list = Object.entries(attempts);
+    const totalTests = list.length;
+    let totalScore = 0, totalMax = 0;
+    list.forEach(([_, a]) => { totalScore += a.score; totalMax += a.total; });
+    const avg = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+    box.innerHTML = `
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:16px;">
+        <div class="card" style="padding:14px; text-align:center;">
+          <div style="font-size:1.8rem; font-weight:800; color:#e8590c;">${totalTests}</div>
+          <small>Total Tests Attempted</small>
+        </div>
+        <div class="card" style="padding:14px; text-align:center;">
+          <div style="font-size:1.8rem; font-weight:800; color:#2b8a3e;">${avg}%</div>
+          <small>Average Accuracy Score</small>
+        </div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <h4 style="margin-bottom:10px;">📜 Test Attempt History:</h4>
+        ${list.reverse().map(([key, a]) => `
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+            <div><b>Test Score:</b> ${a.score} / ${a.total} (${Math.round((a.score/a.total)*100)}%)</div>
+            <small style="color:#777;">🕒 ${a.time}</small>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  });
+}
+
+/* 8. Quiz Engine & Digital Certificate */
 let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false;
 
 function initQuiz() {
@@ -236,8 +410,19 @@ function initQuiz() {
     quizVersion = vSnap.val() || "v1";
     db.ref("userAttempts/" + u.phone + "/" + quizVersion).once("value", aSnap => {
       if (aSnap.exists()) {
-        const prev = aSnap.val(), share = encodeURIComponent(`🔥 ਮੇਰਾ Aman Study Point Mock Test ਸਕੋਰ ${prev.score}/${prev.total} ਹੈ! ਲਿੰਕ: ${window.location.origin}`);
-        box.innerHTML = `<div class="quiz-score-card"><div style="font-size:3rem;">✅</div><h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਦੇ ਚੁੱਕੇ ਹੋ!</h3><p style="color:#666;">Student: <b>${u.name}</b></p><div class="quiz-score-num">${prev.score} / ${prev.total}</div><p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${Math.round((prev.score / prev.total) * 100)}%</p><a class="btn btn-primary btn-small" href="https://api.whatsapp.com/send?text=${share}" target="_blank" style="background:#25D366;color:#fff;">📲 Share on WhatsApp</a></div>`;
+        const prev = aSnap.val(), pct = Math.round((prev.score / prev.total) * 100);
+        box.innerHTML = `
+          <div class="quiz-score-card">
+            <div style="font-size:3rem;">✅</div>
+            <h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਦੇ ਚੁੱਕੇ ਹੋ!</h3>
+            <p style="color:#666;">Student: <b>${u.name}</b></p>
+            <div class="quiz-score-num">${prev.score} / ${prev.total}</div>
+            <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 10px;">
+              🎖️ Download Official Certificate
+            </button>
+          </div>
+        `;
       } else {
         db.ref("dailyQuiz").once("value", qSnap => {
           activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
@@ -289,18 +474,98 @@ function finishTest() {
   const box = document.getElementById("quizBox"), u = currentUser();
   db.ref("quizResults").push({ name: u.name, phone: u.phone, score: qScore, total: activeQuiz.length, version: quizVersion, time: new Date().toLocaleString() });
   db.ref("userAttempts/" + u.phone + "/" + quizVersion).set({ score: qScore, total: activeQuiz.length, time: new Date().toLocaleString() });
-  const share = encodeURIComponent(`🔥 ਮੇਰਾ Aman Study Point Mock Test ਸਕੋਰ ${qScore}/${activeQuiz.length} ਹੈ! ਤੁਸੀਂ ਵੀ ਆਪਣੀ ਤਿਆਰੀ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.netlify.app`);
 
-  box.innerHTML = `<div class="quiz-score-card"><div style="font-size:3rem;">🏆</div><h3>Test Completed!</h3><p style="color:#666;">Student: <b>${u.name}</b></p><div class="quiz-score-num">${qScore} / ${activeQuiz.length}</div><div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:15px auto;"><a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?text=${share}" target="_blank" style="background:#25D366;color:#fff;">📲 Share on WhatsApp Status</a><button class="btn btn-ghost btn-block" onclick="showReview()">🔍 View Detailed Solution</button></div><div id="revBox" style="display:none;margin-top:15px;"></div></div>`;
+  box.innerHTML = `
+    <div class="quiz-score-card">
+      <div style="font-size:3rem;">🏆</div>
+      <h3>Test Completed!</h3>
+      <p style="color:#666;">Student: <b>${u.name}</b></p>
+      <div class="quiz-score-num">${qScore} / ${activeQuiz.length}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:15px auto;">
+        <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${qScore}, ${activeQuiz.length})" style="background:#1971c2; color:#fff;">
+          🎖️ Download Score Certificate
+        </button>
+        <button class="btn btn-ghost btn-block" onclick="showReview()">🔍 View Detailed Solution</button>
+      </div>
+      <div id="revBox" style="display:none;margin-top:15px;"></div>
+    </div>
+  `;
   loadBoard();
+}
+
+function generateCertificate(name, score, total) {
+  const percentage = Math.round((score / total) * 100);
+  const canvas = document.createElement("canvas");
+  canvas.width = 900;
+  canvas.height = 600;
+  const ctx = canvas.getContext("2d");
+
+  // Certificate Background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 900, 600);
+
+  // Border
+  ctx.strokeStyle = "#e8590c";
+  ctx.lineWidth = 14;
+  ctx.strokeRect(20, 20, 860, 560);
+  ctx.strokeStyle = "#ffd8a8";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(32, 32, 836, 536);
+
+  // Header Title
+  ctx.fillStyle = "#e8590c";
+  ctx.font = "bold 34px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("AMAN STUDY POINT", 450, 90);
+
+  ctx.fillStyle = "#555555";
+  ctx.font = "18px sans-serif";
+  ctx.fillText("CERTIFICATE OF MOCK TEST ACHIEVEMENT", 450, 130);
+
+  ctx.fillStyle = "#222222";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("This is proudly presented to", 450, 190);
+
+  // Student Name
+  ctx.fillStyle = "#1971c2";
+  ctx.font = "bold 40px sans-serif";
+  ctx.fillText(name.toUpperCase(), 450, 250);
+
+  // Score Info
+  ctx.fillStyle = "#333333";
+  ctx.font = "20px sans-serif";
+  ctx.fillText(`for scoring ${score} out of ${total} (${percentage}% Marks)`, 450, 310);
+  ctx.fillText(`in the Punjab Competitive Exam Daily Mock Test Series`, 450, 345);
+
+  // Date & Badge
+  const dateStr = new Date().toLocaleDateString('en-GB');
+  ctx.fillStyle = "#777777";
+  ctx.font = "16px sans-serif";
+  ctx.fillText(`Date: ${dateStr}  •  Status: Verified Participant`, 450, 420);
+
+  // Signature
+  ctx.fillStyle = "#e8590c";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("Aman Study Point Mansa", 450, 500);
+
+  // Download Trigger
+  const link = document.createElement("a");
+  link.download = `Certificate_${name.replace(/\s+/g, '_')}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 }
 
 function showReview() {
   const rb = document.getElementById("revBox");
   if (!rb) return;
-  if (rb.style.display === "block") { rb.style.display = "none"; return; }
-  rb.style.display = "block";
-  rb.innerHTML = userAns.map((a, i) => `<div class="review-item ${a.sel === a.cor ? 'is-correct' : 'is-wrong'}"><div style="font-weight:700;">${i + 1}. ${a.q}</div><div style="font-size:0.88rem;color:${a.sel === a.cor ? '#2b8a3e' : '#c92a2a'};">Your Answer: ${a.opts[a.sel] || 'Skipped'} ${a.sel === a.cor ? '✅' : '❌'}</div>${a.sel !== a.cor ? `<div style="font-size:0.88rem;color:#2b8a3e;">Correct Answer: ${a.opts[a.cor]}</div>` : ''}</div>`).join("");
+  rb.style.display = (rb.style.display === "block") ? "none" : "block";
+  rb.innerHTML = userAns.map((a, i) => `
+    <div class="review-item ${a.sel === a.cor ? 'is-correct' : 'is-wrong'}">
+      <div style="font-weight:700;">${i + 1}. ${a.q}</div>
+      <div style="font-size:0.88rem;color:${a.sel === a.cor ? '#2b8a3e' : '#c92a2a'};">Your Answer: ${a.opts[a.sel] || 'Skipped'} ${a.sel === a.cor ? '✅' : '❌'}</div>
+      ${a.sel !== a.cor ? `<div style="font-size:0.88rem;color:#2b8a3e;">Correct Answer: ${a.opts[a.cor]}</div>` : ''}
+    </div>
+  `).join("");
 }
 
 function loadBoard() {
@@ -314,13 +579,38 @@ function loadBoard() {
   });
 }
 
+function initLogin() {
+  const tL = document.getElementById("tabLogin"), tR = document.getElementById("tabReg"), fL = document.getElementById("formLogin"), fR = document.getElementById("formReg"), err = document.getElementById("loginError");
+  if (!tL || !fL) return;
+  tL.onclick = () => { tL.classList.add("active"); tR.classList.remove("active"); fL.style.display = "block"; fR.style.display = "none"; };
+  tR.onclick = () => { tR.classList.add("active"); tL.classList.remove("active"); fR.style.display = "block"; fL.style.display = "none"; };
+  if (session()) { location.replace("index.html"); return; }
+  fR.onsubmit = e => {
+    e.preventDefault();
+    const name = document.getElementById("regName").value.trim(), phone = document.getElementById("regPhone").value.trim(), pass = document.getElementById("regPass").value;
+    if (phone.length < 10 || pass.length < 4) { err.textContent = "Please fill details correctly"; err.style.display = "block"; return; }
+    db.ref("accounts/" + phone).get().then(s => {
+      if (s.exists()) { err.textContent = "Number already registered!"; err.style.display = "block"; }
+      else { db.ref("accounts/" + phone).set({ name, phone, pass }).then(() => { setSession(phone); localStorage.setItem("pp_name", name); location.href = "index.html"; }); }
+    });
+  };
+  fL.onsubmit = e => {
+    e.preventDefault();
+    const phone = document.getElementById("loginPhone").value.trim(), pass = document.getElementById("loginPass").value;
+    db.ref("accounts/" + phone).get().then(s => {
+      if (s.exists() && s.val().pass === pass) { setSession(phone); localStorage.setItem("pp_name", s.val().name); location.href = "index.html"; }
+      else { err.textContent = "Invalid mobile or password!"; err.style.display = "block"; }
+    });
+  };
+}
+
 function initReader() {
   const body = document.getElementById("readerBody");
   if (!body) return;
   const params = new URLSearchParams(location.search), id = params.get("id"), isDemo = params.get("demo") === "true", b = BOOKS.find(x => x.id === id), u = currentUser();
   if (isDemo && b) {
     const rh = document.getElementById("readerHead");
-    if (rh) rh.innerHTML = `<div class="emoji">${b.emoji}</div><h1>${b.title} (Free Demo Sample)</h1><div class="meta">Sample Preview • ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਖਰੀਦੋ</div><div style="margin-top:12px;"><button class="btn btn-primary btn-small" onclick="openBuy('${b.id}')">🛒 Buy Full Book (₹${INSTITUTE.price})</button></div>`;
+    if (rh) rh.innerHTML = `<div class="emoji">${b.emoji}</div><h1>${b.title} (Free Demo Sample)</h1><div class="meta">Sample Preview • ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਖਰੀਦੋ</div><div style="margin-top:12px;"><button class="btn btn-primary btn-small" onclick="openBuy('${b.id}')">🛒 Buy Full Book</button></div>`;
     body.innerHTML = `<div style="position:relative;width:100%;height:80vh;border:2px solid var(--line);border-radius:14px;overflow:hidden;"><iframe src="${b.demoPdf || b.pdf || ''}" style="width:100%;height:100%;border:none;"></iframe></div>`;
     return;
   }
@@ -335,8 +625,11 @@ function initReader() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   renderAccount();
+  initLiveBooksConfig();
   renderBooksRealtime();
+  loadPublicPYQs();
   initReader();
   initLogin();
   initQuiz();
@@ -345,32 +638,3 @@ document.addEventListener("DOMContentLoaded", () => {
   const mc = document.getElementById("modalClose");
   if (mc) mc.onclick = closeModal;
 });
-// --- DYNAMIC TOP ANNOUNCEMENT SYSTEM ---
-if (typeof db !== 'undefined') {
-  // Live Announcement Listener on Index Page
-  db.ref('siteSettings/announcement').on('value', (snap) => {
-    const val = snap.val();
-    const bar = document.getElementById('topAnnouncement');
-    if (bar && val) {
-      bar.innerText = val;
-    }
-  });
-}
-
-// Admin Panel Function to Update Top Notice
-function updateAnnouncement() {
-  const textInput = document.getElementById('announcementInput');
-  if (!textInput) return;
-  const text = textInput.value.trim();
-  if (!text) {
-    alert('ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!');
-    return;
-  }
-  db.ref('siteSettings/announcement').set(text).then(() => {
-    alert('✅ ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਫਲਤਾਪੂਰਵਕ ਬਦਲ ਦਿੱਤੀ ਗਈ ਹੈ!');
-    textInput.value = '';
-  }).catch((err) => {
-    alert('ਐਰਰ: ' + err.message);
-  });
-}
-

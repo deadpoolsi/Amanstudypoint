@@ -4,28 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#e8590c">
-<title>AMAN STUDY POINT — Exam Books (₹99)</title>
+<title>AMAN STUDY POINT — Exam Books & Mock Tests</title>
 
-<!-- WhatsApp & Social Media Preview Tags -->
-<meta property="og:title" content="Aman Study Point — Punjab Exam Preparation (₹99)">
-<meta property="og:description" content="ਪੰਜਾਬ ਪੁਲਿਸ, ਪਟਵਾਰੀ, SSC ਅਤੇ ਬੈਂਕਿੰਗ ਦੀਆਂ ਕਿਤਾਬਾਂ ਅਤੇ ਡੇਲੀ ਮੌਕ ਟੈਸਟ ਸਿਰਫ਼ ₹99 ਵਿੱਚ।">
+<link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
+<link rel="apple-touch-icon" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
+
+<!-- WhatsApp Preview Tags -->
+<meta property="og:title" content="Aman Study Point — Punjab Exam Preparation">
+<meta property="og:description" content="ਪੰਜਾਬ ਪੁਲਿਸ, ਪਟਵਾਰੀ, SSC ਦੀਆਂ ਕਿਤਾਬਾਂ ਅਤੇ ਡੇਲੀ ਮੌਕ ਟੈਸਟ।">
 <meta property="og:image" content="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
 <meta property="og:url" content="https://amanstudypoint.vercel.app">
 <meta property="og:type" content="website">
 
-<!-- Twitter Cards -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
-
-
-<!-- 1. PWA Manifest & App Icons -->
-<link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
-<link rel="apple-touch-icon" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- Live Notice Bar -->
 <div class="top-announcement" id="topAnnouncement">
   📢🔥 ਅੱਜ ਦਾ ਨਵਾਂ ਮੌਕ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ — ਹੁਣੇ ਅਟੈਂਪਟ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਦੇਖੋ!
 </div>
@@ -36,8 +32,10 @@
     <nav id="navLinks">
       <a href="#books">📚 Books</a>
       <a href="#quiz">🎯 Daily Test</a>
-      <a href="#referral">🎁 Refer & Earn</a>
-      <a href="#leaderboard">🏆 Top Rankers</a>
+      <a href="#pyqs">📑 PYQ Papers</a>
+      <a href="#analytics" id="analyticsNav" style="display:none;">📊 My Progress</a>
+      <a href="#referral">🎁 Refer</a>
+      <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
       <button id="installAppBtn" class="btn btn-small btn-buy" style="display:none;" onclick="installPWA()">📲 Install App</button>
       <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
     </nav>
@@ -46,21 +44,22 @@
 
 <section class="hero">
   <div class="container">
-    <div class="badge">🔥 Every Book Only <b>₹99</b></div>
+    <div class="badge">🔥 Best Exam Preparation Portal in Punjabi</div>
     <h1>Complete Exam Preparation <span>in Punjabi</span></h1>
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
       <a href="#books" class="btn btn-primary">📚 View Books</a>
       <a href="#quiz" class="btn btn-ghost">🎯 Daily Mock Test</a>
+      <a href="#pyqs" class="btn btn-ghost" style="background:#e7f5ff; color:#1971c2; border-color:#a5d8ff;">📑 Free PYQs</a>
     </div>
   </div>
 </section>
 
-<!-- Books Section with 5. Category Filters -->
+<!-- Books Section -->
 <section id="books" class="section">
   <div class="container">
     <h2>📚 Our Books</h2>
-    <p class="section-sub">Every book only ₹99</p>
+    <p class="section-sub">Affordable high quality notes in Punjabi</p>
 
     <!-- Mega Combo Offer -->
     <div class="combo-card">
@@ -71,13 +70,13 @@
           <p>Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
         </div>
         <div class="combo-price-box">
-          <div class="combo-price">₹499 <small><s>₹792</s> (Save ₹293)</small></div>
-          <button class="btn btn-primary" onclick="openBuyCombo()">🛒 Unlock All 8 Books</button>
+          <div class="combo-price" id="combo_price_display">₹499 <small><s>₹792</s> (Save ₹293)</small></div>
+          <button id="buy_btn_combo" class="btn btn-primary" onclick="openBuyCombo()">🛒 Unlock All 8 Books</button>
         </div>
       </div>
     </div>
 
-    <!-- Category Filter Pills -->
+    <!-- Category Filters -->
     <div class="cat-filters">
       <button class="cat-btn active" onclick="filterBooks('all', this)">All Books</button>
       <button class="cat-btn" onclick="filterBooks('gk', this)">🏛️ GK & History</button>
@@ -89,12 +88,21 @@
   </div>
 </section>
 
-<!-- My Books -->
+<!-- My Books Section -->
 <section id="myBooks" class="section section-alt" hidden>
   <div class="container">
     <h2>🎒 My Books</h2>
     <p class="section-sub">Your unlocked books are here — read anytime</p>
     <div id="myBooksGrid" class="grid"></div>
+  </div>
+</section>
+
+<!-- Student Analytics / Progress Section -->
+<section id="analytics" class="section section-alt" style="display:none;">
+  <div class="container">
+    <h2>📊 My Performance & Test Progress</h2>
+    <p class="section-sub">ਤੁਹਾਡੇ ਪਿਛਲੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟਾਂ ਦਾ ਰਿਕਾਰਡ</p>
+    <div id="userAnalyticsBox"></div>
   </div>
 </section>
 
@@ -109,8 +117,17 @@
   </div>
 </section>
 
-<!-- 6. Referral & Share Section -->
-<section id="referral" class="section section-alt">
+<!-- Previous Year Papers (PYQ Section) -->
+<section id="pyqs" class="section section-alt">
+  <div class="container">
+    <h2>📑 Free Previous Year Papers (PYQ)</h2>
+    <p class="section-sub">ਪੰਜਾਬ ਪੁਲਿਸ, ਪਟਵਾਰੀ ਅਤੇ PSSSB ਦੇ ਪੁਰਾਣੇ ਹੱਲ ਕੀਤੇ ਪੇਪਰ ਮੁਫ਼ਤ ਡਾਊਨਲੋਡ ਕਰੋ</p>
+    <div id="pyqListContainer" class="grid">Loading papers...</div>
+  </div>
+</section>
+
+<!-- Referral Section -->
+<section id="referral" class="section">
   <div class="container">
     <h2>🎁 Refer & Share with Friends</h2>
     <p class="section-sub">ਆਪਣੇ ਦੋਸਤਾਂ ਨੂੰ ਜੋੜੋ ਅਤੇ ਤਿਆਰੀ ਵਿੱਚ ਮਦਦ ਕਰੋ</p>
@@ -128,7 +145,7 @@
 </section>
 
 <!-- Leaderboard -->
-<section id="leaderboard" class="section">
+<section id="leaderboard" class="section section-alt">
   <div class="container">
     <h2>🏆 Today's Top Rankers</h2>
     <p class="section-sub">ਅੱਜ ਦੇ ਮੌਕ ਟੈਸਟ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਨੰਬਰ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ</p>
@@ -139,7 +156,7 @@
 </section>
 
 <!-- Contact -->
-<section id="contact" class="section section-alt">
+<section id="contact" class="section">
   <div class="container">
     <h2>📞 Contact Us</h2>
     <p class="section-sub">Have any questions? Get in touch with us</p>
@@ -164,11 +181,12 @@
   <div>© 2026 — All Rights Reserved | Partner in Exam Preparation</div>
 </footer>
 
-<!-- 4. Floating WhatsApp Quick Help Widget -->
+<!-- Floating WhatsApp Button -->
 <a href="https://wa.me/919041321843?text=Hello%20Aman%20Study%20Point,%20I%20need%20help." class="floating-wa-btn" target="_blank" title="Need Help? Chat on WhatsApp">
   💬
 </a>
 
+<!-- Payment & Details Modal -->
 <div id="modal" class="modal-backdrop" style="display:none;" hidden>
   <div class="modal">
     <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
@@ -182,18 +200,16 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
-  
+
 <script>
   if (typeof db !== 'undefined') {
     db.ref('siteSettings/announcement').on('value', (snap) => {
       const val = snap.val();
       const bar = document.getElementById('topAnnouncement');
-      if (bar && val) {
-        bar.innerText = '📢 ' + val;
-      }
+      if (bar && val) bar.innerText = '📢 ' + val;
     });
   }
 </script>
-  
+
 </body>
 </html>

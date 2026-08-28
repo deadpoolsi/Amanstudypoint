@@ -18,10 +18,11 @@
   .sec-title { margin-top: 28px; margin-bottom: 12px; color: #e8590c; font-size: 1.25rem; border-bottom: 2px solid #ffe8cc; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
   .pwd-badge { background: #e7f5ff; color: #1c7ed6; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; }
   
-  /* 30 Qs Inputs */
-  .q-edit-box { background: #f8f9fa; padding: 14px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 12px; }
-  .q-edit-box input, .q-edit-box select { width: 100%; padding: 8px 10px; margin: 4px 0 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
-  
+  /* Bulk Quiz Importer */
+  .bulk-box { background: #fff8f0; border: 1.5px dashed #ffd8a8; padding: 18px; border-radius: 10px; margin-bottom: 20px; }
+  .bulk-textarea { width: 100%; height: 220px; padding: 12px; font-family: monospace; font-size: 0.9rem; border: 1.5px solid #ffc078; border-radius: 8px; resize: vertical; line-height: 1.4; }
+  .bulk-textarea:focus { outline: none; border-color: #e8590c; }
+
   /* Admin Lock */
   #adminAuthBox { max-width: 380px; margin: 60px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; border: 1px solid #eee; }
   .pin-input { width: 100%; padding: 12px; font-size: 1.1rem; text-align: center; border: 1.5px solid #ccc; border-radius: 8px; margin: 15px 0; letter-spacing: 4px; }
@@ -50,25 +51,46 @@
   <div class="sec-title">📥 Pending Book Requests</div>
   <div id="requestsList">Loading pending requests...</div>
 
-  <!-- ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਕੁਇਜ਼ ਰਿਜ਼ਲਟ (Delete Features Included) -->
+  <!-- ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਕੁਇਜ਼ ਰਿਜ਼ਲਟ -->
   <div class="sec-title">
     <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
     <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="font-size:0.75rem; color:#e03131; border-color:#ffa8a8;">🗑️ Clear All Results</button>
   </div>
   <div id="quizResultsList">Loading student test submissions...</div>
 
-  <!-- 30 ਸਵਾਲਾਂ ਦਾ ਕੁਇਜ਼ ਅੱਪਡੇਟ -->
-  <div class="sec-title">🎯 Update Daily Quiz (30 Questions)</div>
-  <p style="color:#666; font-size:0.85rem; margin-bottom:12px;">ਨਵੇਂ ਸਵਾਲ ਸੇਵ ਕਰਨ 'ਤੇ ਸਾਰੇ ਵਿਦਿਆਰਥੀਆਂ ਲਈ ਨਵਾਂ ਟੈਸਟ ਖੁੱਲ੍ਹ ਜਾਵੇਗਾ।</p>
+  <!-- 3. Bulk Quiz Importer (ਇੱਕਠੇ ਸਵਾਲ ਅੱਪਲੋਡ ਕਰੋ) -->
+  <div class="sec-title">⚡ Quick Bulk Upload Daily Quiz</div>
   
-  <form id="quizAdminForm" onsubmit="saveQuizToFirebase(event)">
-    <div id="quizInputsContainer"></div>
-    <button class="btn btn-primary btn-block" type="submit" style="margin-top:10px; padding:12px; font-size:1rem;">
-      💾 Save & Publish New Quiz
-    </button>
-  </form>
+  <div class="bulk-box">
+    <p style="font-size:0.88rem; color:#666; margin-bottom:10px;">
+      <b>ਸਾਰੇ ਸਵਾਲ ਇੱਕਠੇ ਪੇਸਟ ਕਰੋ</b> (ਹੇਠਾਂ ਦਿੱਤੇ ਬਾਕਸ ਵਿੱਚ ਸਵਾਲ, 4 ਆਪਸ਼ਨਾਂ (A, B, C, D) ਅਤੇ Ans: ਲਿਖ ਕੇ ਸਿੱਧਾ 'Auto-Upload' ਦਬਾਓ):
+    </p>
 
-  <!-- ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ (ID/Pass Delete Option Included) -->
+    <textarea id="bulkTextInput" class="bulk-textarea" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
+A) ਮੋਰ
+B) ਬਾਜ਼
+C) ਤੋਤਾ
+D) ਕਬੂਤਰ
+Ans: B
+
+2. ਪੰਜਾਬ ਵਿੱਚ ਕੁੱਲ ਕਿੰਨੇ ਜ਼ਿਲ੍ਹੇ ਹਨ?
+A) 22
+B) 23
+C) 24
+D) 25
+Ans: B"></textarea>
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button class="btn btn-primary" onclick="processBulkUpload()" style="flex:1; padding:12px;">
+        🚀 Auto-Convert & Publish All Questions
+      </button>
+      <button class="btn btn-ghost" onclick="fillBulkTemplate()" style="font-size:0.85rem;">
+        📝 Sample Template
+      </button>
+    </div>
+  </div>
+
+  <!-- ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
   <div class="sec-title">
     <span>👥 Registered Students (<span id="userCount">0</span>)</span>
   </div>
@@ -81,7 +103,7 @@
 
 <script>
 // @ts-nocheck
-const ADMIN_SECRET_PIN = "73503"; // ਐਡਮਿਨ ਪਿੰਨ
+const ADMIN_SECRET_PIN = "904132"; // ਐਡਮਿਨ ਪਿੰਨ
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
@@ -110,8 +132,6 @@ function showDashboard() {
   document.getElementById("adminAuthBox").style.display = "none";
   document.getElementById("adminDashboard").style.display = "block";
   loadFirebaseData();
-  renderQuizInputs();
-  loadCurrentQuiz();
 }
 
 function adminLogout() {
@@ -121,86 +141,97 @@ function adminLogout() {
 
 if (sessionStorage.getItem("asp_admin_auth") === "true") showDashboard();
 
-// 30 ਸਵਾਲਾਂ ਦਾ ਫਾਰਮ
-function renderQuizInputs() {
-  const cont = document.getElementById("quizInputsContainer");
-  let html = "";
-  for (let i = 0; i < 30; i++) {
-    html += `
-      <div class="q-edit-box">
-        <b style="color:#e8590c;">Question ${i + 1}:</b>
-        <input type="text" id="q_${i}" placeholder="ਸਵਾਲ ਨੰਬਰ ${i + 1} ਲਿਖੋ...">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-          <input type="text" id="q_${i}_opt0" placeholder="Option A">
-          <input type="text" id="q_${i}_opt1" placeholder="Option B">
-          <input type="text" id="q_${i}_opt2" placeholder="Option C">
-          <input type="text" id="q_${i}_opt3" placeholder="Option D">
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <label style="font-size:0.85rem; font-weight:600; white-space:nowrap;">Correct Option:</label>
-          <select id="q_${i}_ans" style="margin:0;">
-            <option value="0">Option A</option>
-            <option value="1">Option B</option>
-            <option value="2">Option C</option>
-            <option value="3">Option D</option>
-          </select>
-        </div>
-      </div>`;
-  }
-  cont.innerHTML = html;
-}
-
-function loadCurrentQuiz() {
-  db.ref("dailyQuiz").get().then((snap) => {
-    if (snap.exists()) {
-      const data = snap.val();
-      data.forEach((item, i) => {
-        if (i < 30 && document.getElementById(`q_${i}`)) {
-          document.getElementById(`q_${i}`).value = item.q || "";
-          document.getElementById(`q_${i}_opt0`).value = item.options[0] || "";
-          document.getElementById(`q_${i}_opt1`).value = item.options[1] || "";
-          document.getElementById(`q_${i}_opt2`).value = item.options[2] || "";
-          document.getElementById(`q_${i}_opt3`).value = item.options[3] || "";
-          document.getElementById(`q_${i}_ans`).value = item.answer || 0;
-        }
-      });
-    }
-  });
-}
-
-function saveQuizToFirebase(e) {
-  e.preventDefault();
-  const quizArr = [];
-  for (let i = 0; i < 30; i++) {
-    const qText = document.getElementById(`q_${i}`).value.trim();
-    const opt0 = document.getElementById(`q_${i}_opt0`).value.trim();
-    const opt1 = document.getElementById(`q_${i}_opt1`).value.trim();
-    const opt2 = document.getElementById(`q_${i}_opt2`).value.trim();
-    const opt3 = document.getElementById(`q_${i}_opt3`).value.trim();
-
-    if (qText && opt0 && opt1) {
-      quizArr.push({
-        q: qText,
-        options: [opt0, opt1, opt2 || "None", opt3 || "None"],
-        answer: parseInt(document.getElementById(`q_${i}_ans`).value)
-      });
-    }
-  }
-
-  if (quizArr.length === 0) {
-    alert("⚠️ Please add at least 1 question.");
+// ---------- Bulk Quiz Auto Parser Engine ----------
+function processBulkUpload() {
+  const text = document.getElementById("bulkTextInput").value.trim();
+  if (!text) {
+    alert("⚠️ Please paste question text first!");
     return;
   }
 
-  const newQuizVersion = "v_" + Date.now();
-  db.ref("dailyQuiz").set(quizArr);
-  db.ref("quizVersion").set(newQuizVersion).then(() => {
-    alert(`✅ Success! ${quizArr.length} questions published.`);
-  }).catch(err => alert("Error: " + err.message));
+  // ਸਵਾਲਾਂ ਨੂੰ ਵੱਖ-ਵੱਖ ਬਲਾਕਾਂ ਵਿੱਚ ਵੰਡੋ
+  const blocks = text.split(/\n\s*\n+/);
+  const quizArray = [];
+
+  for (let block of blocks) {
+    const lines = block.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 5) continue; // ਸਵਾਲ + 4 ਆਪਸ਼ਨ + Ans ਘੱਟੋ-ਘੱਟ 5-6 ਲਾਈਨਾਂ
+
+    let qText = lines[0];
+    let optA = "", optB = "", optC = "", optD = "";
+    let correctIndex = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^[aA][\)\.\:]\s*(.*)/.test(line)) {
+        optA = line.replace(/^[aA][\)\.\:]\s*/, "");
+      } else if (/^[bB][\)\.\:]\s*(.*)/.test(line)) {
+        optB = line.replace(/^[bB][\)\.\:]\s*/, "");
+      } else if (/^[cC][\)\.\:]\s*(.*)/.test(line)) {
+        optC = line.replace(/^[cC][\)\.\:]\s*/, "");
+      } else if (/^[dD][\)\.\:]\s*(.*)/.test(line)) {
+        optD = line.replace(/^[dD][\)\.\:]\s*/, "");
+      } else if (/^(ans|answer|ਉੱਤਰ|uttar)[\:\s\-]+([a-dA-D1-4])/i.test(line)) {
+        const match = line.match(/^(ans|answer|ਉੱਤਰ|uttar)[\:\s\-]+([a-dA-D1-4])/i);
+        const ansChar = match[2].toUpperCase();
+        if (ansChar === "A" || ansChar === "1") correctIndex = 0;
+        if (ansChar === "B" || ansChar === "2") correctIndex = 1;
+        if (ansChar === "C" || ansChar === "3") correctIndex = 2;
+        if (ansChar === "D" || ansChar === "4") correctIndex = 3;
+      }
+    }
+
+    if (qText && optA && optB) {
+      quizArray.push({
+        q: qText,
+        options: [optA, optB, optC || "None", optD || "None"],
+        answer: correctIndex
+      });
+    }
+  }
+
+  if (quizArray.length === 0) {
+    alert("⚠️ Could not read format! Please check sample template format.");
+    return;
+  }
+
+  if (confirm(`✅ ${quizArray.length} questions recognized!\nDo you want to publish these questions live to the website?`)) {
+    const newQuizVersion = "v_" + Date.now();
+    db.ref("dailyQuiz").set(quizArray);
+    db.ref("quizVersion").set(newQuizVersion).then(() => {
+      alert(`🎉 Successfully published ${quizArray.length} questions to the website!`);
+      document.getElementById("bulkTextInput").value = "";
+    }).catch(err => alert("Error: " + err.message));
+  }
 }
 
+function fillBulkTemplate() {
+  document.getElementById("bulkTextInput").value = 
+`1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
+A) ਮੋਰ
+B) ਬਾਜ਼
+C) ਤੋਤਾ
+D) ਕਬੂਤਰ
+Ans: B
+
+2. ਪੰਜਾਬ ਵਿੱਚ ਕੁੱਲ ਕਿੰਨੇ ਜ਼ਿਲ੍ਹੇ ਹਨ?
+A) 22
+B) 23
+C) 24
+D) 25
+Ans: B
+
+3. ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਦੀ ਲਿੱਪੀ ਕਿਹੜੀ ਹੈ?
+A) ਦੇਵਨਾਗਰੀ
+B) ਸ਼ਾਹਮੁਖੀ
+C) ਗੁਰਮੁਖੀ
+D) ਰੋਮਨ
+Ans: C`;
+}
+
+// ---------- Data Loaders ----------
 function loadFirebaseData() {
-  // 1. Pending Book Requests
+  // 1. Pending Requests
   db.ref("requests").on("value", (snap) => {
     const list = document.getElementById("requestsList");
     const data = snap.val();
@@ -223,7 +254,7 @@ function loadFirebaseData() {
     `).join("");
   });
 
-  // 2. Student Results List
+  // 2. Student Results
   db.ref("quizResults").on("value", (snap) => {
     const list = document.getElementById("quizResultsList");
     const countSpan = document.getElementById("resultsCount");
@@ -258,7 +289,7 @@ function loadFirebaseData() {
     }).join("");
   });
 
-  // 3. Registered Users (With Delete Option)
+  // 3. Registered Users
   db.ref("accounts").on("value", (snap) => {
     const uList = document.getElementById("usersList");
     const countSpan = document.getElementById("userCount");
@@ -291,29 +322,27 @@ function rejectBook(reqId) {
   if (confirm("Reject request?")) db.ref("requests/" + reqId).remove();
 }
 
-// 1 ਰਿਜ਼ਲਟ ਡਿਲੀਟ ਕਰਨਾ
 function deleteResult(key) {
   if (confirm("Delete this student result?")) {
     db.ref("quizResults/" + key).remove();
   }
 }
 
-// ਸਾਰੇ ਰਿਜ਼ਲਟ ਇਕੱਠੇ ਸਾਫ਼ ਕਰਨਾ
 function clearAllResults() {
   if (confirm("Are you sure you want to delete ALL student quiz results?")) {
     db.ref("quizResults").remove();
   }
 }
 
-// ਵਿਦਿਆਰਥੀ ਦਾ ID/Pass ਅਕਾਊਂਟ ਡਿਲੀਟ ਕਰਨਾ
 function deleteStudentAccount(phone, name) {
   if (confirm(`ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਵਿਦਿਆਰਥੀ "${name}" (${phone}) ਦਾ ਅਕਾਊਂਟ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) {
-    db.ref("accounts/" + phone).remove();       // ID & Pass ਡਿਲੀਟ
-    db.ref("users/" + phone).remove();          // ਅਨਲੌਕ ਕਿਤਾਬਾਂ ਡਿਲੀਟ
-    db.ref("userAttempts/" + phone).remove();   // ਕੁਇਜ਼ ਲਾਕ ਡਾਟਾ ਡਿਲੀਟ
+    db.ref("accounts/" + phone).remove();
+    db.ref("users/" + phone).remove();
+    db.ref("userAttempts/" + phone).remove();
     alert("Student account completely deleted!");
   }
 }
 </script>
 </body>
 </html>
+

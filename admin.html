@@ -49,6 +49,22 @@
     </div>
   </div>
 
+<!-- 🖼️ Popup Poster Manager -->
+<div class="card" style="margin-bottom:24px; padding:20px; background:#fff; border-radius:12px; border:1px solid #e9ecef;">
+  <h3 style="color:#e8590c; margin-bottom:8px;">🖼️ Homepage Popup Poster (ਪੌਪਅੱਪ ਪੋਸਟਰ)</h3>
+  <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਵੈੱਬਸਾਈਟ ਖੁੱਲ੍ਹਣ 'ਤੇ ਦਿਖਣ ਵਾਲਾ ਪੋਸਟਰ ਅਤੇ ਆਨ/ਆਫ ਸਟੇਟਸ:</p>
+  
+  <div style="display:flex; flex-direction:column; gap:8px;">
+    <input type="url" id="posterImgUrl" placeholder="ਪੋਸਟਰ ਫੋਟੋ ਦਾ ਲਿੰਕ (Image URL)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+    <input type="url" id="posterClickUrl" placeholder="ਕਲਿੱਕ ਕਰਨ 'ਤੇ ਖੁੱਲ੍ਹਣ ਵਾਲਾ ਲਿੰਕ (ਜਿਵੇਂ WhatsApp/Telegram ਲਿੰਕ — Optional)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+    <select id="posterStatusSelect" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+      <option value="true">🟢 ਪੋਸਟਰ ਚਾਲੂ (Show Popup)</option>
+      <option value="false">🔴 ਪੋਸਟਰ ਬੰਦ (Disable Popup)</option>
+    </select>
+    <button class="btn btn-primary" onclick="savePopupPosterConfig()">💾 Save Poster</button>
+  </div>
+</div>
+
   <!-- 2. ਡਿਸਕਾਊਂਟ ਕੂਪਨ ਸਿਸਟਮ (Daily Editable Promo Codes) -->
   <div class="card-admin">
     <h3>🏷️ Daily Promo / Discount Coupon</h3>
@@ -457,6 +473,30 @@ function exportResultsToCSV() {
   a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
+
+// Load & Save Popup Poster in Admin
+function loadPopupPosterConfig() {
+  db.ref("siteSettings/popupPoster").on("value", snap => {
+    const data = snap.val() || {};
+    const imgInp = document.getElementById("posterImgUrl");
+    if (imgInp) {
+      imgInp.value = data.imgUrl || "";
+      document.getElementById("posterClickUrl").value = data.clickUrl || "";
+      document.getElementById("posterStatusSelect").value = String(data.active !== false);
+    }
+  });
+}
+
+function savePopupPosterConfig() {
+  const imgUrl = document.getElementById("posterImgUrl").value.trim();
+  const clickUrl = document.getElementById("posterClickUrl").value.trim();
+  const active = document.getElementById("posterStatusSelect").value === "true";
+
+  db.ref("siteSettings/popupPoster").set({ imgUrl, clickUrl, active }).then(() => {
+    alert("✅ ਪੋਸਟਰ ਸੈਟਿੰਗਜ਼ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ ਹਨ!");
+  });
+}
+
 </script>
 </body>
 </html>

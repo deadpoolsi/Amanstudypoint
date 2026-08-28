@@ -95,7 +95,7 @@ function installPWA() {
 
 /* 3. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
-  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਅਤੇ ਸਿਰਫ਼ ₹99 ਵਿੱਚ ਕਿਤਾਬਾਂ ਮਿਲ ਰਹੀਆਂ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
+  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ । ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
@@ -147,6 +147,8 @@ function renderAccount() {
   if (!b) return;
   if (u) {
     b.textContent = "👤 " + u.name;
+    b.onclick = () => editStudentName();
+b.title = "Click to Edit Name";
     b.href = "#myBooks";
     if (anNav) anNav.style.display = "inline-block";
     loadUserAnalytics();
@@ -308,12 +310,25 @@ function applyCoupon(originalPrice, id, name) {
 
 function renderModalButtons(price, id, name) {
   const u = currentUser();
+  const upiUrl = `upi://pay?pa=${INSTITUTE.upi}&pn=Aman%20Study%20Point&am=${price}&cu=INR&tn=Book-${encodeURIComponent(name)}`;
   const wa = encodeURIComponent(`Hello,\nI sent ₹${price} for "${name}".\nName: ${u.name}\nPhone: ${u.phone}\nPlease approve.`);
+  
   return `
-    <a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${wa}" target="_blank">📲 Send Screenshot on WhatsApp</a>
-    <button class="btn btn-ghost btn-block" onclick="submitReq('${id}','${name}', ${price})" style="background:#e8f5e9;color:#2e7d32;">✅ I Have Paid ₹${price} — Submit</button>
+    <!-- 1-Click UPI Deep Link Button -->
+    <a class="btn btn-block" href="${upiUrl}" style="background:#1971c2; color:#fff; font-weight:700; padding:12px; margin-bottom:4px;">
+      ⚡ Pay via UPI (GPay / PhonePe / Paytm)
+    </a>
+    
+    <a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${wa}" target="_blank">
+      📲 Send Screenshot on WhatsApp
+    </a>
+    
+    <button class="btn btn-ghost btn-block" onclick="submitReq('${id}','${name}', ${price})" style="background:#e8f5e9; color:#2e7d32;">
+      ✅ I Have Paid ₹${price} — Submit
+    </button>
   `;
 }
+
 
 function submitReq(bookId, title, price) {
   const u = currentUser(), reqId = u.phone + "_" + bookId;
@@ -638,3 +653,76 @@ document.addEventListener("DOMContentLoaded", () => {
   const mc = document.getElementById("modalClose");
   if (mc) mc.onclick = closeModal;
 });
+
+// --- STUDENT NAME EDIT FUNCTION ---
+function editStudentName() {
+  const u = currentUser();
+  if (!u) return;
+  const newName = prompt("ਆਪਣਾ ਨਵਾਂ ਨਾਮ ਦਰਜ ਕਰੋ (Enter New Name):", u.name);
+  if (newName && newName.trim().length >= 2) {
+    const cleanName = newName.trim();
+    localStorage.setItem("pp_name", cleanName);
+    if (typeof db !== 'undefined') {
+      db.ref("accounts/" + u.phone + "/name").set(cleanName).then(() => {
+        alert("✅ ਤੁਹਾਡਾ ਨਾਮ ਸਫਲਤਾਪੂਰਵਕ ਬਦਲ ਦਿੱਤਾ ਗਿਆ ਹੈ!");
+        location.reload();
+      });
+    }
+  }
+}
+
+// --- GOOGLE SIGN IN FUNCTION ---
+function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then((result) => {
+      const user = result.user;
+      const name = user.displayName || "Student";
+      const identifier = user.phoneNumber || user.email.split('@')[0];
+
+      // Save to Firebase Database
+      db.ref("accounts/" + identifier).update({
+        name: name,
+        phone: identifier,
+        email: user.email,
+        authType: "google"
+      }).then(() => {
+        setSession(identifier);
+        localStorage.setItem("pp_name", name);
+        toast("✅ Google Login Successful!");
+        setTimeout(() => location.href = "index.html", 500);
+      });
+    })
+    .catch((error) => {
+      alert("Google Sign-In Error: " + error.message);
+    });
+}
+
+// --- LIVE POPUP POSTER LISTENER ---
+function closePosterModal() {
+  const pm = document.getElementById("posterModal");
+  if (pm) pm.style.display = "none";
+  sessionStorage.setItem("asp_poster_closed", "true");
+}
+
+if (typeof db !== 'undefined') {
+  db.ref('siteSettings/popupPoster').on('value', snap => {
+    const data = snap.val();
+    const modal = document.getElementById('posterModal');
+    const imgEl = document.getElementById('posterImageElement');
+    const linkEl = document.getElementById('posterAnchor');
+
+    if (data && data.active && data.imgUrl && !sessionStorage.getItem("asp_poster_closed")) {
+      if (imgEl && modal) {
+        imgEl.src = data.imgUrl;
+        if (linkEl) {
+          linkEl.href = data.clickUrl || "javascript:void(0)";
+          if (!data.clickUrl) linkEl.style.cursor = "default";
+        }
+        modal.style.display = "flex";
+      }
+    } else {
+      if (modal) modal.style.display = "none";
+    }
+  });
+}

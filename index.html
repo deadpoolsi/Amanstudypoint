@@ -22,9 +22,7 @@
 <body>
 
 <!-- Live Notice Bar -->
-<div class="top-announcement" id="topAnnouncement">
-  📢🔥 ਅੱਜ ਦਾ ਨਵਾਂ ਮੌਕ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ — ਹੁਣੇ ਅਟੈਂਪਟ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਦੇਖੋ!
-</div>
+<div class="top-announcement" id="topAnnouncement" style="display:none;"></div>
 
 <header>
   <div class="container header-inner">
@@ -210,6 +208,37 @@
     });
   }
 </script>
+
+<script>
+  // 1. ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਨੋਟਿਸ ਬਿਨਾਂ 1 ਸਕਿੰਟ ਦੀ ਦੇਰੀ ਦੇ ਤੁਰੰਤ ਦਿਖਾਓ
+  const bar = document.getElementById('topAnnouncement');
+  const cachedNotice = localStorage.getItem('asp_announcement');
+  if (cachedNotice && bar) {
+    bar.innerText = cachedNotice;
+    bar.style.display = 'block';
+  }
+
+  // 2. Firebase ਤੋਂ ਨਵਾਂ ਨੋਟਿਸ ਚੈੱਕ ਕਰੋ
+  if (typeof db !== 'undefined') {
+    db.ref('siteSettings/announcement').on('value', (snap) => {
+      const val = snap.val();
+      if (bar && val) {
+        bar.innerText = '📢 ' + val;
+        bar.style.display = 'block';
+        localStorage.setItem('asp_announcement', '📢 ' + val);
+      }
+    });
+  }
+</script>
+<!-- 🖼️ Popup Poster Modal -->
+<div id="posterModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="position:relative; max-width:400px; width:100%; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:center;">
+    <button onclick="closePosterModal()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.65); color:#fff; border:none; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; font-weight:bold; z-index:10;">✕</button>
+    <a id="posterAnchor" href="#" target="_blank" style="display:block;">
+      <img id="posterImageElement" src="" alt="Announcement" style="width:100%; height:auto; display:block; max-height:75vh; object-fit:contain;">
+    </a>
+  </div>
+</div>
 
 </body>
 </html>

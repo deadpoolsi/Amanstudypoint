@@ -726,3 +726,21 @@ if (typeof db !== 'undefined') {
     }
   });
 }
+
+// --- ☰ SIDEBAR HAMBURGER MENU TOGGLE ---
+function toggleNavMenu() {
+  const nav = document.getElementById("navLinks");
+  if (nav) nav.classList.toggle("menu-open");
+}
+
+// ਮੈਨਿਊ ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਆਪਸ਼ਨ ਦਬਾਉਣ 'ਤੇ ਮੈਨਿਊ ਆਪਣੇ ਆਪ ਬੰਦ ਹੋ ਜਾਵੇ
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("#navLinks a, #navLinks button").forEach(item => {
+    item.addEventListener("click", () => {
+      const nav = document.getElementById("navLinks");
+      if (nav && nav.classList.contains("menu-open")) {
+        nav.classList.remove("menu-open");
+      }
+    });
+  });
+});

@@ -20,9 +20,8 @@
   
   /* Bulk Quiz Importer */
   .bulk-box { background: #fff8f0; border: 1.5px dashed #ffd8a8; padding: 18px; border-radius: 10px; margin-bottom: 20px; }
-  .bulk-textarea { width: 100%; height: 220px; padding: 12px; font-family: monospace; font-size: 0.9rem; border: 1.5px solid #ffc078; border-radius: 8px; resize: vertical; line-height: 1.4; }
-  .bulk-textarea:focus { outline: none; border-color: #e8590c; }
-
+  .bulk-textarea { width: 100%; height: 200px; padding: 12px; font-family: monospace; font-size: 0.9rem; border: 1.5px solid #ffc078; border-radius: 8px; resize: vertical; line-height: 1.4; }
+  
   /* Admin Lock */
   #adminAuthBox { max-width: 380px; margin: 60px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; border: 1px solid #eee; }
   .pin-input { width: 100%; padding: 12px; font-size: 1.1rem; text-align: center; border: 1.5px solid #ccc; border-radius: 8px; margin: 15px 0; letter-spacing: 4px; }
@@ -30,7 +29,7 @@
 </head>
 <body style="background:#f4f5f7;">
 
-<!-- 1. ਐਡਮਿਨ ਲਾਕ ਸਕ੍ਰੀਨ -->
+<!-- ਲਾਕ ਸਕ੍ਰੀਨ -->
 <div id="adminAuthBox">
   <h2>🔒 Admin Verification</h2>
   <p style="color:#666; font-size:0.9rem; margin-top:5px;">Enter your Secret PIN to access panel</p>
@@ -39,7 +38,7 @@
   <div id="pinError" style="color:#e03131; margin-top:10px; font-size:0.9rem; display:none;">⚠️ Invalid PIN Code!</div>
 </div>
 
-<!-- 2. ਐਡਮਿਨ ਡੈਸ਼ਬੋਰਡ -->
+<!-- ਐਡਮਿਨ ਡੈਸ਼ਬੋਰਡ -->
 <div class="admin-wrap" id="adminDashboard" style="display:none;">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h2>🔐 Admin Panel — Aman Study Point</h2>
@@ -47,23 +46,33 @@
   </div>
   <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
 
-  <!-- ਕਿਤਾਬਾਂ ਦੀ ਅਪਰੂਵਲ -->
+  <!-- 1. ਕਿਤਾਬਾਂ ਦੀ ਅਪਰੂਵਲ (WhatsApp Shortcut Included) -->
   <div class="sec-title">📥 Pending Book Requests</div>
   <div id="requestsList">Loading pending requests...</div>
 
-  <!-- ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਕੁਇਜ਼ ਰਿਜ਼ਲਟ -->
+  <!-- 2. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ (Export to Excel Feature Included) -->
   <div class="sec-title">
     <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
-    <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="font-size:0.75rem; color:#e03131; border-color:#ffa8a8;">🗑️ Clear All Results</button>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary btn-small" onclick="exportResultsToCSV()" style="font-size:0.78rem; background:#2b8a3e;">📥 Export to Excel</button>
+      <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="font-size:0.78rem; color:#e03131;">🗑️ Clear All</button>
+    </div>
   </div>
   <div id="quizResultsList">Loading student test submissions...</div>
 
-  <!-- 3. Bulk Quiz Importer (ਇੱਕਠੇ ਸਵਾਲ ਅੱਪਲੋਡ ਕਰੋ) -->
+  <!-- 3. ਟੈਸਟ ਟਾਈਮਰ ਸੈਟਿੰਗ (Adjustable Timer) -->
+  <div class="sec-title">⏱️ Adjust Test Timer</div>
+  <div style="display:flex; align-items:center; gap:12px; background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #dee2e6;">
+    <label style="font-weight:600; font-size:0.95rem;">Test Duration (Minutes):</label>
+    <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:90px; padding:8px; border:1px solid #ccc; border-radius:6px; font-weight:700; text-align:center;">
+    <button class="btn btn-primary btn-small" onclick="saveTimerSetting()">💾 Save Timer</button>
+  </div>
+
+  <!-- 4. Bulk Quiz Importer -->
   <div class="sec-title">⚡ Quick Bulk Upload Daily Quiz</div>
-  
   <div class="bulk-box">
     <p style="font-size:0.88rem; color:#666; margin-bottom:10px;">
-      <b>ਸਾਰੇ ਸਵਾਲ ਇੱਕਠੇ ਪੇਸਟ ਕਰੋ</b> (ਹੇਠਾਂ ਦਿੱਤੇ ਬਾਕਸ ਵਿੱਚ ਸਵਾਲ, 4 ਆਪਸ਼ਨਾਂ (A, B, C, D) ਅਤੇ Ans: ਲਿਖ ਕੇ ਸਿੱਧਾ 'Auto-Upload' ਦਬਾਓ):
+      <b>ਸਾਰੇ ਸਵਾਲ ਇੱਕਠੇ ਪੇਸਟ ਕਰੋ</b> (ਸਵਾਲ, 4 ਆਪਸ਼ਨਾਂ (A, B, C, D) ਅਤੇ Ans: ਲਿਖ ਕੇ 'Auto-Publish' ਦਬਾਓ):
     </p>
 
     <textarea id="bulkTextInput" class="bulk-textarea" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
@@ -71,18 +80,11 @@ A) ਮੋਰ
 B) ਬਾਜ਼
 C) ਤੋਤਾ
 D) ਕਬੂਤਰ
-Ans: B
-
-2. ਪੰਜਾਬ ਵਿੱਚ ਕੁੱਲ ਕਿੰਨੇ ਜ਼ਿਲ੍ਹੇ ਹਨ?
-A) 22
-B) 23
-C) 24
-D) 25
 Ans: B"></textarea>
 
     <div style="display:flex; gap:10px; margin-top:10px;">
       <button class="btn btn-primary" onclick="processBulkUpload()" style="flex:1; padding:12px;">
-        🚀 Auto-Convert & Publish All Questions
+        🚀 Auto-Convert & Publish Questions
       </button>
       <button class="btn btn-ghost" onclick="fillBulkTemplate()" style="font-size:0.85rem;">
         📝 Sample Template
@@ -90,7 +92,7 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
+  <!-- 5. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
   <div class="sec-title">
     <span>👥 Registered Students (<span id="userCount">0</span>)</span>
   </div>
@@ -103,7 +105,7 @@ Ans: B"></textarea>
 
 <script>
 // @ts-nocheck
-const ADMIN_SECRET_PIN = "73503"; // ਐਡਮਿਨ ਪਿੰਨ
+const ADMIN_SECRET_PIN = "73503";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
@@ -119,6 +121,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+let currentResultsData = [];
+
 function checkAdminPin() {
   if (document.getElementById("adminPinInput").value === ADMIN_SECRET_PIN) {
     sessionStorage.setItem("asp_admin_auth", "true");
@@ -132,6 +136,7 @@ function showDashboard() {
   document.getElementById("adminAuthBox").style.display = "none";
   document.getElementById("adminDashboard").style.display = "block";
   loadFirebaseData();
+  loadTimerSetting();
 }
 
 function adminLogout() {
@@ -141,21 +146,37 @@ function adminLogout() {
 
 if (sessionStorage.getItem("asp_admin_auth") === "true") showDashboard();
 
-// ---------- Bulk Quiz Auto Parser Engine ----------
-function processBulkUpload() {
-  const text = document.getElementById("bulkTextInput").value.trim();
-  if (!text) {
-    alert("⚠️ Please paste question text first!");
+/* Timer Setting */
+function loadTimerSetting() {
+  db.ref("quizTimerMinutes").get().then((snap) => {
+    if (snap.exists()) {
+      document.getElementById("timerMinutesInput").value = snap.val();
+    }
+  });
+}
+
+function saveTimerSetting() {
+  const mins = parseInt(document.getElementById("timerMinutesInput").value);
+  if (!mins || mins < 1) {
+    alert("Please enter a valid time in minutes.");
     return;
   }
+  db.ref("quizTimerMinutes").set(mins).then(() => {
+    alert(`✅ Test timer set to ${mins} minutes successfully!`);
+  });
+}
 
-  // ਸਵਾਲਾਂ ਨੂੰ ਵੱਖ-ਵੱਖ ਬਲਾਕਾਂ ਵਿੱਚ ਵੰਡੋ
+/* Bulk Quiz Auto Parser */
+function processBulkUpload() {
+  const text = document.getElementById("bulkTextInput").value.trim();
+  if (!text) { alert("⚠️ Please paste question text first!"); return; }
+
   const blocks = text.split(/\n\s*\n+/);
   const quizArray = [];
 
   for (let block of blocks) {
     const lines = block.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length < 5) continue; // ਸਵਾਲ + 4 ਆਪਸ਼ਨ + Ans ਘੱਟੋ-ਘੱਟ 5-6 ਲਾਈਨਾਂ
+    if (lines.length < 5) continue;
 
     let qText = lines[0];
     let optA = "", optB = "", optC = "", optD = "";
@@ -163,15 +184,11 @@ function processBulkUpload() {
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      if (/^[aA][\)\.\:]\s*(.*)/.test(line)) {
-        optA = line.replace(/^[aA][\)\.\:]\s*/, "");
-      } else if (/^[bB][\)\.\:]\s*(.*)/.test(line)) {
-        optB = line.replace(/^[bB][\)\.\:]\s*/, "");
-      } else if (/^[cC][\)\.\:]\s*(.*)/.test(line)) {
-        optC = line.replace(/^[cC][\)\.\:]\s*/, "");
-      } else if (/^[dD][\)\.\:]\s*(.*)/.test(line)) {
-        optD = line.replace(/^[dD][\)\.\:]\s*/, "");
-      } else if (/^(ans|answer|ਉੱਤਰ|uttar)[\:\s\-]+([a-dA-D1-4])/i.test(line)) {
+      if (/^[aA][\)\.\:]\s*(.*)/.test(line)) optA = line.replace(/^[aA][\)\.\:]\s*/, "");
+      else if (/^[bB][\)\.\:]\s*(.*)/.test(line)) optB = line.replace(/^[bB][\)\.\:]\s*/, "");
+      else if (/^[cC][\)\.\:]\s*(.*)/.test(line)) optC = line.replace(/^[cC][\)\.\:]\s*/, "");
+      else if (/^[dD][\)\.\:]\s*(.*)/.test(line)) optD = line.replace(/^[dD][\)\.\:]\s*/, "");
+      else if (/^(ans|answer|ਉੱਤਰ|uttar)[\:\s\-]+([a-dA-D1-4])/i.test(line)) {
         const match = line.match(/^(ans|answer|ਉੱਤਰ|uttar)[\:\s\-]+([a-dA-D1-4])/i);
         const ansChar = match[2].toUpperCase();
         if (ansChar === "A" || ansChar === "1") correctIndex = 0;
@@ -191,17 +208,17 @@ function processBulkUpload() {
   }
 
   if (quizArray.length === 0) {
-    alert("⚠️ Could not read format! Please check sample template format.");
+    alert("⚠️ Could not read format! Please check sample template.");
     return;
   }
 
-  if (confirm(`✅ ${quizArray.length} questions recognized!\nDo you want to publish these questions live to the website?`)) {
+  if (confirm(`✅ ${quizArray.length} questions detected! Publish now?`)) {
     const newQuizVersion = "v_" + Date.now();
     db.ref("dailyQuiz").set(quizArray);
     db.ref("quizVersion").set(newQuizVersion).then(() => {
-      alert(`🎉 Successfully published ${quizArray.length} questions to the website!`);
+      alert(`🎉 Successfully published ${quizArray.length} questions!`);
       document.getElementById("bulkTextInput").value = "";
-    }).catch(err => alert("Error: " + err.message));
+    });
   }
 }
 
@@ -219,19 +236,35 @@ A) 22
 B) 23
 C) 24
 D) 25
-Ans: B
-
-3. ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਦੀ ਲਿੱਪੀ ਕਿਹੜੀ ਹੈ?
-A) ਦੇਵਨਾਗਰੀ
-B) ਸ਼ਾਹਮੁਖੀ
-C) ਗੁਰਮੁਖੀ
-D) ਰੋਮਨ
-Ans: C`;
+Ans: B`;
 }
 
-// ---------- Data Loaders ----------
+/* Export Results to Excel/CSV */
+function exportResultsToCSV() {
+  if (!currentResultsData || currentResultsData.length === 0) {
+    alert("No student results to export.");
+    return;
+  }
+
+  let csvContent = "data:text/csv;charset=utf-8,Student Name,Mobile Number,Score,Total Marks,Percentage,Time\n";
+
+  currentResultsData.forEach(r => {
+    const pct = Math.round((r.score / r.total) * 100) + "%";
+    csvContent += `"${r.name}","${r.phone}",${r.score},${r.total},"${pct}","${r.time}"\n`;
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Quiz_Results_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* Firebase Data Handlers */
 function loadFirebaseData() {
-  // 1. Pending Requests
+  // Pending Requests with WhatsApp Notification button
   db.ref("requests").on("value", (snap) => {
     const list = document.getElementById("requestsList");
     const data = snap.val();
@@ -246,15 +279,15 @@ function loadFirebaseData() {
           <div>📚 Book: <b>${r.bookTitle}</b></div>
           <small style="color:#777;">Time: ${r.time}</small>
         </div>
-        <div>
-          <button class="btn-approve" onclick="approveBook('${r.phone}', '${r.bookId}', '${r.reqId}')">✅ Approve</button>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-approve" onclick="approveBook('${r.phone}', '${r.bookId}', '${r.reqId}', '${r.name}', '${r.bookTitle}')">✅ Approve</button>
           <button class="btn-reject" onclick="rejectBook('${r.reqId}')">❌ Reject</button>
         </div>
       </div>
     `).join("");
   });
 
-  // 2. Student Results
+  // Quiz Results
   db.ref("quizResults").on("value", (snap) => {
     const list = document.getElementById("quizResultsList");
     const countSpan = document.getElementById("resultsCount");
@@ -263,11 +296,13 @@ function loadFirebaseData() {
     if (!data) {
       list.innerHTML = "<p>No test attempts yet.</p>";
       countSpan.textContent = "0";
+      currentResultsData = [];
       return;
     }
 
     const items = Object.entries(data).reverse();
     countSpan.textContent = items.length;
+    currentResultsData = items.map(([_, val]) => val);
 
     list.innerHTML = items.map(([key, r]) => {
       const percentage = Math.round((r.score / r.total) * 100);
@@ -284,12 +319,11 @@ function loadFirebaseData() {
             </div>
             <button class="btn-del-icon" onclick="deleteResult('${key}')" title="Delete Result">🗑️</button>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join("");
   });
 
-  // 3. Registered Users
+  // Registered Students
   db.ref("accounts").on("value", (snap) => {
     const uList = document.getElementById("usersList");
     const countSpan = document.getElementById("userCount");
@@ -312,10 +346,21 @@ function loadFirebaseData() {
   });
 }
 
-function approveBook(phone, bookId, reqId) {
-  db.ref("users/" + phone + "/books/" + bookId).set(true);
+function approveBook(phone, bookId, reqId, name, bookTitle) {
+  if (bookId === "all_combo") {
+    // Unlock all 8 books
+    const allBooks = ["punjabi", "gk", "maths", "reasoning", "history", "science", "constitution", "computer"];
+    allBooks.forEach(id => db.ref("users/" + phone + "/books/" + id).set(true));
+  } else {
+    db.ref("users/" + phone + "/books/" + bookId).set(true);
+  }
+
   db.ref("requests/" + reqId).update({ status: "approved" });
-  alert("Book approved!");
+
+  if (confirm(`Book Approved!\n\nDo you want to send a WhatsApp confirmation to ${name}?`)) {
+    const msg = encodeURIComponent(`ਹੈਲੋ ${name},\nਤੁਹਾਡੀ ਕਿਤਾਬ "${bookTitle}" ਅਨਲੌਕ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ। Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਜਾ ਕੇ ਹੁਣੇ ਪੜ੍ਹਨਾ ਸ਼ੁਰੂ ਕਰੋ:\nhttps://amanstudypoint.netlify.app`);
+    window.open(`https://api.whatsapp.com/send?phone=91${phone}&text=${msg}`, '_blank');
+  }
 }
 
 function rejectBook(reqId) {
@@ -323,26 +368,21 @@ function rejectBook(reqId) {
 }
 
 function deleteResult(key) {
-  if (confirm("Delete this student result?")) {
-    db.ref("quizResults/" + key).remove();
-  }
+  if (confirm("Delete this student result?")) db.ref("quizResults/" + key).remove();
 }
 
 function clearAllResults() {
-  if (confirm("Are you sure you want to delete ALL student quiz results?")) {
-    db.ref("quizResults").remove();
-  }
+  if (confirm("Are you sure you want to delete ALL student quiz results?")) db.ref("quizResults").remove();
 }
 
 function deleteStudentAccount(phone, name) {
-  if (confirm(`ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਵਿਦਿਆਰਥੀ "${name}" (${phone}) ਦਾ ਅਕਾਊਂਟ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) {
+  if (confirm(`Delete student account "${name}" (${phone})?`)) {
     db.ref("accounts/" + phone).remove();
     db.ref("users/" + phone).remove();
     db.ref("userAttempts/" + phone).remove();
-    alert("Student account completely deleted!");
+    alert("Account deleted!");
   }
 }
 </script>
 </body>
 </html>
-

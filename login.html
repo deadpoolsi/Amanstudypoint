@@ -3,74 +3,186 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#e8590c">
 <title>Login / Register — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .forgot-link { display: block; text-align: right; margin: 8px 0 14px; font-size: 0.88rem; color: #e8590c; text-decoration: none; cursor: pointer; }
-  .forgot-link:hover { text-decoration: underline; }
+  /* Login Page Specific Styling */
+  body {
+    background: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+  }
+  .login-card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 100%;
+    padding: 28px 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+  .login-logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #e8590c;
+    text-align: center;
+    margin-bottom: 4px;
+    text-decoration: none;
+    display: block;
+  }
+  .login-sub {
+    text-align: center;
+    color: #666;
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+  }
+  .tabs {
+    display: flex;
+    background: #f1f3f5;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #666;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .tab.active {
+    background: #ffffff;
+    color: #e8590c;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  .field input {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .field input:focus {
+    border-color: #e8590c;
+    box-shadow: 0 0 0 3px rgba(232, 89, 12, 0.15);
+  }
+  .error-msg {
+    background: #ffe3e3;
+    color: #c92a2a;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    display: none;
+    text-align: center;
+    font-weight: 600;
+  }
+  .forgot-link {
+    display: block;
+    text-align: right;
+    font-size: 0.82rem;
+    color: #e8590c;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: -6px;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .back-home {
+    display: block;
+    text-align: center;
+    margin-top: 18px;
+    color: #777;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .back-home:hover {
+    color: #e8590c;
+  }
 </style>
 </head>
 <body>
 
-<div class="login-wrap">
-  <div class="login-card">
-    <div class="login-logo">📘 AMAN STUDY POINT</div>
-    <p class="login-sub" id="formSubtitle">Log in to your account or create a new one</p>
+<div class="login-card">
+  <a class="login-logo" href="index.html">📘 AMAN STUDY POINT</a>
+  <div class="login-sub" id="formSubtitle">Log in to your account or create a new one</div>
 
-    <!-- ਟੈਬਸ -->
-    <div class="tabs" id="authTabs">
-      <button class="tab active" id="tabLogin" type="button">Login</button>
-      <button class="tab" id="tabReg" type="button">New Account</button>
-    </div>
-
-    <div class="error-msg" id="loginError"></div>
-
-    <!-- 1. ਲੌਗਇਨ ਫਾਰਮ -->
-    <form id="formLogin">
-      <div class="field">
-        <label for="loginPhone">📱 Mobile Number</label>
-        <input id="loginPhone" inputmode="numeric" maxlength="10" placeholder="9876543210" required>
-      </div>
-      <div class="field">
-        <label for="loginPass">🔒 Password</label>
-        <input id="loginPass" type="password" placeholder="••••••" required>
-      </div>
-      <span class="forgot-link" onclick="showForgotForm()">Forgot Password? (ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?)</span>
-      <button class="btn btn-primary btn-block" type="submit">⬅ Login</button>
-    </form>
-
-    <!-- 2. ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਫਾਰਮ -->
-    <form id="formReg" style="display:none">
-      <div class="field">
-        <label for="regName">👤 Your Name</label>
-        <input id="regName" placeholder="e.g., Harpreet Singh" required>
-      </div>
-      <div class="field">
-        <label for="regPhone">📱 Mobile Number</label>
-        <input id="regPhone" inputmode="numeric" maxlength="10" placeholder="9876543210" required>
-      </div>
-      <div class="field">
-        <label for="regPass">🔒 Create Password</label>
-        <input id="regPass" type="password" placeholder="Min 4 characters" required>
-      </div>
-      <button class="btn btn-primary btn-block" type="submit">✅ Create Account</button>
-    </form>
-
-    <!-- 3. ਫਾਰਗੌਟ ਪਾਸਵਰਡ (WhatsApp ਸਪੋਰਟ) -->
-    <div id="formForgot" style="display:none">
-      <div class="field">
-        <label for="forgotPhone">📱 Registered Mobile Number</label>
-        <input id="forgotPhone" inputmode="numeric" maxlength="10" placeholder="9876543210">
-      </div>
-      <button class="btn btn-primary btn-block" onclick="sendForgotWhatsApp()" type="button" style="margin-top:10px;">
-        📲 Get Password via WhatsApp
-      </button>
-      <a class="forgot-link" onclick="cancelForgot()" style="text-align:center; margin-top:15px;">← Back to Login</a>
-    </div>
-
-    <a class="back-link" href="index.html">← Back to Home</a>
+  <!-- Tabs Switcher -->
+  <div class="tabs" id="authTabs">
+    <button class="tab active" id="tabLogin">Login</button>
+    <button class="tab" id="tabReg">New Account</button>
   </div>
+
+  <div id="loginError" class="error-msg"></div>
+
+  <!-- 1. Login Form -->
+  <form id="formLogin">
+    <div class="field">
+      <label>📱 Mobile Number</label>
+      <input type="tel" id="loginPhone" placeholder="10-digit mobile number" maxlength="10" required>
+    </div>
+    <div class="field">
+      <label>🔒 Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password" required>
+    </div>
+    <div class="forgot-link" onclick="showForgotForm()">Forgot Password? (ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?)</div>
+    <button type="submit" class="btn btn-primary btn-block">➔ Login</button>
+  </form>
+
+  <!-- 2. Register Form -->
+  <form id="formReg" style="display:none;">
+    <div class="field">
+      <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ)</label>
+      <input type="text" id="regName" placeholder="Enter your full name">
+    </div>
+    <div class="field">
+      <label>📱 Mobile Number</label>
+      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10">
+    </div>
+    <div class="field">
+      <label>🔒 Set Password</label>
+      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">🎉 Create Account</button>
+  </form>
+
+  <!-- 3. Forgot Password Form -->
+  <div id="formForgot" style="display:none;">
+    <p style="color:#555; font-size:0.88rem; margin-bottom:12px; line-height:1.4;">
+      ਆਪਣਾ ਰਜਿਸਟਰਡ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ, ਤੁਹਾਡਾ ਪਾਸਵਰਡ ਵਟਸਐਪ 'ਤੇ ਭੇਜ ਦਿੱਤਾ ਜਾਵੇਗਾ:
+    </p>
+    <div class="field">
+      <label>📱 Registered Mobile Number</label>
+      <input type="tel" id="forgotPhone" placeholder="10-digit registered number" maxlength="10">
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+      <button class="btn btn-primary btn-block" onclick="sendForgotWhatsApp()">📲 Get Password on WhatsApp</button>
+      <button class="btn btn-ghost btn-block" onclick="cancelForgot()">Cancel</button>
+    </div>
+  </div>
+
+  <a class="back-home" href="index.html">← Back to Home</a>
 </div>
 
 <div id="toast"></div>

@@ -26,8 +26,14 @@
 
 <header>
   <div class="container header-inner">
-    <a class="logo" href="index.html">📘 Aman Study Point</a>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- ☰ ਖੱਬੇ ਪਾਸੇ ਵਾਲਾ ਮੈਨਿਊ ਬਟਨ -->
+      <button class="menu-toggle-btn" onclick="toggleNavMenu()" aria-label="Toggle Menu">☰</button>
+      <a class="logo" href="index.html">📘 Aman Study Point</a>
+    </div>
+
     <nav id="navLinks">
+      <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
       <a href="#books">📚 Books</a>
       <a href="#quiz">🎯 Daily Test</a>
       <a href="#pyqs">📑 PYQ Papers</a>

@@ -66,19 +66,20 @@
     <p class="section-sub">Affordable high quality notes in Punjabi</p>
 
     <!-- Mega Combo Offer -->
-    <div class="combo-card">
-      <div class="combo-tag">🔥 BEST VALUE OFFER</div>
-      <div class="combo-content">
-        <div>
-          <h3>🎁 All-in-One Mega Combo Pack</h3>
-          <p>Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
-        </div>
-        <div class="combo-price-box">
-          <div class="combo-price" id="combo_price_display">₹499 <small><s>₹792</s> (Save ₹293)</small></div>
-          <button id="buy_btn_combo" class="btn btn-primary" onclick="openBuyCombo()">🛒 Unlock All 8 Books</button>
-        </div>
-      </div>
-    </div>
+    <div class="card combo-card" style="border: 2px solid #ffa94d; background: #fff9db;">
+  <span class="badge" style="background:#e8590c; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🔥 BEST VALUE OFFER</span>
+  <h3 style="margin-top:8px;">🎁 All-in-One Mega Combo Pack</h3>
+  <p style="color:#555; font-size:0.9rem;">Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
+  
+  <div class="price" id="combo_price_display" style="font-size:1.6rem; font-weight:bold; color:#e8590c; margin:10px 0;">
+    ₹499 <small style="font-size:0.9rem; color:#777;"><s>₹792</s> (Save ₹293)</small>
+  </div>
+
+  <button class="btn btn-buy btn-block" id="buy_btn_combo" onclick="buyBook('combo')" style="background:#e8590c; color:#fff; width:100%; padding:12px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
+    🛒 Unlock All 8 Books
+  </button>
+</div>
+
 
     <!-- Category Filters -->
     <div class="cat-filters">

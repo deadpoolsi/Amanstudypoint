@@ -157,7 +157,7 @@
       // 1. ਡੈਮੋ ਮੋਡ
       if (isDemo) {
         if (!demoUrl) {
-          rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3><p style="color:#666; margin:8px 0;">Admin Panel ਵਿੱਚ Demo Link ਸੇਵ ਕਰੋ।</p></div>`;
+          rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3><p style="color:#666; margin:8px 0;">Upload ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p></div>`;
           return;
         }
         renderBook(fixGoogleDriveUrl(demoUrl), true);
@@ -203,8 +203,8 @@
           rBody.innerHTML = `
             <div class="error-box">
               <div style="font-size:2.5rem; margin-bottom:10px;">⏳</div>
-              <h3>Full Book PDF ਲਿੰਕ ਖ਼ਾਲੀ ਹੈ</h3>
-              <p style="color:#666; margin:8px 0;">Admin Panel ਵਿੱਚ <b>Full Book PDF Link</b> ਪਾ ਕੇ Save ਕਰੋ।</p>
+              <h3>Full Book PDF ਵਿੱਚ ਫ਼ਿਲਹਾਲ ਕੁੱਝ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</h3>
+              <p style="color:#666; margin:8px 0;">upload ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p>
             </div>
           `;
           return;

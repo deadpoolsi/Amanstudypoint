@@ -65,6 +65,51 @@
   </div>
 </div>
 
+<!-- 📚 Book PDF & Rate Manager -->
+<div class="card" style="margin-bottom:24px; padding:20px; background:#fff; border-radius:12px; border:1px solid #e9ecef; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+  <h3 style="color:#e8590c; margin-bottom:8px;">📚 Manage Books & PDFs (ਕਿਤਾਬਾਂ ਅਤੇ PDF ਅੱਪਲੋਡ ਕਰੋ)</h3>
+  <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਕਿਸੇ ਵੀ ਕਿਤਾਬ ਦੀ Full PDF, Demo PDF ਅਤੇ ਕੀਮਤ ਇੱਥੋਂ ਸੈੱਟ ਕਰੋ:</p>
+  
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <!-- ਕਿਤਾਬ ਚੁਣੋ -->
+    <label style="font-weight:600; font-size:0.85rem;">1. ਕਿਤਾਬ ਸਿਲੈਕਟ ਕਰੋ:</label>
+    <select id="adminBookSelect" onchange="loadSelectedBookData()" style="padding:10px; border-radius:6px; border:1px solid #ccc; font-weight:bold;">
+      <option value="punjabi">📖 Punjabi Grammar</option>
+      <option value="gk">🌏 General Knowledge (GK)</option>
+      <option value="maths">🔢 Mathematics</option>
+      <option value="reasoning">🧩 Reasoning Ability</option>
+      <option value="history">🏛️ History of Punjab</option>
+      <option value="science">🔬 General Science</option>
+      <option value="constitution">⚖️ Indian Constitution</option>
+      <option value="computer">💻 Computer Awareness</option>
+    </select>
+
+    <!-- Full PDF Link -->
+    <label style="font-weight:600; font-size:0.85rem;">2. Full Book PDF Link (ਜੋ ਸਿਰਫ਼ ਖਰੀਦਣ ਤੋਂ ਬਾਅਦ ਖੁੱਲ੍ਹੇਗੀ):</label>
+    <input type="url" id="adminBookPdfUrl" placeholder="Full PDF Link (Google Drive / Direct URL)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+
+    <!-- Demo PDF Link -->
+    <label style="font-weight:600; font-size:0.85rem;">3. Demo PDF Link (ਜੋ ਸਾਰੇ ਮੁਫ਼ਤ ਦੇਖ ਸਕਦੇ ਹਨ):</label>
+    <input type="url" id="adminBookDemoPdfUrl" placeholder="Demo PDF Link (Optional)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+
+    <!-- Price -->
+    <label style="font-weight:600; font-size:0.85rem;">4. ਕੀਮਤ (₹ Price):</label>
+    <input type="number" id="adminBookPrice" placeholder="Price in ₹ (e.g. 99)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+
+    <!-- Status -->
+    <label style="font-weight:600; font-size:0.85rem;">5. ਸਟੇਟਸ (Status):</label>
+    <select id="adminBookStatus" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+      <option value="available">🟢 Available (ਵਿਕਰੀ ਲਈ ਚਾਲੂ)</option>
+      <option value="unavailable">⏳ Coming Soon (ਜਲਦੀ ਆ ਰਹੀ ਹੈ)</option>
+    </select>
+
+    <button class="btn btn-primary" onclick="saveAdminBookData()" style="background:#e8590c; padding:12px; font-weight:bold; margin-top:6px;">
+      💾 Save Book Details
+    </button>
+  </div>
+</div>
+
+
 <!--  ਦਿਨ ਵਾਲਾ -->
 <div class="card" style="margin-bottom:24px; padding:20px; background:#fff; border-radius:12px; border:1px solid #e9ecef;">
   <h3 style="color:#2b8a3e; margin-bottom:8px;">📅 Today's Special Day (ਅੱਜ ਦਾ ਮਹੱਤਵਪੂਰਨ ਦਿਨ)</h3>
@@ -548,6 +593,35 @@ function saveTodayDayConfig() {
   });
 }
 
+// ਕਿਤਾਬ ਦਾ ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਡਾਟਾ ਲੋਡ ਕਰੋ
+function loadSelectedBookData() {
+  const bookId = document.getElementById("adminBookSelect").value;
+  db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
+    const data = snap.val() || {};
+    document.getElementById("adminBookPdfUrl").value = data.pdf || "";
+    document.getElementById("adminBookDemoPdfUrl").value = data.demoPdf || "";
+    document.getElementById("adminBookPrice").value = data.price || 99;
+    document.getElementById("adminBookStatus").value = data.status || "available";
+  });
+}
+
+// ਕਿਤਾਬ ਦਾ ਡਾਟਾ Firebase ਵਿੱਚ ਸੇਵ ਕਰੋ
+function saveAdminBookData() {
+  const bookId = document.getElementById("adminBookSelect").value;
+  const pdf = document.getElementById("adminBookPdfUrl").value.trim();
+  const demoPdf = document.getElementById("adminBookDemoPdfUrl").value.trim();
+  const price = parseInt(document.getElementById("adminBookPrice").value) || 99;
+  const status = document.getElementById("adminBookStatus").value;
+
+  db.ref("siteSettings/booksConfig/" + bookId).update({
+    pdf,
+    demoPdf,
+    price,
+    status
+  }).then(() => {
+    alert("✅ ਕਿਤਾਬ ਦਾ ਡਾਟਾ ਅਤੇ PDF ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਡੇਟ ਹੋ ਗਏ ਹਨ!");
+  });
+}
 
 </script>
 </body>

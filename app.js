@@ -241,7 +241,9 @@ function drawBooks() {
   }
 }
 
-/* 5. Checkout Modal with Coupon Discount System */
+/* 5. Checkout Modal with Coupon Discount & Razorpay Gateway */
+const RAZORPAY_KEY_ID = "rzp_live_TVWYBLz18w4R54";
+
 function openBuy(id) {
   const u = currentUser();
   if (!u) { toast("Please login first 👇"); setTimeout(() => location.href = "login.html", 800); return; }
@@ -264,26 +266,24 @@ function showModal(title, price, id, name) {
   if (!mb) return;
 
   mb.innerHTML = `
-    <div class="pay-book">${title}</div>
-    <div class="pay-price" id="modalPriceDisplay">Price: ₹${price}</div>
+    <div class="pay-book" style="font-size:1.1rem; font-weight:bold; color:#e8590c; margin-bottom:6px;">${title}</div>
+    <div class="pay-price" id="modalPriceDisplay" style="font-size:1.3rem; font-weight:bold; margin-bottom:12px;">Price: ₹${price}</div>
 
-    <!-- Coupon Box -->
-    <div style="margin: 10px 0; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px dashed #ccc;">
-      <div style="font-size: 0.84rem; font-weight: 600; margin-bottom: 5px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਕੋਡ ਲਗਾਓ):</div>
+    <!-- 🏷️ Coupon Code Box -->
+    <div style="margin: 10px 0 16px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px dashed #ffa94d;">
+      <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਕੋਡ ਲਗਾਓ):</div>
       <div style="display: flex; gap: 6px;">
-        <input type="text" id="couponInput" placeholder="Enter Code" style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #ccc; text-transform:uppercase;">
-        <button class="btn btn-primary btn-small" onclick="applyCoupon(${price}, '${id}', '${name}')">Apply</button>
+        <input type="text" id="couponInput" placeholder="ENTER CODE" style="flex:1; padding:8px 10px; border-radius:6px; border:1px solid #ccc; text-transform:uppercase; font-weight:bold;">
+        <button class="btn btn-primary btn-small" onclick="applyCoupon(${price}, '${id}', '${name}')" style="background:#e8590c;">Apply</button>
       </div>
-      <div id="couponMsg" style="font-size:0.8rem; margin-top:4px;"></div>
+      <div id="couponMsg" style="font-size:0.8rem; margin-top:6px;"></div>
     </div>
 
-    <div style="text-align:center;margin:10px 0;">
-      <img src="https://i.postimg.cc/FsFy1W75/qr.png" style="max-width:130px;width:100%;border-radius:8px;border:2px solid #ffd8a8;display:block;margin:0 auto;">
-      <small style="color:#666;display:block;margin-top:4px;">Scan & Pay via UPI: <b>${INSTITUTE.upi}</b></small>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;" id="modalActionButtons">
-      ${renderModalButtons(price, id, name)}
+    <!-- 💳 Razorpay Instant Pay Button -->
+    <div id="modalPayBtnBox">
+      <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${price})" style="background:#1971c2; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
+        ⚡ Pay ₹${price} via Razorpay (GPay/PhonePe/Cards)
+      </button>
     </div>
   `;
 
@@ -295,6 +295,7 @@ function applyCoupon(originalPrice, id, name) {
   const inp = document.getElementById("couponInput").value.trim().toUpperCase();
   const msg = document.getElementById("couponMsg");
   const pDisp = document.getElementById("modalPriceDisplay");
+  const btnBox = document.getElementById("modalPayBtnBox");
 
   if (!activeCoupon || !activeCoupon.active || activeCoupon.code !== inp) {
     msg.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
@@ -308,38 +309,73 @@ function applyCoupon(originalPrice, id, name) {
   msg.innerHTML = `<span style="color:#2b8a3e; font-weight:700;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${discountAmount} ਦੀ ਛੋਟ ਮਿਲੀ (${activeCoupon.discount}% Off)</span>`;
   pDisp.innerHTML = `Price: <s style="color:#888;">₹${originalPrice}</s> <b style="color:#2b8a3e;">₹${finalPrice}</b>`;
 
-  document.getElementById("modalActionButtons").innerHTML = renderModalButtons(finalPrice, id, name);
+  // ਡਿਸਕਾਊਂਟ ਵਾਲੇ ਰੇਟ ਨਾਲ ਬਟਨ ਅੱਪਡੇਟ ਕਰੋ
+  if (btnBox) {
+    btnBox.innerHTML = `
+      <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${finalPrice}, '${inp}')" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
+        ⚡ Pay ₹${finalPrice} via Razorpay (Discount Applied)
+      </button>
+    `;
+  }
 }
 
-function renderModalButtons(price, id, name) {
+function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
   const u = currentUser();
-  const upiUrl = `upi://pay?pa=${INSTITUTE.upi}&pn=Aman%20Study%20Point&am=${price}&cu=INR&tn=Book-${encodeURIComponent(name)}`;
-  const wa = encodeURIComponent(`Hello,\nI sent ₹${price} for "${name}".\nName: ${u.name}\nPhone: ${u.phone}\nPlease approve.`);
-  
-  return `
-    <!-- 1-Click UPI Deep Link Button -->
-    <a class="btn btn-block" href="${upiUrl}" style="background:#1971c2; color:#fff; font-weight:700; padding:12px; margin-bottom:4px;">
-      ⚡ Pay via UPI (GPay / PhonePe / Paytm)
-    </a>
-    
-    <a class="btn btn-primary btn-block" href="https://api.whatsapp.com/send?phone=91${INSTITUTE.whatsapp}&text=${wa}" target="_blank">
-      📲 Send Screenshot on WhatsApp
-    </a>
-    
-    <button class="btn btn-ghost btn-block" onclick="submitReq('${id}','${name}', ${price})" style="background:#e8f5e9; color:#2e7d32;">
-      ✅ I Have Paid ₹${price} — Submit
-    </button>
-  `;
-}
+  if (!u) return;
 
+  const options = {
+    key: RAZORPAY_KEY_ID,
+    amount: finalPrice * 100, // paise ਵਿੱਚ
+    currency: "INR",
+    name: "Aman Study Point",
+    description: `Unlock ${itemName}`,
+    prefill: {
+      name: u.name || "",
+      contact: u.phone || ""
+    },
+    theme: {
+      color: "#e8590c"
+    },
+    handler: function (response) {
+      if (response.razorpay_payment_id) {
+        // ਪੇਮੈਂਟ ਹਿਸਟਰੀ ਸੇਵ ਕਰੋ
+        const payRecord = {
+          paymentId: response.razorpay_payment_id,
+          phone: u.phone,
+          name: u.name,
+          bookId: bookId,
+          itemName: itemName,
+          amount: finalPrice,
+          couponUsed: couponCode || "NONE",
+          date: new Date().toLocaleString(),
+          status: "SUCCESS"
+        };
+        db.ref("payments/" + response.razorpay_payment_id).set(payRecord);
 
-function submitReq(bookId, title, price) {
-  const u = currentUser(), reqId = u.phone + "_" + bookId;
-  db.ref("requests/" + reqId).set({
-    reqId, phone: u.phone, name: u.name, bookId, bookTitle: title, paidAmount: price, time: new Date().toLocaleString(), status: "pending"
-  }).then(() => {
-    closeModal(); toast("✅ Request Sent! Book unlocks once approved.");
-  });
+        // ਵਿਦਿਆਰਥੀ ਦੇ ਖਾਤੇ ਵਿੱਚ ਕਿਤਾਬਾਂ ਆਟੋਮੈਟਿਕ ਅਨਲੌਕ ਕਰੋ
+        if (bookId === "combo") {
+          BOOKS.forEach(b => {
+            db.ref("users/" + u.phone + "/books/" + b.id).set(true);
+          });
+          db.ref("users/" + u.phone + "/books/combo").set(true);
+        } else {
+          db.ref("users/" + u.phone + "/books/" + bookId).set(true);
+        }
+
+        closeModal();
+        alert(`🎉 ਵਧਾਈਆਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ।\nPayment ID: ${response.razorpay_payment_id}\nਕਿਤਾਬ ਤੁਰੰਤ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।`);
+        drawBooks();
+      }
+    },
+    modal: {
+      ondismiss: function () {
+        console.log("Payment cancelled");
+      }
+    }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.open();
 }
 
 function closeModal() {

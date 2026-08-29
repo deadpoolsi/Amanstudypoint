@@ -1,16 +1,19 @@
+/* ==========================================
+   1. VARIABLES & GLOBAL RESETS
+   ========================================== */
 :root {
   --primary: #e8590c;
   --primary-dark: #d9480f;
   --primary-light: #ffe8cc;
   --text: #1a1a1a;
-  --text-sub: #666;
+  --text-sub: #666666;
   --bg: #fafafa;
   --card-bg: #ffffff;
   --line: #e9ecef;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Dark Mode Variables */
+/* 🌙 Dark Mode Support */
 body.dark-mode {
   --text: #e0e0e0;
   --text-sub: #a0a0a0;
@@ -19,169 +22,624 @@ body.dark-mode {
   --line: #2d2d2d;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; -webkit-tap-highlight-color: transparent; }
-.container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
-
-.top-announcement { background: linear-gradient(90deg, #e8590c, #f76707); color: #fff; font-size: 0.85rem; font-weight: 600; text-align: center; padding: 7px 12px; }
-
-/* Header */
-header { background: var(--card-bg); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-.header-inner { display: flex; justify-content: space-between; align-items: center; min-height: 60px; padding: 8px 16px; gap: 10px; }
-.logo { font-size: 1.15rem; font-weight: 800; color: var(--primary); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
-nav { display: flex; align-items: center; gap: 8px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
-nav::-webkit-scrollbar { display: none; }
-nav a, nav button { text-decoration: none; color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; flex-shrink: 0; }
-nav a:hover { color: var(--primary); background: rgba(232, 89, 12, 0.1); }
-
-@media (max-width: 650px) {
-  .header-inner { flex-direction: column; align-items: flex-start; padding: 8px 12px; gap: 6px; }
-  .logo { width: 100%; font-size: 1.1rem; }
-  nav { width: 100%; padding-bottom: 4px; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: 8px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.top-announcement {
+  background: linear-gradient(90deg, #e8590c, #f76707);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 7px 12px;
+}
+
+/* ==========================================
+   2. HEADER & NAVIGATION DRAWER
+   ========================================== */
+header {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px 16px;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+nav a, nav button {
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+nav a:hover, nav button:hover {
+  color: var(--primary);
+  background: rgba(232, 89, 12, 0.1);
+}
+
+.menu-toggle-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.menu-close-btn {
+  display: none;
+  font-size: 1.4rem;
+  color: var(--text-sub);
+  align-self: flex-end;
+  cursor: pointer;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+/* 📱 Mobile Drawer Menu (Slide from Left) */
+@media (max-width: 768px) {
+  .menu-toggle-btn { display: block; }
+  .menu-close-btn { display: block; }
+
+  #navLinks {
+    position: fixed;
+    top: 0;
+    left: -290px;
+    width: 270px;
+    height: 100vh;
+    background: var(--card-bg);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px 16px;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
+    transition: left 0.3s ease-in-out;
+    z-index: 99999;
+    gap: 8px;
+  }
+
+  #navLinks.menu-open {
+    left: 0;
+  }
+
+  #navLinks a, #navLinks button {
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    border: 1px solid var(--line);
+  }
+}
+
+/* ==========================================
+   3. BUTTONS & BADGES
+   ========================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 0.92rem;
+}
+
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-ghost { background: var(--card-bg); border: 1.5px solid var(--line); color: var(--text); }
 .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
-.btn-small { padding: 5px 10px; font-size: 0.82rem; }
+.btn-small { padding: 5px 10px; font-size: 0.8rem; }
 .btn-block { width: 100%; }
 .btn-buy { background: #fff3bf; color: #d9480f; border: 1px solid #ffd43b; }
 .btn-read { background: #d3f9d8; color: #2b8a3e; border: 1px solid #8ce99a; }
 
-/* Hero */
-.hero { padding: 40px 0 30px; text-align: center; background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg) 100%); }
-.badge { display: inline-block; padding: 4px 12px; background: var(--primary-light); color: var(--primary-dark); border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; font-weight: 600; }
-.hero h1 { font-size: 2.1rem; font-weight: 800; line-height: 1.25; margin-bottom: 12px; }
+/* ==========================================
+   4. HERO & CATEGORY FILTERS
+   ========================================== */
+.hero {
+  padding: 35px 0 25px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg) 100%);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
 .hero h1 span { color: var(--primary); }
-.hero-sub { color: var(--text-sub); max-width: 600px; margin: 0 auto 20px; font-size: 1rem; }
+.hero-sub { color: var(--text-sub); max-width: 580px; margin: 0 auto 18px; font-size: 0.95rem; }
 .hero-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
-/* Category Filters */
-.cat-filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 10px; scrollbar-width: none; }
+.cat-filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 0 16px;
+  scrollbar-width: none;
+}
 .cat-filters::-webkit-scrollbar { display: none; }
-.cat-btn { padding: 8px 14px; background: var(--card-bg); color: var(--text); border: 1.5px solid var(--line); border-radius: 20px; font-size: 0.88rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+.cat-btn {
+  padding: 8px 14px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
 .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* Combo Card */
-.combo-card { background: linear-gradient(135deg, #fff9db 0%, #fff4e6 100%); border: 2px solid #ffd8a8; border-radius: 16px; padding: 22px; margin-bottom: 20px; position: relative; color: #1a1a1a; }
-body.dark-mode .combo-card { background: linear-gradient(135deg, #2b2614 0%, #291a10 100%); border-color: #744210; color: #fff; }
-.combo-tag { position: absolute; top: -12px; left: 20px; background: #e8590c; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+/* ==========================================
+   5. MEGA COMBO PACK CARD
+   ========================================== */
+.combo-card {
+  background: linear-gradient(135deg, #fff9db 0%, #fff4e6 100%);
+  border: 2px solid #ffd8a8;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  color: #1a1a1a;
+}
+body.dark-mode .combo-card {
+  background: linear-gradient(135deg, #2b2614 0%, #291a10 100%);
+  border-color: #744210;
+  color: #fff;
+}
+.combo-tag {
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
 .combo-content { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; }
 .combo-price-box { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-.combo-price { font-size: 1.6rem; font-weight: 800; color: #e8590c; }
+.combo-price { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 .combo-price small { font-size: 0.85rem; color: #888; }
 
-/* Books Grid */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
-.book-card, .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 14px; padding: 18px; position: relative; display: flex; flex-direction: column; }
-.pill { position: absolute; top: 12px; right: 12px; background: #e6fcf5; color: #0ca678; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; border: 1px solid #96f2d7; }
-.book-emoji { font-size: 2.8rem; text-align: center; margin: 8px 0; }
-.book-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; text-align: center; }
-.book-sub { color: var(--text-sub); font-size: 0.84rem; text-align: center; margin-bottom: 14px; }
-.book-bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--line); padding-top: 12px; }
-.price { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-.price small { font-size: 0.75rem; color: var(--text-sub); font-weight: normal; }
+/* ==========================================
+   6. BOOKS GRID (2-Columns on Mobile)
+   ========================================== */
+.grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  width: 100%;
+}
 
-/* Sections */
-.section { padding: 40px 0; }
+@media (min-width: 768px) {
+  .grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+  }
+}
+
+.book-card, .card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #e6fcf5;
+  color: #0ca678;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid #96f2d7;
+}
+
+.book-emoji, .book-card .book-icon {
+  font-size: 2.3rem;
+  text-align: center;
+  margin: 4px auto 6px;
+  display: block;
+}
+
+.book-title, .book-card h3 {
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin: 0 0 4px;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.book-sub, .book-card .book-desc, .book-card p {
+  color: var(--text-sub);
+  font-size: 0.72rem;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.book-bottom, .book-card .book-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+  width: 100%;
+}
+
+.price, .price-tag, .book-card .book-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.price small {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  font-weight: normal;
+}
+
+.book-card .btn, .book-card button, .book-card a.btn {
+  width: 100%;
+  padding: 7px 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* ==========================================
+   7. DAILY MOCK TEST & QUIZ ENGINE
+   ========================================== */
+.section { padding: 35px 0; }
 .section-alt { background: var(--card-bg); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.section h2 { font-size: 1.7rem; text-align: center; font-weight: 800; margin-bottom: 4px; }
-.section-sub { text-align: center; color: var(--text-sub); margin-bottom: 25px; font-size: 0.92rem; }
+.section h2 { font-size: 1.6rem; text-align: center; font-weight: 800; margin-bottom: 4px; }
+.section-sub { text-align: center; color: var(--text-sub); margin-bottom: 22px; font-size: 0.9rem; }
 
-/* Quiz Box */
-.quiz-box { max-width: 650px; margin: 0 auto; background: var(--card-bg); border: 1.5px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; font-weight: 700; color: var(--primary); }
-.quiz-timer-badge { background: #ffe3e3; color: #c92a2a; padding: 4px 10px; border-radius: 20px; font-family: monospace; font-size: 1rem; font-weight: 800; border: 1px solid #ffc9c9; }
-.quiz-q { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
-.quiz-opts { display: flex; flex-direction: column; gap: 9px; }
-.quiz-opt-btn { width: 100%; text-align: left; padding: 12px 14px; background: var(--card-bg); color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; font-size: 0.92rem; font-weight: 500; cursor: pointer; }
-.quiz-opt-btn.correct { background: #d3f9d8 !important; border-color: #40c057 !important; color: #2b8a3e !important; font-weight: 700; }
-.quiz-opt-btn.wrong { background: #ffe3e3 !important; border-color: #fa5252 !important; color: #c92a2a !important; font-weight: 700; }
-.quiz-footer { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; }
+.quiz-box {
+  max-width: 650px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.quiz-timer-badge {
+  background: #ffe3e3;
+  color: #c92a2a;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  border: 1px solid #ffc9c9;
+}
+
+.quiz-q { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+
+.quiz-opt-btn {
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
 .quiz-score-card { text-align: center; padding: 15px 5px; }
-.quiz-score-num { font-size: 2.4rem; font-weight: 800; color: var(--primary); margin: 8px 0; }
-.review-item { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; text-align: left; }
-.review-item.is-correct { border-left: 4px solid #40c057; }
-.review-item.is-wrong { border-left: 4px solid #fa5252; }
+.quiz-score-num { font-size: 2.3rem; font-weight: 800; color: var(--primary); margin: 8px 0; }
 
-/* Referral Box */
-.referral-box { max-width: 550px; margin: 0 auto; background: var(--card-bg); border: 1.5px dashed var(--primary); border-radius: 14px; padding: 25px 20px; text-align: center; }
+/* ==========================================
+   8. LEADERBOARD, REFERRAL & CONTACT
+   ========================================== */
+.referral-box {
+  max-width: 550px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--primary);
+  border-radius: 14px;
+  padding: 22px 18px;
+  text-align: center;
+}
 
-/* Leaderboard */
-.leaderboard-card { max-width: 600px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.rank-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); }
-.rank-badge { font-weight: 800; width: 32px; font-size: 1.1rem; }
+.leaderboard-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.rank-badge { font-weight: 800; width: 30px; font-size: 1.1rem; }
 .rank-name { font-weight: 600; flex: 1; padding: 0 10px; }
 .rank-score { font-weight: 800; color: var(--primary); }
 
-/* Floating WhatsApp Button */
-.floating-wa-btn { position: fixed; bottom: 25px; right: 25px; width: 55px; height: 55px; background: #25D366; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; text-decoration: none; }
-.floating-wa-btn:hover { transform: scale(1.08); }
-
-/* Contact & Footer */
-.contact-card { max-width: 480px; margin: 0 auto; background: var(--card-bg); padding: 22px; border-radius: 14px; text-align: center; border: 1px solid var(--line); }
+.contact-card {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  padding: 22px;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid var(--line);
+}
 .contact-card .big { font-size: 2.2rem; margin-bottom: 6px; }
-footer { padding: 25px 0; text-align: center; font-size: 0.85rem; color: var(--text-sub); background: var(--card-bg); border-top: 1px solid var(--line); }
 
-/* Modal & Toast */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
-.modal { background: var(--card-bg); color: var(--text); border-radius: 16px; max-width: 440px; width: 100%; padding: 22px; position: relative; }
-.modal-close { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #999; }
-.pay-book { font-size: 1.15rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
-.pay-price { text-align: center; color: var(--primary); font-size: 1.05rem; font-weight: 800; margin-bottom: 10px; }
-#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #111; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 0.88rem; z-index: 300; opacity: 0; transition: 0.3s; pointer-events: none; }
-#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-/* ☰ 3-Line Menu & Side Drawer */
-.menu-toggle-btn { display: none; background: none; border: none; font-size: 1.8rem; color: var(--primary); cursor: pointer; padding: 2px 8px; }
-.menu-close-btn { display: none; font-size: 1.4rem; color: var(--text-sub); align-self: flex-end; cursor: pointer; padding: 4px 10px; margin-bottom: 10px; font-weight: bold; }
-
-@media (max-width: 768px) {
-  .menu-toggle-btn { display: block; }
-  .menu-close-btn { display: block; }
-  .header-inner { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
-  
-  #navLinks {
-    position: fixed;
-    top: 0;
-    right: -280px;
-    width: 260px;
-    height: 100vh;
-    background: var(--card-bg);
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 20px;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.25);
-    transition: right 0.3s ease-in-out;
-    z-index: 9999;
-    gap: 10px !important;
-  }
-  
-  #navLinks.menu-open { right: 0; }
-  #navLinks a, #navLinks button { width: 100%; text-align: left; padding: 12px 14px; border-radius: 8px; font-size: 0.95rem; }
+footer {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  background: var(--card-bg);
+  border-top: 1px solid var(--line);
 }
 
-@media (max-width: 768px) {
-  #navLinks {
-    position: fixed;
-    top: 0;
-    left: -280px !important;  /* ਪਹਿਲਾਂ ਖੱਬੇ ਪਾਸੇ ਛੁਪਿਆ ਰਹੇਗਾ */
-    right: auto !important;
-    width: 260px;
-    height: 100vh;
-    background: var(--card-bg);
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 20px;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.25);
-    transition: left 0.3s ease-in-out !important; /* ਖੱਬੇ ਪਾਸਿਓਂ ਸਲਾਈਡ ਐਨੀਮੇਸ਼ਨ */
-    z-index: 99999;
-    gap: 10px !important;
-  }
+/* ==========================================
+   9. MODALS, FLOATING WA & TOAST
+   ========================================== */
+.floating-wa-btn {
+  position: fixed;
+  bottom: 22px;
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  background: #25D366;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  z-index: 998;
+  text-decoration: none;
+}
+.floating-wa-btn:hover { transform: scale(1.08); }
 
-  #navLinks.menu-open { 
-    left: 0 !important; /* 3 ਲਾਈਨਾਂ ਦਬਾਉਣ 'ਤੇ ਖੱਬੇ ਪਾਸਿਓਂ ਅੱਗੇ ਆਵੇਗਾ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 16px;
+  max-width: 420px;
+  width: 100%;
+  padding: 22px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #999;
+}
+
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #111;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.88rem;
+  z-index: 10001;
+  opacity: 0;
+  transition: 0.3s;
+  pointer-events: none;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* 📱 Perfect 2-Column Mobile Grid */
+.grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.book-card, .card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 12px 8px !important;
+  min-height: 230px !important;
+}
+
+/* 🔘 ਬਟਨ ਇੱਕ-ਦੂਜੇ ਦੇ ਉੱਪਰ-ਹੇਠਾਂ ਰੱਖੋ ਤਾਂ ਜੋ ਭਿੜਨ ਨਾ */
+.book-bottom, .book-card .book-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  margin-top: auto !important;
+  border-top: 1px dashed #eee !important;
+  padding-top: 8px !important;
+}
+
+.book-card .btn-group, .book-card > div:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+.book-card .btn, .book-card a.btn, .book-card button {
+  width: 100% !important;
+  padding: 6px 2px !important;
+  font-size: 0.78rem !important;
+}
+
+/* 📚 ਕਾਰਡ ਦਾ ਸਾਈਜ਼ ਅਤੇ ਲੇਆਉਟ */
+.book-card, .card {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  border-radius: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* 🔘 ਬਟਨ ਅਤੇ ਕੀਮਤ ਨੂੰ ਠੀਕ ਕਰਨਾ */
+.book-card .book-bottom, 
+.book-card .book-footer,
+.book-card > div:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  margin-top: auto !important;
+}
+
+.book-card .btn, 
+.book-card a.btn, 
+.book-card button {
+  width: 100% !important;
+  padding: 8px 4px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+/* 💻 ਵੱਡੀ ਸਕ੍ਰੀਨ (ਕੰਪਿਊਟਰ / ਲੈਪਟਾਪ) ਲਈ */
+@media (min-width: 768px) {
+  #books, #booksList, #booksGrid, .grid, .books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 16px !important;
   }
 }

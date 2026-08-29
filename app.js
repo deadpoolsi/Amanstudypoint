@@ -586,13 +586,41 @@ function showReview() {
 function loadBoard() {
   const list = document.getElementById("leaderboardList");
   if (!list) return;
-  db.ref("quizResults").on("value", snap => {
-    const data = snap.val();
-    if (!data) { list.innerHTML = "<p style='text-align:center;padding:10px;'>ਕੋਈ ਟੈਸਟ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।</p>"; return; }
-    const items = Object.values(data).sort((a, b) => b.score - a.score).slice(0, 5), medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
-    list.innerHTML = items.map((r, i) => `<div class="rank-row"><span class="rank-badge">${medals[i] || (i + 1)}</span><span class="rank-name">${r.name}</span><span class="rank-score">${r.score} / ${r.total}</span></div>`).join("");
+
+  // 1. ਮੌਜੂਦਾ ਨਵੇਂ ਟੈਸਟ ਦਾ ਵਰਜਨ ਚੈੱਕ ਕਰੋ
+  db.ref("quizVersion").on("value", vSnap => {
+    const curVer = vSnap.val() || "v1";
+
+    // 2. ਸਿਰਫ਼ ਉਸੇ ਨਵੇਂ ਵਰਜਨ ਵਾਲੇ ਟੈਸਟ ਦੇ ਨਤੀਜੇ ਦਿਖਾਓ
+    db.ref("quizResults").on("value", snap => {
+      const data = snap.val();
+      if (!data) {
+        list.innerHTML = "<p style='text-align:center;padding:10px;'>ਕੋਈ ਟੈਸਟ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।</p>";
+        return;
+      }
+
+      const items = Object.values(data)
+        .filter(r => r.version === curVer) // ਕੇਵਲ ਨਵੇਂ ਟੈਸਟ ਦੇ ਰਿਜ਼ਲਟ
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      if (items.length === 0) {
+        list.innerHTML = "<p style='text-align:center;padding:12px;color:#777;'>ਅਜੇ ਤੱਕ ਨਵੇਂ ਟੈਸਟ ਦਾ ਕੋਈ ਰੈਂਕ ਨਹੀਂ ਹੈ। ਪਹਿਲੇ ਨੰਬਰ 'ਤੇ ਆਉਣ ਲਈ ਹੁਣੇ ਟੈਸਟ ਦਿਓ! 🚀</p>";
+        return;
+      }
+
+      const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+      list.innerHTML = items.map((r, i) => `
+        <div class="rank-row">
+          <span class="rank-badge">${medals[i] || (i + 1)}</span>
+          <span class="rank-name">${r.name}</span>
+          <span class="rank-score">${r.score} / ${r.total}</span>
+        </div>
+      `).join("");
+    });
   });
 }
+
 
 function initLogin() {
   const tL = document.getElementById("tabLogin"), tR = document.getElementById("tabReg"), fL = document.getElementById("formLogin"), fR = document.getElementById("formReg"), err = document.getElementById("loginError");

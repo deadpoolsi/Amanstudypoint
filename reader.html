@@ -91,12 +91,15 @@
 <body>
 
 <header>
+  <!-- ਉੱਪਰਲਾ ਮੇਨ ਹੈਡਰ -->
+<header>
   <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
     <a class="logo" href="index.html" style="font-weight:700; color:#e8590c; text-decoration:none;">📘 AMAN STUDY POINT</a>
     <a href="index.html#books" class="btn btn-ghost btn-small" style="text-decoration:none;">← All Books</a>
   </div>
 </header>
 
+<!-- ਰੀਡਰ ਬਾਡੀ (ਇਸ ਵਿੱਚੋਂ ਪੁਰਾਣਾ ਲਿਖਿਆ ਡੈਮੋ ਹੈਡਰ ਹਟਾ ਦਿਓ) -->
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
   <div id="readerBody">
@@ -215,12 +218,16 @@
     });
 
     function renderBook(url, demoMode) {
-      rHead.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
-          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
-          <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none;">← Back to Books</a>
-        </div>
-      `;
+  rHead.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
+      <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
+      <div style="display:flex; gap:8px;">
+        <button onclick="toggleFullScreen()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:0.8rem;">⛶ Fullscreen</button>
+        <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back to Books</a>
+      </div>
+    </div>
+  `;
+         
 
       const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
 
@@ -244,6 +251,26 @@
       `;
     }
   });
+  
+  function toggleFullScreen() {
+  const elem = document.querySelector(".pdf-wrapper") || document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
 </script>
 </body>
 </html>

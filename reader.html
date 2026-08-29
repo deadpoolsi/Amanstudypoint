@@ -7,8 +7,15 @@
 <title>Reader — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  * { user-select: none; -webkit-user-select: none; }
+  * { user-select: none; -webkit-user-select: none; box-sizing: border-box; }
   
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f4f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
   .reader-wrap {
     max-width: 1000px;
     margin: 0 auto;
@@ -21,10 +28,10 @@
     width: 100%;
     height: 88vh;
     overflow: hidden;
-    background: #f8f9fa;
+    background: #333;
   }
   
-  /* 🛡️ 1. Pop-out Icon Block Shield */
+  /* 🛡️ 1. Pop-out Icon Blocker */
   .popout-blocker {
     position: absolute;
     top: 0;
@@ -36,7 +43,7 @@
     cursor: default;
   }
 
-  /* 🛡️ 2. Clean & Subtle Single Center Watermark (No Reading Issue) */
+  /* 🛡️ 2. Clean Light Watermark */
   .watermark-overlay {
     position: absolute;
     top: 0;
@@ -48,19 +55,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 120px;
-    opacity: 0.07; /* Bilkul halka taaki text saaf dikhe */
+    justify-content: space-around;
+    opacity: 0.08;
   }
 
   .watermark-item {
     transform: rotate(-30deg);
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 900;
     color: #000;
     text-align: center;
     line-height: 1.4;
-    letter-spacing: 2px;
   }
 
   .reader-frame {
@@ -68,31 +73,44 @@
     height: 100%;
     border: none;
     display: block;
+    background: #fff;
+  }
+
+  .error-box {
+    text-align: center;
+    padding: 40px 20px;
+    max-width: 480px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px;">
+  <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
     <a class="logo" href="index.html" style="font-weight:700; color:#e8590c; text-decoration:none;">📘 AMAN STUDY POINT</a>
-    <a href="index.html#books" class="btn btn-ghost btn-small">← All Books</a>
+    <a href="index.html#books" class="btn btn-ghost btn-small" style="text-decoration:none;">← All Books</a>
   </div>
 </header>
 
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
   <div id="readerBody">
-    <p style="text-align:center; padding:40px; color:#666;">⏳ Kitab load ho rahi hai...</p>
+    <p style="text-align:center; padding:50px; color:#666;">⏳ ਕਿਤਾਬ ਲੋਡ ਹੋ ਰਹੀ ਹੈ...</p>
   </div>
 </div>
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
 
 <script>
-  // Right Click, Print, Save & Copy Disable
+  // Right Click, Save, Copy Block
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
@@ -110,66 +128,97 @@
     const u = typeof currentUser === 'function' ? currentUser() : null;
 
     if (!bookId) {
-      rBody.innerHTML = "<p style='text-align:center;padding:30px;'>Koi kitab nahi mili.</p>";
+      rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਕੋਈ ਕਿਤਾਬ ਸਿਲੈਕਟ ਨਹੀਂ ਕੀਤੀ ਗਈ।</h3><a href="index.html#books" class="btn btn-primary" style="margin-top:15px; background:#e8590c; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; display:inline-block;">ਸਾਰੀਆਂ ਕਿਤਾਬਾਂ ਦੇਖੋ</a></div>`;
       return;
     }
 
+    // Google Drive Link Parser
     function fixGoogleDriveUrl(url) {
       if (!url) return "";
+      url = url.trim();
       if (url.includes("drive.google.com")) {
-        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          return `https://drive.google.com/file/d/${match[1]}/preview`;
+        const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        const match2 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        const match3 = url.match(/id=([a-zA-Z0-9_-]+)/);
+        const fileId = (match1 && match1[1]) || (match2 && match2[1]) || (match3 && match3[1]);
+        if (fileId) {
+          return `https://drive.google.com/file/d/${fileId}/preview`;
         }
       }
-      return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      return url;
     }
 
+    // Firebase ਤੋਂ ਕਿਤਾਬ ਡਾਟਾ ਲਿਆਓ
     db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
       const cfg = snap.val() || {};
       const fullUrl = cfg.pdf || "";
       const demoUrl = cfg.demoPdf || cfg.pdf || "";
-      const targetRawUrl = isDemo ? demoUrl : fullUrl;
-      const embedUrl = fixGoogleDriveUrl(targetRawUrl);
 
-      if (!isDemo) {
-        if (!u) {
-          alert("Puri kitab padhne ke liye pehle Login karein!");
-          window.location.href = "login.html";
-          return;
-        }
-
-        db.ref("users/" + u.phone + "/books").once("value", uSnap => {
-          const userBooks = uSnap.val() || {};
-          const isUnlocked = userBooks[bookId] === true || userBooks['combo'] === true;
-
-          if (!isUnlocked) {
-            alert("⚠️ Aapne yeh book buy nahi ki hai.");
-            window.location.href = "index.html#books";
-            return;
-          }
-
-          if (!fullUrl) {
-            rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ Full Book PDF abhi upload nahi hui hai.</h3></div>`;
-            return;
-          }
-
-          renderBook(embedUrl, false);
-        });
-      } else {
+      // 1. ਡੈਮੋ ਮੋਡ
+      if (isDemo) {
         if (!demoUrl) {
-          rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ Demo PDF upload nahi hai.</h3></div>`;
+          rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3><p style="color:#666; margin:8px 0;">Admin Panel ਵਿੱਚ Demo Link ਸੇਵ ਕਰੋ।</p></div>`;
           return;
         }
-        renderBook(embedUrl, true);
+        renderBook(fixGoogleDriveUrl(demoUrl), true);
+        return;
       }
+
+      // 2. ਫੁੱਲ ਬੁੱਕ ਮੋਡ (ਲੌਗਇਨ ਚੈੱਕ)
+      if (!u) {
+        rBody.innerHTML = `
+          <div class="error-box">
+            <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
+            <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
+            <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
+            <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
+          </div>
+        `;
+        return;
+      }
+
+      // ਯੂਜ਼ਰ ਦੀ ਖਰੀਦਦਾਰੀ ਚੈੱਕ ਕਰੋ
+      db.ref("users/" + u.phone).once("value", uSnap => {
+        const uData = uSnap.val() || {};
+        const booksObj = uData.books || {};
+        const purchasesObj = uData.purchases || {};
+
+        const isUnlocked = booksObj[bookId] === true || booksObj['combo'] === true || purchasesObj[bookId] === true || purchasesObj['combo'] === true;
+
+        if (!isUnlocked) {
+          rBody.innerHTML = `
+            <div class="error-box">
+              <div style="font-size:2.5rem; margin-bottom:10px;">🔒</div>
+              <h3>ਕਿਤਾਬ ਲਾਕ ਹੈ</h3>
+              <p style="color:#666; margin:8px 0 16px;">ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਇਹ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।</p>
+              <a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🛒 ਕਿਤਾਬ ਖਰੀਦੋ</a>
+            </div>
+          `;
+          return;
+        }
+
+        // ਲਿੰਕ ਚੈੱਕ ਕਰੋ (ਜੇ fullUrl ਨਾ ਮਿਲੇ ਤਾਂ demoUrl 'ਤੇ ਚਲਾਓ)
+        const finalPdfUrl = fullUrl || demoUrl;
+        if (!finalPdfUrl) {
+          rBody.innerHTML = `
+            <div class="error-box">
+              <div style="font-size:2.5rem; margin-bottom:10px;">⏳</div>
+              <h3>Full Book PDF ਲਿੰਕ ਖ਼ਾਲੀ ਹੈ</h3>
+              <p style="color:#666; margin:8px 0;">Admin Panel ਵਿੱਚ <b>Full Book PDF Link</b> ਪਾ ਕੇ Save ਕਰੋ।</p>
+            </div>
+          `;
+          return;
+        }
+
+        renderBook(fixGoogleDriveUrl(finalPdfUrl), false);
+      });
     });
 
     function renderBook(url, demoMode) {
       rHead.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
           <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
-          <a href="index.html#books" class="btn btn-small btn-ghost">← Back to Books</a>
+          <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none;">← Back to Books</a>
         </div>
       `;
 
@@ -182,11 +231,11 @@
           <div class="watermark-overlay">
             <div class="watermark-item">
               AMAN STUDY POINT<br>
-              <span style="font-size:1.1rem; font-weight:700;">${studentTag}</span>
+              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
             </div>
             <div class="watermark-item">
               AMAN STUDY POINT<br>
-              <span style="font-size:1.1rem; font-weight:700;">${studentTag}</span>
+              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
             </div>
           </div>
 

@@ -25,22 +25,26 @@
 <div class="top-announcement" id="topAnnouncement" style="display:none;"></div>
 
 <header>
-  <div class="container header-inner">
+  <div class="container header-inner" style="display: flex; align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <!-- ☰ ਖੱਬੇ ਪਾਸੇ ਵਾਲਾ ਮੈਨਿਊ ਬਟਨ -->
       <button class="menu-toggle-btn" onclick="toggleNavMenu()" aria-label="Toggle Menu">☰</button>
       <a class="logo" href="index.html">📘 Aman Study Point</a>
     </div>
 
+    <div style="display: flex; align-items: center;">
+      <button id="installAppBtn" class="btn btn-small btn-buy" onclick="installPWA()" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; font-weight: 700;">
+        📲 Install App
+      </button>
+    </div>
+
     <nav id="navLinks">
       <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
-      <a href="#books">📚 Books</a>
-      <a href="#quiz">🎯 Daily Test</a>
-      <a href="#pyqs">📑 PYQ Papers</a>
-      <a href="#analytics" id="analyticsNav" style="display:none;">📊 My Progress</a>
-      <a href="#referral">🎁 Refer</a>
+      <a href="#books" onclick="toggleNavMenu()">📚 Books</a>
+      <a href="#quiz" onclick="toggleNavMenu()">🎯 Daily Test</a>
+      <a href="#pyqs" onclick="toggleNavMenu()">📑 PYQ Papers</a>
+      <a href="#analytics" id="analyticsNav" style="display:none;" onclick="toggleNavMenu()">📊 My Progress</a>
+      <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
       <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
-      <button id="installAppBtn" class="btn btn-small btn-buy" style="display:none;" onclick="installPWA()">📲 Install App</button>
       <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
     </nav>
   </div>
@@ -121,6 +125,26 @@
     </div>
   </div>
 </section>
+
+<!-- ਦਿਨ ਵਾਲਾ-->
+<section class="container" id="dailyDaySection" style="display:none; margin-top:20px; margin-bottom:20px;">
+  <div style="background: linear-gradient(135deg, #f4fbf7, #e8f5e9); border: 1.5px solid #81c784; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span style="background:#2e7d32; color:#fff; font-size:0.75rem; font-weight:bold; padding:3px 10px; border-radius:20px;">
+        🌟 TODAY'S SPECIAL DAY (ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ)
+      </span>
+      <span id="dailyDayDate" style="font-size:0.8rem; color:#2e7d32; font-weight:bold;"></span>
+    </div>
+    
+    <h3 id="dailyDayTitle" style="color:#1b5e20; margin: 8px 0 6px; font-size: 1.2rem;"></h3>
+    <p id="dailyDayWhy" style="color:#333; font-size:0.92rem; line-height:1.55; margin:0 0 8px;"></p>
+    
+    <div id="dailyDayThemeBox" style="display:none; font-size:0.85rem; color:#1b5e20; background:rgba(255,255,255,0.8); padding:8px 12px; border-radius:6px; border-left:4px solid #2e7d32; margin-top:8px;">
+      🎯 <b>ਥੀਮ / ਮੁੱਖ ਤੱਥ:</b> <span id="dailyDayTheme"></span>
+    </div>
+  </div>
+</section>
+
 
 <!-- Previous Year Papers (PYQ Section) -->
 <section id="pyqs" class="section section-alt">

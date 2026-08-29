@@ -26,12 +26,12 @@
   .pdf-wrapper {
     position: relative;
     width: 100%;
-    height: 88vh;
-    overflow: hidden;
-    background: #333;
+    height: 82vh;
+    overflow: auto;
+    background: #525659;
   }
   
-  /* 🛡️ 1. Pop-out Icon Blocker */
+  /* 🛡️ 1. Pop-out Blocker */
   .popout-blocker {
     position: absolute;
     top: 0;
@@ -43,7 +43,7 @@
     cursor: default;
   }
 
-  /* 🛡️ 2. Clean Light Watermark */
+  /* 🛡️ 2. Clean Watermark */
   .watermark-overlay {
     position: absolute;
     top: 0;
@@ -56,7 +56,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-around;
-    opacity: 0.08;
+    opacity: 0.12;
   }
 
   .watermark-item {
@@ -74,6 +74,7 @@
     border: none;
     display: block;
     background: #fff;
+    transition: transform 0.2s ease;
   }
 
   .error-box {
@@ -90,17 +91,15 @@
 </head>
 <body>
 
+<!-- ਉੱਪਰਲਾ ਮੇਨ ਹੈਡਰ -->
 <header>
-  <!-- ਉੱਪਰਲਾ ਮੇਨ ਹੈਡਰ -->
-<header>
-    
   <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
     <a class="logo" href="index.html" style="font-weight:700; color:#e8590c; text-decoration:none;">📘 AMAN STUDY POINT</a>
     <a href="index.html#books" class="btn btn-ghost btn-small" style="text-decoration:none;">← All Books</a>
   </div>
 </header>
 
-<!-- ਰੀਡਰ ਬਾਡੀ (ਇਸ ਵਿੱਚੋਂ ਪੁਰਾਣਾ ਲਿਖਿਆ ਡੈਮੋ ਹੈਡਰ ਹਟਾ ਦਿਓ) -->
+<!-- ਰੀਡਰ ਬਾਡੀ -->
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
   <div id="readerBody">
@@ -114,7 +113,7 @@
 <script src="app.js"></script>
 
 <script>
-  // Right Click, Save, Copy Block
+  // ਸੁਰੱਖਿਆ ਨਿਯਮ
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
@@ -123,11 +122,121 @@
     }
   });
 
+  // 🔍 Zoom Global Variables & Functions
+  var currentZoom = 1;
+
+  function zoomIn() {
+    if (currentZoom < 2.2) {
+      currentZoom += 0.15;
+      applyZoom();
+    }
+  }
+
+  function zoomOut() {
+    if (currentZoom > 0.7) {
+      currentZoom -= 0.15;
+      applyZoom();
+    }
+  }
+
+  function applyZoom() {
+    const frame = document.querySelector(".reader-frame");
+    const zoomVal = document.getElementById("zoomVal");
+    if (frame) {
+      frame.style.transform = `scale(${currentZoom})`;
+      frame.style.transformOrigin = "top center";
+    }
+    if (zoomVal) {
+      zoomVal.textContent = Math.round(currentZoom * 100) + "%";
+    }
+  }
+
+  // ⛶ Fullscreen Function
+  function toggleFullScreen() {
+    const elem = document.querySelector(".pdf-wrapper") || document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  }
+
+  // Google Drive Link Converter
+  function fixGoogleDriveUrl(url) {
+    if (!url) return "";
+    url = url.trim();
+    if (url.includes("drive.google.com")) {
+      const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      const match2 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const match3 = url.match(/id=([a-zA-Z0-9_-]+)/);
+      const fileId = (match1 && match1[1]) || (match2 && match2[1]) || (match3 && match3[1]);
+      if (fileId) {
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+      }
+    }
+    return url;
+  }
+
+  function renderBook(url, demoMode) {
+    currentZoom = 1;
+    const rHead = document.getElementById("readerHead");
+    const rBody = document.getElementById("readerBody");
+    const u = (typeof currentUser === 'function') ? currentUser() : null;
+
+    if (rHead) {
+      rHead.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee; flex-wrap:wrap; gap:8px;">
+          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button type="button" onclick="zoomOut()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom Out">🔍 -</button>
+            <span id="zoomVal" style="font-size:0.78rem; font-weight:700; min-width:36px; text-align:center;">100%</span>
+            <button type="button" onclick="zoomIn()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom In">🔍 +</button>
+            <button type="button" onclick="toggleFullScreen()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:0.8rem;">⛶ Fullscreen</button>
+            <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back</a>
+          </div>
+        </div>
+      `;
+    }
+
+    const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
+
+    if (rBody) {
+      rBody.innerHTML = `
+        <div class="pdf-wrapper">
+          <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
+          
+          <div class="watermark-overlay">
+            <div class="watermark-item">
+              AMAN STUDY POINT<br>
+              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
+            </div>
+            <div class="watermark-item">
+              AMAN STUDY POINT<br>
+              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
+            </div>
+          </div>
+
+          <iframe src="${url}" class="reader-frame" allow="autoplay"></iframe>
+        </div>
+      `;
+    }
+  }
+
+  // ਮੇਨ ਲੋਡਰ
   window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const bookId = params.get('id');
     const isDemo = params.get('demo') === 'true';
-    const rHead = document.getElementById("readerHead");
     const rBody = document.getElementById("readerBody");
     const u = typeof currentUser === 'function' ? currentUser() : null;
 
@@ -136,23 +245,6 @@
       return;
     }
 
-    // Google Drive Link Parser
-    function fixGoogleDriveUrl(url) {
-      if (!url) return "";
-      url = url.trim();
-      if (url.includes("drive.google.com")) {
-        const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        const match2 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        const match3 = url.match(/id=([a-zA-Z0-9_-]+)/);
-        const fileId = (match1 && match1[1]) || (match2 && match2[1]) || (match3 && match3[1]);
-        if (fileId) {
-          return `https://drive.google.com/file/d/${fileId}/preview`;
-        }
-      }
-      return url;
-    }
-
-    // Firebase ਤੋਂ ਕਿਤਾਬ ਡਾਟਾ ਲਿਆਓ
     db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
       const cfg = snap.val() || {};
       const fullUrl = cfg.pdf || "";
@@ -201,7 +293,6 @@
           return;
         }
 
-        // ਲਿੰਕ ਚੈੱਕ ਕਰੋ (ਜੇ fullUrl ਨਾ ਮਿਲੇ ਤਾਂ demoUrl 'ਤੇ ਚਲਾਓ)
         const finalPdfUrl = fullUrl || demoUrl;
         if (!finalPdfUrl) {
           rBody.innerHTML = `
@@ -217,95 +308,7 @@
         renderBook(fixGoogleDriveUrl(finalPdfUrl), false);
       });
     });
-
-    function renderBook(url, demoMode) {
-  currentZoom = 1;
-  rHead.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee; flex-wrap:wrap; gap:8px;">
-      <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
-      <div style="display:flex; gap:6px; align-items:center;">
-        <button onclick="zoomOut()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom Out">🔍 -</button>
-        <span id="zoomVal" style="font-size:0.78rem; font-weight:700; min-width:36px; text-align:center;">100%</span>
-        <button onclick="zoomIn()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom In">🔍 +</button>
-        <button onclick="toggleFullScreen()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:0.8rem;">⛶ Fullscreen</button>
-        <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back</a>
-      </div>
-    </div>
-  `;
-
-  const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
-
-  rBody.innerHTML = `
-    <div class="pdf-wrapper" style="overflow:auto; width:100%; height:82vh; background:#525659;">
-      <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
-      
-      <div class="watermark-overlay">
-        <div class="watermark-item">
-          AMAN STUDY POINT<br>
-          <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
-        </div>
-        <div class="watermark-item">
-          AMAN STUDY POINT<br>
-          <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
-        </div>
-      </div>
-
-      <iframe src="${url}" class="reader-frame" allow="autoplay" style="width:100%; height:100%; border:none; transition:transform 0.2s ease;"></iframe>
-    </div>
-  `;
-}
   });
-  
-  function toggleFullScreen() {
-  const elem = document.querySelector(".pdf-wrapper") || document.documentElement;
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    }
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
-  }
-}
-
-} // 👈 ਇਹ ਲਾਈਨ 276 ਵਾਲੀ ਬਰੈਕਟ ਹੈ
-
-// 👉 ਇੱਥੇ ਪੇਸਟ ਕਰੋ:
-let currentZoom = 1;
-
-function zoomIn() {
-  if (currentZoom < 2.2) {
-    currentZoom += 0.15;
-    applyZoom();
-  }
-}
-
-function zoomOut() {
-  if (currentZoom > 0.7) {
-    currentZoom -= 0.15;
-    applyZoom();
-  }
-}
-
-function applyZoom() {
-  const frame = document.querySelector(".reader-frame");
-  const zoomVal = document.getElementById("zoomVal");
-  if (frame) {
-    frame.style.transform = `scale(${currentZoom})`;
-    frame.style.transformOrigin = "top center";
-  }
-  if (zoomVal) {
-    zoomVal.textContent = Math.round(currentZoom * 100) + "%";
-  }
-}
-
 </script>
 </body>
 </html>

@@ -6,24 +6,50 @@
 <meta name="theme-color" content="#e8590c">
 <title>Reader — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  .pdf-wrapper {
+    position: relative;
+    width: 100%;
+    height: 88vh;
+    overflow: hidden;
+    background: #f8f9fa;
+  }
+  
+  /* 🛡️ ਸੱਜੇ ਪਾਸੇ ਵਾਲੇ Pop-out ਆਈਕਨ ਨੂੰ ਬਲਾਕ ਕਰਨ ਵਾਲੀ ਸ਼ੀਲਡ */
+  .popout-blocker {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 75px;
+    height: 55px;
+    background: transparent;
+    z-index: 999;
+    cursor: default;
+  }
+
+  .reader-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+</style>
 </head>
 <body>
 
 <header>
-  <div class="container header-inner">
-    <a class="logo" href="index.html">📘 AMAN STUDY POINT</a>
-    <nav id="navLinks">
-      <a href="index.html#books">← All Books</a>
-    </nav>
+  <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px;">
+    <a class="logo" href="index.html" style="font-weight:700; color:#e8590c; text-decoration:none;">📘 AMAN STUDY POINT</a>
+    <a href="index.html#books" class="btn btn-ghost btn-small">← All Books</a>
   </div>
 </header>
 
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
-  <div id="readerBody"></div>
+  <div id="readerBody">
+    <p style="text-align:center; padding:40px; color:#666;">⏳ ਕਿਤਾਬ ਲੋਡ ਹੋ ਰਹੀ ਹੈ...</p>
+  </div>
 </div>
-
-<div id="toast"></div>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -31,14 +57,84 @@
 <script src="app.js"></script>
 
 <script>
-  // Right Click Disable
+  // Right Click & Copy Disable
   document.addEventListener('contextmenu', e => e.preventDefault());
-
-  // Download / Print Shortcut Disable
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
       e.preventDefault();
-      alert("⚠️ Content is protected. Downloading and printing is disabled.");
+      alert("⚠️ Content is protected.");
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('id');
+    const isDemo = params.get('demo') === 'true';
+    const rHead = document.getElementById("readerHead");
+    const rBody = document.getElementById("readerBody");
+    const u = typeof currentUser === 'function' ? currentUser() : null;
+
+    if (!bookId) {
+      rBody.innerHTML = "<p style='text-align:center;padding:30px;'>ਕੋਈ ਕਿਤਾਬ ਨਹੀਂ ਮਿਲੀ।</p>";
+      return;
+    }
+
+    function fixGoogleDriveUrl(url) {
+      if (!url) return "";
+      if (url.includes("drive.google.com")) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          return `https://drive.google.com/file/d/${match[1]}/preview`;
+        }
+      }
+      return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    }
+
+    db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
+      const cfg = snap.val() || {};
+      const rawUrl = isDemo ? (cfg.demoPdf || cfg.pdf) : cfg.pdf;
+      const embedUrl = fixGoogleDriveUrl(rawUrl);
+
+      if (!isDemo) {
+        if (!u) {
+          alert("ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ!");
+          window.location.href = "login.html";
+          return;
+        }
+
+        db.ref("users/" + u.phone + "/books/" + bookId).once("value", uSnap => {
+          if (!uSnap.val()) {
+            alert("⚠️ ਤੁਸੀਂ ਇਹ ਕਿਤਾਬ ਅਜੇ ਨਹੀਂ ਖਰੀਦੀ।");
+            window.location.href = "index.html#books";
+            return;
+          }
+          renderBook(embedUrl, false);
+        });
+      } else {
+        renderBook(embedUrl, true);
+      }
+    });
+
+    function renderBook(url, demoMode) {
+      if (!url) {
+        rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ PDF ਜਲਦੀ ਹੀ ਅੱਪਲੋਡ ਕੀਤੀ ਜਾਵੇਗੀ।</h3></div>`;
+        return;
+      }
+
+      rHead.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
+          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book'}</b>
+          <a href="index.html#books" class="btn btn-small btn-ghost">✕ Close</a>
+        </div>
+      `;
+
+      // Wrapper ਦੇ ਅੰਦਰ ਲਾਕ ਸ਼ੀਲਡ (Protective Shield)
+      rBody.innerHTML = `
+        <div class="pdf-wrapper">
+          <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
+          <iframe src="${url}" class="reader-frame" allow="autoplay"></iframe>
+        </div>
+      `;
     }
   });
 </script>

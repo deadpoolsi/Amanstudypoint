@@ -157,13 +157,13 @@
 
   <!-- Switcher Tabs -->
   <div class="tabs" id="authTabs">
-    <button class="tab active" id="tabLogin" type="button">Login</button>
-    <button class="tab" id="tabReg" type="button">New Account</button>
+    <button class="tab active" id="tabLogin" type="button" onclick="switchTab('login')">Login</button>
+    <button class="tab" id="tabReg" type="button" onclick="switchTab('reg')">New Account</button>
   </div>
 
   <div id="loginError" class="error-msg"></div>
 
-  <!-- Google Login Button (ਦੋਵਾਂ ਟੈਬਾਂ ਲਈ ਹਮੇਸ਼ਾ ਦਿਖੇਗਾ) -->
+  <!-- Google Login Button -->
   <button type="button" class="btn-ghost" onclick="loginWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px solid #ced4da; padding: 10px; font-weight: 600; margin-bottom: 12px; background: #fff;">
     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px; height: 18px;"> Continue with Google
   </button>
@@ -173,10 +173,10 @@
   </div>
 
   <!-- 1. Login Form -->
-  <form id="formLogin">
+  <form id="formLogin" onsubmit="event.preventDefault(); handleLogin();">
     <div class="field">
       <label>📱 Mobile Number</label>
-      <input type="tel" id="loginPhone" placeholder="10-digit mobile number" maxlength="10" required>
+      <input type="tel" id="loginPhone" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
     </div>
     <div class="field">
       <label>🔒 Password</label>
@@ -186,37 +186,19 @@
     <button type="submit" class="btn-submit">➔ Login</button>
   </form>
 
-  <!-- 2. Register Form -->
-  <form id="formReg" style="display:none;">
+  <!-- 2. Register Form (100% Validated) -->
+  <form id="formReg" style="display:none;" onsubmit="event.preventDefault(); handleRegister();">
     <div class="field">
-      <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ)</label>
-      <input type="text" id="regName" placeholder="Enter your full name" required>
+      <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਪੂਰਾ ਨਾਮ)</label>
+      <input type="text" id="regName" placeholder="Enter your full name" minlength="3" required>
     </div>
     <div class="field">
-      <label>📱 Mobile Number</label>
-      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10" required>
+      <label>📱 Mobile Number (ਸਿਰਫ਼ 10 ਅੰਕਾਂ ਦਾ ਨੰਬਰ)</label>
+      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
     </div>
     <div class="field">
-      <label>🔒 Set Password</label>
-      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" required>
-    </div>
-    <button type="submit" class="btn-submit">🎉 Create Account</button>
-  </form>
-
-
-  <!-- 2. Register Form -->
-  <form id="formReg" style="display:none;">
-    <div class="field">
-      <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ)</label>
-      <input type="text" id="regName" placeholder="Enter your full name" required>
-    </div>
-    <div class="field">
-      <label>📱 Mobile Number</label>
-      <input type="tel" id="regPhone" placeholder="10-digit mobile number" maxlength="10" required>
-    </div>
-    <div class="field">
-      <label>🔒 Set Password</label>
-      <input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" required>
+      <label>🔒 Set Password (ਪਾਸਵਰਡ ਬਣਾਓ)</label>
+      <input type="password" id="regPass" placeholder="Choose password (min 4 chars)" minlength="4" required>
     </div>
     <button type="submit" class="btn-submit">🎉 Create Account</button>
   </form>
@@ -224,11 +206,11 @@
   <!-- 3. Forgot Password Form -->
   <div id="formForgot" style="display:none;">
     <p style="color:#555; font-size:0.88rem; margin-bottom:14px; line-height:1.4;">
-      ਆਪਣਾ ਰਜਿਸਟਰਡ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ, ਤੁਹਾਡਾ ਪਾਸਵਰਡ ਵਟਸਐਪ 'ਤੇ ਭੇਜ ਦਿੱਤਾ ਜਾਵੇਗਾ:
+      ਆਪਣਾ ਰਜਿਸਟਰਡ 10 ਅੰਕਾਂ ਦਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ, ਤੁਹਾਡਾ ਪਾਸਵਰਡ ਵਟਸਐਪ 'ਤੇ ਭੇਜ ਦਿੱਤਾ ਜਾਵੇਗਾ:
     </p>
     <div class="field">
       <label>📱 Registered Mobile Number</label>
-      <input type="tel" id="forgotPhone" placeholder="10-digit registered number" maxlength="10">
+      <input type="tel" id="forgotPhone" placeholder="10-digit registered number" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
     </div>
     <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
       <button class="btn-submit" type="button" onclick="sendForgotWhatsApp()">📲 Get Password on WhatsApp</button>
@@ -246,21 +228,134 @@
 <script src="app.js"></script>
 
 <script>
+// --- 🔄 SWITCH TABS (Login / Register) ---
+function switchTab(type) {
+  hideError();
+  document.getElementById("formForgot").style.display = "none";
+  if (type === 'login') {
+    document.getElementById("tabLogin").classList.add("active");
+    document.getElementById("tabReg").classList.remove("active");
+    document.getElementById("formLogin").style.display = "block";
+    document.getElementById("formReg").style.display = "none";
+    document.getElementById("formSubtitle").textContent = "Log in to your account";
+  } else {
+    document.getElementById("tabReg").classList.add("active");
+    document.getElementById("tabLogin").classList.remove("active");
+    document.getElementById("formReg").style.display = "block";
+    document.getElementById("formLogin").style.display = "none";
+    document.getElementById("formSubtitle").textContent = "Create a new student account";
+  }
+}
+
+function showError(msg) {
+  const err = document.getElementById("loginError");
+  err.textContent = msg;
+  err.style.display = "block";
+}
+
+function hideError() {
+  document.getElementById("loginError").style.display = "none";
+}
+
+// --- 📝 100% SAFE REGISTRATION (NO FAKE IDs) ---
+function handleRegister() {
+  hideError();
+  const name = document.getElementById("regName").value.trim();
+  const phone = document.getElementById("regPhone").value.trim();
+  const pass = document.getElementById("regPass").value.trim();
+
+  // 1. ਨਾਮ ਚੈੱਕ
+  if (name.length < 3) {
+    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਨਾਮ ਭਰੋ (ਘੱਟੋ-ਘੱਟ 3 ਅੱਖਰ)।");
+    return;
+  }
+
+  // 2. ਸਿਰਫ਼ 10 ਅੰਕਾਂ ਦਾ ਅਸਲੀ ਮੋਬਾਈਲ ਨੰਬਰ (6, 7, 8 ਜਾਂ 9 ਤੋਂ ਸ਼ੁਰੂ)
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ (ਜਿਵੇਂ: 9876543210)।");
+    return;
+  }
+
+  // 3. ਪਾਸਵਰਡ ਚੈੱਕ
+  if (!pass || pass.length < 4) {
+    showError("⚠️ ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 4 ਅੱਖਰਾਂ ਜਾਂ ਅੰਕਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
+    return;
+  }
+
+  // Firebase ਵਿੱਚ ਚੈੱਕ ਕਰੋ
+  db.ref("accounts/" + phone).once("value", snap => {
+    if (snap.exists()) {
+      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਰਜਿਸਟਰ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ Login ਕਰੋ!");
+      return;
+    }
+
+    const userData = {
+      name: name,
+      phone: phone,
+      password: pass,
+      createdAt: new Date().toLocaleString(),
+      authType: "phone"
+    };
+
+    // accounts ਅਤੇ users ਦੋਵਾਂ ਨੋਡਾਂ 'ਤੇ ਸਹੀ ਡਾਟਾ ਸੇਵ ਕਰੋ
+    db.ref("accounts/" + phone).set(userData);
+    db.ref("users/" + phone).update({ name: name, phone: phone, password: pass });
+
+    localStorage.setItem("pp_session", phone);
+    localStorage.setItem("pp_name", name);
+    alert("🎉 ਖਾਤਾ ਸਫਲਤਾਪੂਰਵਕ ਬਣ ਗਿਆ ਹੈ!");
+    window.location.href = "index.html";
+  });
+}
+
+// --- 🔐 LOGIN FUNCTION ---
+function handleLogin() {
+  hideError();
+  const phone = document.getElementById("loginPhone").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+
+  if (phone.length !== 10) {
+    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ 10 ਅੰਕਾਂ ਦਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
+    return;
+  }
+
+  db.ref("accounts/" + phone).once("value", snap => {
+    const acc = snap.val();
+    if (!acc) {
+      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ। ਪਹਿਲਾਂ 'New Account' ਬਣਾਓ!");
+      return;
+    }
+
+    if (acc.password !== pass) {
+      showError("⚠️ ਪਾਸਵਰਡ ਗ਼ਲਤ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+      return;
+    }
+
+    localStorage.setItem("pp_session", phone);
+    localStorage.setItem("pp_name", acc.name || "Student");
+    alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+    window.location.href = "index.html";
+  });
+}
+
+// --- 🌐 GOOGLE LOGIN ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
     .then((result) => {
       const user = result.user;
       const name = user.displayName || "Student";
-      const identifier = user.phoneNumber || user.email.split('@')[0];
+      const identifier = user.phoneNumber || user.email.replace(/[^a-zA-Z0-9]/g, "_");
 
-      // Save to Firebase Database
       db.ref("accounts/" + identifier).update({
         name: name,
         phone: identifier,
         email: user.email,
-        authType: "google"
+        authType: "google",
+        password: "GOOGLE_AUTH"
       }).then(() => {
+        db.ref("users/" + identifier).update({ name: name, phone: identifier });
         localStorage.setItem("pp_session", identifier);
         localStorage.setItem("pp_name", name);
         alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
@@ -270,6 +365,39 @@ function loginWithGoogle() {
     .catch((error) => {
       alert("Google Login Error: " + error.message);
     });
+}
+
+// --- 📲 FORGOT PASSWORD ---
+function showForgotForm() {
+  document.getElementById("formLogin").style.display = "none";
+  document.getElementById("formReg").style.display = "none";
+  document.getElementById("formForgot").style.display = "block";
+  document.getElementById("authTabs").style.display = "none";
+}
+
+function cancelForgot() {
+  document.getElementById("authTabs").style.display = "flex";
+  switchTab('login');
+}
+
+function sendForgotWhatsApp() {
+  const phone = document.getElementById("forgotPhone").value.trim();
+  if (phone.length !== 10) {
+    alert("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ 10 ਅੰਕਾਂ ਦਾ ਰਜਿਸਟਰਡ ਨੰਬਰ ਭਰੋ।");
+    return;
+  }
+
+  db.ref("accounts/" + phone).once("value", snap => {
+    const acc = snap.val();
+    if (!acc) {
+      alert("⚠️ ਇਹ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
+      return;
+    }
+
+    const pass = acc.password || "No password set";
+    const msg = encodeURIComponent(`Hello Sir,\nI forgot my password for Aman Study Point.\nName: ${acc.name}\nRegistered Phone: ${phone}\nPlease send my password.`);
+    window.open(`https://api.whatsapp.com/send?phone=919041321843&text=${msg}`, "_blank");
+  });
 }
 </script>
 </body>

@@ -448,31 +448,75 @@ function loadUserAnalytics() {
   });
 }
 
-/* 8. Quiz Engine & Digital Certificate */
-let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false;
+/* 8. Quiz Engine (Instruction Notice, Timer, Auto-Resume & Leaderboard) */
+let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false, quizTotalMins = 20;
+
+function getProgressKey() {
+  const u = currentUser();
+  return u ? `asp_quiz_progress_${u.phone}_${quizVersion}` : null;
+}
+
+function saveQuizState() {
+  const key = getProgressKey();
+  if (!key || isNaN(qIdx)) return;
+  const state = {
+    qIdx: qIdx,
+    qScore: qScore,
+    userAns: userAns,
+    qSecs: qSecs,
+    isTimerStarted: isTimerStarted,
+    quizVersion: quizVersion
+  };
+  localStorage.setItem(key, JSON.stringify(state));
+}
+
+function clearQuizState() {
+  const key = getProgressKey();
+  if (key) localStorage.removeItem(key);
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (isTimerStarted && qIdx < activeQuiz.length) {
+    saveQuizState();
+    e.preventDefault();
+    e.returnValue = "ਤੁਹਾਡਾ ਟੈਸਟ ਚੱਲ ਰਿਹਾ ਹੈ!";
+  }
+});
 
 function initQuiz() {
+  // 🏆 ਟੌਪਰ ਲਿਸਟ ਤੁਰੰਤ ਲੋਡ ਕਰੋ
+  if (typeof loadBoard === 'function') loadBoard();
+
   const box = document.getElementById("quizBox");
   if (!box) return;
   const u = currentUser();
   if (!u) {
-    box.innerHTML = `<div style="text-align:center;padding:25px 15px;"><div style="font-size:3rem;margin-bottom:10px;">🔐</div><h3>Login Required for Daily Test</h3><p style="color:#666;margin:8px 0 16px;">ਟੈਸਟ ਦੇਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ।</p><a class="btn btn-primary" href="login.html">🔐 Login / Register</a></div>`;
+    box.innerHTML = `<div style="text-align:center;padding:25px 15px;"><div style="font-size:3rem;margin-bottom:10px;">🔐</div><h3>Login Required for Daily Test</h3><p style="color:#666;margin:8px 0 16px;">ਟੈਸਟ ਦੇਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ।</p><a class="btn btn-primary" href="login.html" style="background:#e8590c; color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none;">🔐 Login / Register</a></div>`;
     return;
   }
-  db.ref("quizTimerMinutes").once("value", s => { qSecs = (s.val() || 20) * 60; });
+
+  db.ref("quizTimerMinutes").once("value", s => { 
+    quizTotalMins = s.val() || 20;
+    if (!localStorage.getItem(getProgressKey())) {
+      qSecs = quizTotalMins * 60; 
+    }
+  });
+
   db.ref("quizVersion").on("value", vSnap => {
     quizVersion = vSnap.val() || "v1";
+
     db.ref("userAttempts/" + u.phone + "/" + quizVersion).once("value", aSnap => {
       if (aSnap.exists()) {
+        clearQuizState();
         const prev = aSnap.val(), pct = Math.round((prev.score / prev.total) * 100);
         box.innerHTML = `
-          <div class="quiz-score-card">
+          <div class="quiz-score-card" style="text-align:center; padding:25px;">
             <div style="font-size:3rem;">✅</div>
             <h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਦੇ ਚੁੱਕੇ ਹੋ!</h3>
-            <p style="color:#666;">Student: <b>${u.name}</b></p>
-            <div class="quiz-score-num">${prev.score} / ${prev.total}</div>
+            <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b></p>
+            <div class="quiz-score-num" style="font-size:2rem; font-weight:800; color:#e8590c; margin:10px 0;">${prev.score} / ${prev.total}</div>
             <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
-            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 10px;">
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer;">
               🎖️ Download Official Certificate
             </button>
           </div>
@@ -480,24 +524,88 @@ function initQuiz() {
       } else {
         db.ref("dailyQuiz").once("value", qSnap => {
           activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
-          qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false; clearInterval(qTimer); renderQ();
+          
+          const savedStateStr = localStorage.getItem(getProgressKey());
+          if (savedStateStr) {
+            try {
+              const saved = JSON.parse(savedStateStr);
+              if (saved.quizVersion === quizVersion && saved.qIdx < activeQuiz.length) {
+                qIdx = saved.qIdx || 0;
+                qScore = saved.qScore || 0;
+                userAns = saved.userAns || [];
+                qSecs = saved.qSecs || qSecs;
+                isTimerStarted = saved.isTimerStarted || false;
+              }
+            } catch(e) {}
+          }
+
+          if (isTimerStarted) {
+            startTimer();
+            renderQ();
+          } else {
+            showQuizStartScreen();
+          }
         });
       }
     });
   });
-  loadBoard();
+}
+
+function showQuizStartScreen() {
+  const box = document.getElementById("quizBox");
+  if (!box) return;
+  const u = currentUser();
+
+  box.innerHTML = `
+    <div style="padding:20px 15px; text-align:center;">
+      <div style="font-size:2.8rem; margin-bottom:8px;">📝</div>
+      <h3 style="color:#e8590c; margin-bottom:6px;">Daily Punjab Exam Mock Test</h3>
+      <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">ਵਿਦਿਆਰਥੀ: <b>${u.name}</b></p>
+      
+      <div style="background:#fff4e6; border:1.5px dashed #ffa94d; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
+        <h4 style="color:#d9480f; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          ⚠️ ਜ਼ਰੂਰੀ ਹਦਾਇਤ (Rules):
+        </h4>
+        <ul style="font-size:0.88rem; color:#444; line-height:1.5; padding-left:18px; margin:0;">
+          <li>ਕੁੱਲ ਸਵਾਲ: <b>${activeQuiz.length}</b> | ਸਮਾਂ: <b>${quizTotalMins} ਮਿੰਟ</b></li>
+          <li style="color:#c92a2a; font-weight:700; margin-top:6px;">
+            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਜਾਂ ਬੰਦ ਕਰ ਦਿੰਦੇ ਹੋ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਦਿੱਤੇ ਸਮੇਂ ਤੱਕ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਹੱਲ ਕੀਤੇ ਹੋਣਗੇ, ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ।
+          </li>
+          <li style="margin-top:4px;">ਟੈਸਟ ਪੂਰਾ ਹੋਣ ਤੋਂ ਬਾਅਦ ਤੁਰੰਤ ਸਰਟੀਫਿਕੇਟ ਡਾਊਨਲੋਡ ਕਰ ਸਕੋਗੇ।</li>
+        </ul>
+      </div>
+
+      <button class="btn btn-primary" onclick="startQuizNow()" style="background:#e8590c; color:#fff; font-size:1.05rem; font-weight:bold; padding:12px 30px; border-radius:8px; border:none; cursor:pointer; width:100%; max-width:280px; box-shadow:0 4px 12px rgba(232,89,12,0.25);">
+        🚀 Start Test Now
+      </button>
+    </div>
+  `;
+}
+
+function startQuizNow() {
+  isTimerStarted = true;
+  qIdx = 0;
+  qScore = 0;
+  userAns = [];
+  startTimer();
+  renderQ();
 }
 
 function startTimer() {
   clearInterval(qTimer);
   qTimer = setInterval(() => {
     qSecs--;
+    saveQuizState();
     const d = document.getElementById("quizTimerDisplay");
     if (d) {
       const m = Math.floor(qSecs / 60), s = qSecs % 60;
       d.textContent = `⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
-    if (qSecs <= 0) { clearInterval(qTimer); alert("Time Up!"); finishTest(); }
+    if (qSecs <= 0) { 
+      clearInterval(qTimer); 
+      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
+      finishTest(); 
+    }
   }, 1000);
 }
 
@@ -505,46 +613,109 @@ function renderQ() {
   const box = document.getElementById("quizBox");
   if (!box) return;
   if (qIdx >= activeQuiz.length) { finishTest(); return; }
+  
   qAnswered = false;
-  const cur = activeQuiz[qIdx], m = Math.floor(qSecs / 60), s = qSecs % 60;
-  box.innerHTML = `<div class="quiz-header"><span>Question ${qIdx + 1} of ${activeQuiz.length}</span><span class="quiz-timer-badge" id="quizTimerDisplay">⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</span></div><div class="quiz-q">${cur.q}</div><div class="quiz-opts" id="quizOpts">${cur.options.map((opt, i) => `<button class="quiz-opt-btn" onclick="checkAns(${i})">${String.fromCharCode(65 + i)}) ${opt}</button>`).join("")}</div><div class="quiz-footer" id="quizFooter" style="display:none;"><span id="quizFeedback" style="font-weight:600;"></span><button class="btn btn-primary btn-small" onclick="qIdx++;renderQ();">Next ➔</button></div>`;
+  const cur = activeQuiz[qIdx];
+  const m = Math.floor(qSecs / 60), s = qSecs % 60;
+  
+  box.innerHTML = `
+    <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="font-weight:700;">Question ${qIdx + 1} of ${activeQuiz.length}</span>
+      <span class="quiz-timer-badge" id="quizTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:12px; font-weight:bold;">⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</span>
+    </div>
+    <div class="quiz-q" style="font-size:1.1rem; font-weight:700; margin-bottom:16px;">${cur.q}</div>
+    <div class="quiz-opts" id="quizOpts" style="display:flex; flex-direction:column; gap:10px;">
+      ${cur.options.map((opt, i) => `
+        <button class="quiz-opt-btn" onclick="checkAns(${i})" style="text-align:left; padding:12px; border:1.5px solid #dee2e6; border-radius:8px; background:#fff; font-size:0.95rem; cursor:pointer;">
+          <b>${String.fromCharCode(65 + i)})</b> ${opt}
+        </button>
+      `).join("")}
+    </div>
+  `;
 }
 
-function checkAns(sel) {
+function checkAns(selectedIdx) {
   if (qAnswered) return;
   qAnswered = true;
-  if (!isTimerStarted) { isTimerStarted = true; startTimer(); }
-  const cur = activeQuiz[qIdx], btns = document.querySelectorAll("#quizOpts .quiz-opt-btn"), foot = document.getElementById("quizFooter"), feed = document.getElementById("quizFeedback");
-  btns.forEach(b => b.disabled = true);
-  userAns.push({ q: cur.q, opts: cur.options, sel, cor: cur.answer });
-  if (sel === cur.answer) { btns[sel].classList.add("correct"); feed.textContent = "✅ ਬਿਲਕੁਲ ਸਹੀ!"; feed.style.color = "#2b8a3e"; qScore++; }
-  else { btns[sel].classList.add("wrong"); if (btns[cur.answer]) btns[cur.answer].classList.add("correct"); feed.textContent = "❌ ਗ਼ਲਤ ਜਵਾਬ!"; feed.style.color = "#c92a2a"; }
-  foot.style.display = "flex";
+
+  const cur = activeQuiz[qIdx];
+  const isCorrect = (selectedIdx === cur.answer);
+  
+  if (isCorrect) qScore++;
+  userAns.push({ q: cur.q, selected: selectedIdx, correct: cur.answer });
+
+  const btns = document.querySelectorAll(".quiz-opt-btn");
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === cur.answer) {
+      b.style.background = "#d3f9d8";
+      b.style.borderColor = "#2b8a3e";
+      b.style.color = "#2b8a3e";
+      b.style.fontWeight = "bold";
+    } else if (i === selectedIdx) {
+      b.style.background = "#ffe3e3";
+      b.style.borderColor = "#c92a2a";
+      b.style.color = "#c92a2a";
+    }
+  });
+
+  qIdx++;
+  saveQuizState();
+
+  setTimeout(() => {
+    if (qIdx < activeQuiz.length) {
+      renderQ();
+    } else {
+      finishTest();
+    }
+  }, 1000);
 }
 
 function finishTest() {
   clearInterval(qTimer);
+  qTimer = null;
   isTimerStarted = false;
-  const box = document.getElementById("quizBox"), u = currentUser();
-  db.ref("quizResults").push({ name: u.name, phone: u.phone, score: qScore, total: activeQuiz.length, version: quizVersion, time: new Date().toLocaleString() });
-  db.ref("userAttempts/" + u.phone + "/" + quizVersion).set({ score: qScore, total: activeQuiz.length, time: new Date().toLocaleString() });
+  clearQuizState();
 
-  box.innerHTML = `
-    <div class="quiz-score-card">
-      <div style="font-size:3rem;">🏆</div>
-      <h3>Test Completed!</h3>
-      <p style="color:#666;">Student: <b>${u.name}</b></p>
-      <div class="quiz-score-num">${qScore} / ${activeQuiz.length}</div>
-      <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:15px auto;">
-        <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${qScore}, ${activeQuiz.length})" style="background:#1971c2; color:#fff;">
-          🎖️ Download Score Certificate
+  const u = currentUser();
+  const total = activeQuiz.length;
+  const box = document.getElementById("quizBox");
+
+  if (u) {
+    db.ref("userAttempts/" + u.phone + "/" + quizVersion).set({
+      score: qScore,
+      total: total,
+      time: new Date().toLocaleString()
+    });
+
+    // 🏆 Top Rankers ਲਈ quizResults ਵਿੱਚ ਸੇਵ ਕਰੋ
+    db.ref("quizResults").push({
+      name: u.name,
+      phone: u.phone,
+      score: qScore,
+      total: total,
+      version: quizVersion,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+  }
+
+  if (typeof loadBoard === 'function') loadBoard();
+
+  const pct = Math.round((qScore / total) * 100);
+  if (box) {
+    box.innerHTML = `
+      <div class="quiz-score-card" style="text-align:center; padding:25px;">
+        <div style="font-size:3rem;">🎉</div>
+        <h3>Test Completed!</h3>
+        <p style="color:#666; margin:6px 0;">Student: <b>${u ? u.name : 'Student'}</b></p>
+        <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${qScore} / ${total}</div>
+        <p style="color:#2b8a3e; font-weight:700; margin-bottom:16px;">Marks: ${pct}%</p>
+        <button class="btn btn-primary" onclick="generateCertificate('${u ? u.name : 'Student'}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">
+          🎖️ Download Official Certificate
         </button>
-        <button class="btn btn-ghost btn-block" onclick="showReview()">🔍 View Detailed Solution</button>
       </div>
-      <div id="revBox" style="display:none;margin-top:15px;"></div>
-    </div>
-  `;
-  loadBoard();
+    `;
+  }
 }
 
 function generateCertificate(name, score, total) {

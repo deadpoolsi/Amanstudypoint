@@ -77,21 +77,6 @@ function toggleDarkMode() {
   if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
 }
 
-/* 2. PWA Install */
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const btn = document.getElementById("installAppBtn");
-  if (btn) btn.style.display = "inline-block";
-});
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-  }
-}
 
 /* 3. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
@@ -789,4 +774,75 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+});
+
+// --- 📅 TODAY'S SPECIAL DAY LISTENER (Zero-Delay) ---
+function renderDailyDay(data) {
+  const sec = document.getElementById("dailyDaySection");
+  if (!sec) return;
+
+  if (data && data.active && data.title) {
+    document.getElementById("dailyDayTitle").innerText = "📌 " + data.title;
+    document.getElementById("dailyDayWhy").innerText = data.why || "";
+    
+    const themeBox = document.getElementById("dailyDayThemeBox");
+    if (data.theme && data.theme.trim() !== "") {
+      document.getElementById("dailyDayTheme").innerText = data.theme;
+      themeBox.style.display = "block";
+    } else {
+      themeBox.style.display = "none";
+    }
+
+    const dEl = document.getElementById("dailyDayDate");
+    if (dEl) dEl.innerText = data.updatedAt || "";
+
+    sec.style.display = "block";
+  } else {
+    sec.style.display = "none";
+  }
+}
+
+// 1. ਮੈਮਰੀ ਵਿੱਚੋਂ ਤੁਰੰਤ ਲੋਡ ਕਰੋ
+const cachedDay = localStorage.getItem("asp_cached_daily_day");
+if (cachedDay) {
+  try { renderDailyDay(JSON.parse(cachedDay)); } catch(e) {}
+}
+
+// 2. Firebase ਤੋਂ ਲਾਈਵ ਸਿੰਕ
+if (typeof db !== 'undefined') {
+  db.ref("siteSettings/todayDay").on("value", snap => {
+    const data = snap.val();
+    if (data) {
+      localStorage.setItem("asp_cached_daily_day", JSON.stringify(data));
+      renderDailyDay(data);
+    } else {
+      renderDailyDay(null);
+    }
+  });
+}
+
+// --- 📲 DIRECT 1-CLICK PWA INSTALL ---
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPrompt = e;
+  const btn = document.getElementById('installAppBtn');
+  if (btn) btn.style.display = 'inline-flex';
+});
+
+function installPWA() {
+  if (window.deferredPrompt) {
+    window.deferredPrompt.prompt();
+    window.deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        if (typeof toast === 'function') toast("🎉 ਐਪ ਇੰਸਟਾਲ ਹੋ ਰਹੀ ਹੈ!");
+      }
+      window.deferredPrompt = null;
+    });
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  window.deferredPrompt = null;
+  const btn = document.getElementById('installAppBtn');
+  if (btn) btn.style.display = 'none'; // ਇੰਸਟਾਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਬਟਨ ਆਪਣੇ ਆਪ ਹਟ ਜਾਵੇਗਾ
 });

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <meta name="theme-color" content="#e8590c">
 <title>Reader — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
@@ -93,6 +93,7 @@
 <header>
   <!-- ਉੱਪਰਲਾ ਮੇਨ ਹੈਡਰ -->
 <header>
+    
   <div class="container header-inner" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
     <a class="logo" href="index.html" style="font-weight:700; color:#e8590c; text-decoration:none;">📘 AMAN STUDY POINT</a>
     <a href="index.html#books" class="btn btn-ghost btn-small" style="text-decoration:none;">← All Books</a>
@@ -218,38 +219,41 @@
     });
 
     function renderBook(url, demoMode) {
+  currentZoom = 1;
   rHead.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee; flex-wrap:wrap; gap:8px;">
       <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button onclick="zoomOut()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom Out">🔍 -</button>
+        <span id="zoomVal" style="font-size:0.78rem; font-weight:700; min-width:36px; text-align:center;">100%</span>
+        <button onclick="zoomIn()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom In">🔍 +</button>
         <button onclick="toggleFullScreen()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:0.8rem;">⛶ Fullscreen</button>
-        <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back to Books</a>
+        <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back</a>
       </div>
     </div>
   `;
-         
 
-      const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
+  const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
 
-      rBody.innerHTML = `
-        <div class="pdf-wrapper">
-          <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
-          
-          <div class="watermark-overlay">
-            <div class="watermark-item">
-              AMAN STUDY POINT<br>
-              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
-            </div>
-            <div class="watermark-item">
-              AMAN STUDY POINT<br>
-              <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
-            </div>
-          </div>
-
-          <iframe src="${url}" class="reader-frame" allow="autoplay"></iframe>
+  rBody.innerHTML = `
+    <div class="pdf-wrapper" style="overflow:auto; width:100%; height:82vh; background:#525659;">
+      <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
+      
+      <div class="watermark-overlay">
+        <div class="watermark-item">
+          AMAN STUDY POINT<br>
+          <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
         </div>
-      `;
-    }
+        <div class="watermark-item">
+          AMAN STUDY POINT<br>
+          <span style="font-size:1rem; font-weight:700;">${studentTag}</span>
+        </div>
+      </div>
+
+      <iframe src="${url}" class="reader-frame" allow="autoplay" style="width:100%; height:100%; border:none; transition:transform 0.2s ease;"></iframe>
+    </div>
+  `;
+}
   });
   
   function toggleFullScreen() {
@@ -268,6 +272,37 @@
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     }
+  }
+}
+
+} // 👈 ਇਹ ਲਾਈਨ 276 ਵਾਲੀ ਬਰੈਕਟ ਹੈ
+
+// 👉 ਇੱਥੇ ਪੇਸਟ ਕਰੋ:
+let currentZoom = 1;
+
+function zoomIn() {
+  if (currentZoom < 2.2) {
+    currentZoom += 0.15;
+    applyZoom();
+  }
+}
+
+function zoomOut() {
+  if (currentZoom > 0.7) {
+    currentZoom -= 0.15;
+    applyZoom();
+  }
+}
+
+function applyZoom() {
+  const frame = document.querySelector(".reader-frame");
+  const zoomVal = document.getElementById("zoomVal");
+  if (frame) {
+    frame.style.transform = `scale(${currentZoom})`;
+    frame.style.transformOrigin = "top center";
+  }
+  if (zoomVal) {
+    zoomVal.textContent = Math.round(currentZoom * 100) + "%";
   }
 }
 

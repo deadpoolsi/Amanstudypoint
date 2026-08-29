@@ -448,7 +448,7 @@ function loadUserAnalytics() {
   });
 }
 
-/* 8. Quiz Engine (Instruction Notice, Timer, Auto-Resume & Leaderboard) */
+/* 8. Quiz Engine (Auto-Submit Notice, Timer, Auto-Resume & Leaderboard) */
 let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false, quizTotalMins = 20;
 
 function getProgressKey() {
@@ -475,6 +475,7 @@ function clearQuizState() {
   if (key) localStorage.removeItem(key);
 }
 
+// ⚠️ ਟੈਸਟ ਚੱਲਦੇ ਸਮੇਂ ਬਾਹਰ ਜਾਣ 'ਤੇ ਸੇਵ ਕਰੋ
 window.addEventListener('beforeunload', (e) => {
   if (isTimerStarted && qIdx < activeQuiz.length) {
     saveQuizState();
@@ -484,9 +485,6 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 function initQuiz() {
-  // 🏆 ਟੌਪਰ ਲਿਸਟ ਤੁਰੰਤ ਲੋਡ ਕਰੋ
-  if (typeof loadBoard === 'function') loadBoard();
-
   const box = document.getElementById("quizBox");
   if (!box) return;
   const u = currentUser();
@@ -535,8 +533,16 @@ function initQuiz() {
                 userAns = saved.userAns || [];
                 qSecs = saved.qSecs || qSecs;
                 isTimerStarted = saved.isTimerStarted || false;
+              } else {
+                clearQuizState();
+                qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
               }
-            } catch(e) {}
+            } catch(e) {
+              clearQuizState();
+              qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
+            }
+          } else {
+            qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
           }
 
           if (isTimerStarted) {
@@ -548,6 +554,8 @@ function initQuiz() {
         });
       }
     });
+
+    loadBoard();
   });
 }
 
@@ -562,16 +570,17 @@ function showQuizStartScreen() {
       <h3 style="color:#e8590c; margin-bottom:6px;">Daily Punjab Exam Mock Test</h3>
       <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">ਵਿਦਿਆਰਥੀ: <b>${u.name}</b></p>
       
+      <!-- ⚠️ ਸਪੱਸ਼ਟ ਆਟੋ-ਸਬਮਿਟ ਹਦਾਇਤ ਬਾਕਸ -->
       <div style="background:#fff4e6; border:1.5px dashed #ffa94d; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
         <h4 style="color:#d9480f; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-          ⚠️ ਜ਼ਰੂਰੀ ਹਦਾਇਤ (Rules):
+          ⚠️ ਜ਼ਰੂਰੀ ਹਦਾਇਤ (Important Rule):
         </h4>
         <ul style="font-size:0.88rem; color:#444; line-height:1.5; padding-left:18px; margin:0;">
-          <li>ਕੁੱਲ ਸਵਾਲ: <b>${activeQuiz.length}</b> | ਸਮਾਂ: <b>${quizTotalMins} ਮਿੰਟ</b></li>
+          <li>ਕੁੱਲ ਸਵਾਲ: <b>${activeQuiz.length}</b> | ਕੁੱਲ ਸਮਾਂ: <b>${quizTotalMins} ਮਿੰਟ</b></li>
           <li style="color:#c92a2a; font-weight:700; margin-top:6px;">
-            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਜਾਂ ਬੰਦ ਕਰ ਦਿੰਦੇ ਹੋ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਦਿੱਤੇ ਸਮੇਂ ਤੱਕ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਹੱਲ ਕੀਤੇ ਹੋਣਗੇ, ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ।
+            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਦਿੱਤਾ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਸਮਾਂ ਖ਼ਤਮ ਹੋਣ 'ਤੇ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਅਟੈਮਪਟ ਕੀਤੇ ਹੋਣਗੇ , ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ!
           </li>
-          <li style="margin-top:4px;">ਟੈਸਟ ਪੂਰਾ ਹੋਣ ਤੋਂ ਬਾਅਦ ਤੁਰੰਤ ਸਰਟੀਫਿਕੇਟ ਡਾਊਨਲੋਡ ਕਰ ਸਕੋਗੇ।</li>
+          <li style="margin-top:4px;">ਟੈਸਟ ਪੂਰਾ ਹੋਣ 'ਤੇ ਸਰਟੀਫਿਕੇਟ ਮਿਲੇਗਾ।</li>
         </ul>
       </div>
 
@@ -603,7 +612,7 @@ function startTimer() {
     }
     if (qSecs <= 0) { 
       clearInterval(qTimer); 
-      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
+      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਅਟੈਮਪਟ ਕੀਤੇ ਸਵਾਲਾਂ  ਮੁਤਾਬਕ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
       finishTest(); 
     }
   }, 1000);
@@ -619,6 +628,11 @@ function renderQ() {
   const m = Math.floor(qSecs / 60), s = qSecs % 60;
   
   box.innerHTML = `
+    <!-- 💡 ਐਕਟਿਵ ਟੈਸਟ ਦੌਰਾਨ ਸਪੱਸ਼ਟ ਨੋਟਿਸ -->
+    <div style="background:#fff9db; border:1px solid #fab005; padding:6px 10px; border-radius:6px; font-size:0.78rem; color:#f08c00; margin-bottom:10px; font-weight:600; text-align:center;">
+      ⚠️ ਜੇਕਰ ਟੈਸਟ ਕੱਟਿਆ ਗਿਆ, ਤਾਂ ਸਮਾਂ ਪੂਰਾ ਹੋਣ 'ਤੇ ਅਟੈਮਪਟ ਸਵਾਲ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਜਾਣਗੇ।
+    </div>
+
     <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <span style="font-weight:700;">Question ${qIdx + 1} of ${activeQuiz.length}</span>
       <span class="quiz-timer-badge" id="quizTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:12px; font-weight:bold;">⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</span>
@@ -688,7 +702,6 @@ function finishTest() {
       time: new Date().toLocaleString()
     });
 
-    // 🏆 Top Rankers ਲਈ quizResults ਵਿੱਚ ਸੇਵ ਕਰੋ
     db.ref("quizResults").push({
       name: u.name,
       phone: u.phone,
@@ -699,7 +712,7 @@ function finishTest() {
     });
   }
 
-  if (typeof loadBoard === 'function') loadBoard();
+  loadBoard();
 
   const pct = Math.round((qScore / total) * 100);
   if (box) {

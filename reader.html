@@ -7,6 +7,15 @@
 <title>Reader — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
 <style>
+  * { user-select: none; -webkit-user-select: none; }
+  
+  .reader-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fff;
+    min-height: 90vh;
+  }
+
   .pdf-wrapper {
     position: relative;
     width: 100%;
@@ -15,16 +24,43 @@
     background: #f8f9fa;
   }
   
-  /* 🛡️ ਸੱਜੇ ਪਾਸੇ ਵਾਲੇ Pop-out ਆਈਕਨ ਨੂੰ ਬਲਾਕ ਕਰਨ ਵਾਲੀ ਸ਼ੀਲਡ */
+  /* 🛡️ 1. Pop-out Icon Block Shield */
   .popout-blocker {
     position: absolute;
     top: 0;
     right: 0;
-    width: 75px;
-    height: 55px;
+    width: 85px;
+    height: 60px;
     background: transparent;
-    z-index: 999;
+    z-index: 1000;
     cursor: default;
+  }
+
+  /* 🛡️ 2. Clean & Subtle Single Center Watermark (No Reading Issue) */
+  .watermark-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 120px;
+    opacity: 0.07; /* Bilkul halka taaki text saaf dikhe */
+  }
+
+  .watermark-item {
+    transform: rotate(-30deg);
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #000;
+    text-align: center;
+    line-height: 1.4;
+    letter-spacing: 2px;
   }
 
   .reader-frame {
@@ -47,22 +83,21 @@
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
   <div id="readerBody">
-    <p style="text-align:center; padding:40px; color:#666;">⏳ ਕਿਤਾਬ ਲੋਡ ਹੋ ਰਹੀ ਹੈ...</p>
+    <p style="text-align:center; padding:40px; color:#666;">⏳ Kitab load ho rahi hai...</p>
   </div>
 </div>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
 
 <script>
-  // Right Click & Copy Disable
+  // Right Click, Print, Save & Copy Disable
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
       e.preventDefault();
-      alert("⚠️ Content is protected.");
+      alert("⚠️ Content is protected by Aman Study Point.");
     }
   });
 
@@ -75,7 +110,7 @@
     const u = typeof currentUser === 'function' ? currentUser() : null;
 
     if (!bookId) {
-      rBody.innerHTML = "<p style='text-align:center;padding:30px;'>ਕੋਈ ਕਿਤਾਬ ਨਹੀਂ ਮਿਲੀ।</p>";
+      rBody.innerHTML = "<p style='text-align:center;padding:30px;'>Koi kitab nahi mili.</p>";
       return;
     }
 
@@ -92,46 +127,69 @@
 
     db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
       const cfg = snap.val() || {};
-      const rawUrl = isDemo ? (cfg.demoPdf || cfg.pdf) : cfg.pdf;
-      const embedUrl = fixGoogleDriveUrl(rawUrl);
+      const fullUrl = cfg.pdf || "";
+      const demoUrl = cfg.demoPdf || cfg.pdf || "";
+      const targetRawUrl = isDemo ? demoUrl : fullUrl;
+      const embedUrl = fixGoogleDriveUrl(targetRawUrl);
 
       if (!isDemo) {
         if (!u) {
-          alert("ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ!");
+          alert("Puri kitab padhne ke liye pehle Login karein!");
           window.location.href = "login.html";
           return;
         }
 
-        db.ref("users/" + u.phone + "/books/" + bookId).once("value", uSnap => {
-          if (!uSnap.val()) {
-            alert("⚠️ ਤੁਸੀਂ ਇਹ ਕਿਤਾਬ ਅਜੇ ਨਹੀਂ ਖਰੀਦੀ।");
+        db.ref("users/" + u.phone + "/books").once("value", uSnap => {
+          const userBooks = uSnap.val() || {};
+          const isUnlocked = userBooks[bookId] === true || userBooks['combo'] === true;
+
+          if (!isUnlocked) {
+            alert("⚠️ Aapne yeh book buy nahi ki hai.");
             window.location.href = "index.html#books";
             return;
           }
+
+          if (!fullUrl) {
+            rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ Full Book PDF abhi upload nahi hui hai.</h3></div>`;
+            return;
+          }
+
           renderBook(embedUrl, false);
         });
       } else {
+        if (!demoUrl) {
+          rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ Demo PDF upload nahi hai.</h3></div>`;
+          return;
+        }
         renderBook(embedUrl, true);
       }
     });
 
     function renderBook(url, demoMode) {
-      if (!url) {
-        rBody.innerHTML = `<div style="text-align:center;padding:50px;"><h3>⏳ PDF ਜਲਦੀ ਹੀ ਅੱਪਲੋਡ ਕੀਤੀ ਜਾਵੇਗੀ।</h3></div>`;
-        return;
-      }
-
       rHead.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee;">
-          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book'}</b>
-          <a href="index.html#books" class="btn btn-small btn-ghost">✕ Close</a>
+          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
+          <a href="index.html#books" class="btn btn-small btn-ghost">← Back to Books</a>
         </div>
       `;
 
-      // Wrapper ਦੇ ਅੰਦਰ ਲਾਕ ਸ਼ੀਲਡ (Protective Shield)
+      const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
+
       rBody.innerHTML = `
         <div class="pdf-wrapper">
           <div class="popout-blocker" onclick="event.preventDefault(); event.stopPropagation();"></div>
+          
+          <div class="watermark-overlay">
+            <div class="watermark-item">
+              AMAN STUDY POINT<br>
+              <span style="font-size:1.1rem; font-weight:700;">${studentTag}</span>
+            </div>
+            <div class="watermark-item">
+              AMAN STUDY POINT<br>
+              <span style="font-size:1.1rem; font-weight:700;">${studentTag}</span>
+            </div>
+          </div>
+
           <iframe src="${url}" class="reader-frame" allow="autoplay"></iframe>
         </div>
       `;

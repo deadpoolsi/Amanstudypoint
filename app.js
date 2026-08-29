@@ -100,44 +100,62 @@ function shareReferralWhatsApp() {
 }
 
 /* 4. Realtime Books & Config Listener */
+function updateComboUI(cfg) {
+  if (!cfg) return;
+  const comboCfg = cfg.combo || { price: 499, status: 'available' };
+  const cPriceEl = document.getElementById('combo_price_display');
+  const cBtn = document.getElementById('buy_btn_combo');
+  const comboPrice = parseInt(comboCfg.price) || 499;
+
+  let totalMRP = 0;
+  BOOKS.forEach(b => {
+    const bPrice = (cfg[b.id] && cfg[b.id].price) ? parseInt(cfg[b.id].price) : (b.defaultPrice || 99);
+    totalMRP += bPrice;
+  });
+
+  if (totalMRP <= comboPrice) totalMRP = Math.round(comboPrice * 1.35);
+  const saveAmount = totalMRP - comboPrice;
+
+  if (cPriceEl) {
+    cPriceEl.innerHTML = `₹${comboPrice} <small><s>₹${totalMRP}</s> (Save ₹${saveAmount})</small>`;
+  }
+
+  if (cBtn) {
+    if (comboCfg.status === 'unavailable') {
+      cBtn.innerText = '⏳ Coming Soon (ਜਲਦੀ ਆ ਰਹੀ ਹੈ)';
+      cBtn.disabled = true;
+      cBtn.style.background = '#868e96';
+    } else {
+      cBtn.innerText = '🛒 Unlock All 8 Books';
+      cBtn.disabled = false;
+      cBtn.style.background = '#e8590c';
+    }
+  }
+}
+
 function initLiveBooksConfig() {
+  // 1. ਜ਼ੀਰੋ ਦੇਰੀ: ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਡਾਟਾ ਤੁਰੰਤ ਦਿਖਾਓ
+  const cachedCfg = localStorage.getItem('asp_cached_books_cfg');
+  if (cachedCfg) {
+    try {
+      liveBooksConfig = JSON.parse(cachedCfg);
+      updateComboUI(liveBooksConfig);
+      if (typeof drawBooks === 'function') drawBooks();
+    } catch(e) {}
+  }
+
   if (typeof db === 'undefined') return;
-  
+
   db.ref('siteSettings/coupon').on('value', snap => {
     activeCoupon = snap.val();
   });
 
+  // 2. Firebase ਤੋਂ ਲਾਈਵ ਸਿੰਕ
   db.ref('siteSettings/booksConfig').on('value', snap => {
     liveBooksConfig = snap.val() || {};
-
-    // Combo Card Update
-    const comboCfg = liveBooksConfig.combo || { price: 499, status: 'available' };
-const cPriceEl = document.getElementById('combo_price_display');
-const cBtn = document.getElementById('buy_btn_combo');
-
-// Auto Calculate Dynamic Savings
-const comboPrice = parseInt(comboCfg.price) || 499;
-let totalMRP = 0;
-BOOKS.forEach(b => {
-  const bPrice = (liveBooksConfig[b.id] && liveBooksConfig[b.id].price) ? parseInt(liveBooksConfig[b.id].price) : (b.defaultPrice || 99);
-  totalMRP += bPrice;
-});
-if (totalMRP <= comboPrice) totalMRP = Math.round(comboPrice * 1.35);
-const saveAmount = totalMRP - comboPrice;
-
-if (cPriceEl) cPriceEl.innerHTML = `₹${comboPrice} <small><s>₹${totalMRP}</s> (Save ₹${saveAmount})</small>`;
-    if (cBtn) {
-      if (comboCfg.status === 'unavailable') {
-        cBtn.innerText = '⏳ Coming Soon (ਜਲਦੀ ਆ ਰਹੀ ਹੈ)';
-        cBtn.disabled = true;
-        cBtn.style.background = '#868e96';
-      } else {
-        cBtn.innerText = '🛒 Unlock All 8 Books';
-        cBtn.disabled = false;
-        cBtn.style.background = '#e8590c';
-      }
-    }
-    drawBooks();
+    localStorage.setItem('asp_cached_books_cfg', JSON.stringify(liveBooksConfig));
+    updateComboUI(liveBooksConfig);
+    if (typeof drawBooks === 'function') drawBooks();
   });
 }
 

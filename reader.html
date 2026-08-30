@@ -21,6 +21,7 @@
     margin: 0 auto;
     background: #fff;
     min-height: 90vh;
+    padding-bottom: 70px; /* ਬੈਨਰ ਲਈ ਹੇਠਾਂ ਥਾਂ */
   }
 
   .pdf-wrapper {
@@ -103,8 +104,27 @@
 <div class="reader-wrap">
   <div class="reader-head" id="readerHead"></div>
   <div id="readerBody">
-    <p style="text-align:center; padding:50px; color:#666;">⏳ ਕਿਤਾਬ ਲੋਡ ਹੋ ਰਹੀ ਹੈ...</p>
+    <p style="text-align:center; padding:50px; color:#666;">⏳ ਫਾਈਲ ਲੋਡ ਹੋ ਰਹੀ ਹੈ...</p>
   </div>
+</div>
+
+<!-- 🎯 PYQ Promo Cross-Sell Banner -->
+<div id="pyqPromoBar" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#ffffff; border-top:2px solid #e8590c; padding:10px 14px; box-shadow:0 -4px 15px rgba(0,0,0,0.12); z-index:9999; align-items:center; justify-content:space-between; gap:10px;">
+  <div style="display:flex; align-items:center; gap:8px; text-align:left;">
+    <span style="font-size:1.5rem;">🎁</span>
+    <div>
+      <div style="font-weight:800; font-size:0.88rem; color:#111; line-height:1.2;">
+        ਪੂਰੇ ਸਿਲੇਬਸ ਦੀ ਪੱਕੀ ਤਿਆਰੀ ਕਰੋ!
+      </div>
+      <div style="font-size:0.75rem; color:#666; margin-top:2px;">
+        ਸਾਰੀਆਂ 8 ਕਿਤਾਬਾਂ ਦਾ Complete Combo Pack
+      </div>
+    </div>
+  </div>
+
+  <a href="index.html#books" style="background:#e8590c; color:#fff; font-weight:700; font-size:0.82rem; padding:8px 14px; border-radius:6px; text-decoration:none; white-space:nowrap; display:inline-block;">
+    🛒 View Books
+  </a>
 </div>
 
 <!-- Firebase SDKs -->
@@ -187,22 +207,32 @@
     return url;
   }
 
-  function renderBook(url, demoMode) {
+  function renderBook(url, mode) {
     currentZoom = 1;
     const rHead = document.getElementById("readerHead");
     const rBody = document.getElementById("readerBody");
     const u = (typeof currentUser === 'function') ? currentUser() : null;
 
+    let headerTitle = '📖 Full Book Reader';
+    let backUrl = 'index.html#books';
+
+    if (mode === true || mode === 'demo') {
+      headerTitle = '📄 Demo Preview';
+    } else if (mode === 'pyq') {
+      headerTitle = '📑 PYQ Solved Paper';
+      backUrl = 'index.html#pyq';
+    }
+
     if (rHead) {
       rHead.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border-bottom:1px solid #eee; flex-wrap:wrap; gap:8px;">
-          <b>${demoMode ? '📄 Demo Preview' : '📖 Full Book Reader'}</b>
+          <b>${headerTitle}</b>
           <div style="display:flex; gap:6px; align-items:center;">
             <button type="button" onclick="zoomOut()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom Out">🔍 -</button>
             <span id="zoomVal" style="font-size:0.78rem; font-weight:700; min-width:36px; text-align:center;">100%</span>
             <button type="button" onclick="zoomIn()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-weight:bold; font-size:0.85rem;" title="Zoom In">🔍 +</button>
             <button type="button" onclick="toggleFullScreen()" class="btn btn-small btn-ghost" style="cursor:pointer; padding:4px 8px; font-size:0.8rem;">⛶ Fullscreen</button>
-            <a href="index.html#books" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back</a>
+            <a href="${backUrl}" class="btn btn-small btn-ghost" style="text-decoration:none; padding:4px 8px; font-size:0.8rem;">← Back</a>
           </div>
         </div>
       `;
@@ -236,21 +266,51 @@
   window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const bookId = params.get('id');
+    const isPyq = params.get('type') === 'pyq';
     const isDemo = params.get('demo') === 'true';
     const rBody = document.getElementById("readerBody");
     const u = typeof currentUser === 'function' ? currentUser() : null;
 
+    // 🎁 PYQ ਵਿੱਚ ਪ੍ਰਮੋਸ਼ਨਲ ਬੈਨਰ ਦਿਖਾਓ
+    if (isPyq) {
+      const promo = document.getElementById('pyqPromoBar');
+      if (promo) promo.style.display = 'flex';
+    }
+
     if (!bookId) {
-      rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਕੋਈ ਕਿਤਾਬ ਸਿਲੈਕਟ ਨਹੀਂ ਕੀਤੀ ਗਈ।</h3><a href="index.html#books" class="btn btn-primary" style="margin-top:15px; background:#e8590c; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; display:inline-block;">ਸਾਰੀਆਂ ਕਿਤਾਬਾਂ ਦੇਖੋ</a></div>`;
+      rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਕੋਈ ਫਾਈਲ ਸਿਲੈਕਟ ਨਹੀਂ ਕੀਤੀ ਗਈ।</h3><a href="index.html" class="btn btn-primary" style="margin-top:15px; background:#e8590c; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; display:inline-block;">Home Page</a></div>`;
       return;
     }
 
+    // 📄 1. PYQ (Previous Year Papers) ਮੋਡ (ਸੁਰੱਖਿਅਤ ਤੇ ਮੁਫ਼ਤ ਰੀਡਰ)
+    if (isPyq) {
+      db.ref("pyqList/" + bookId).once("value", snap => {
+        const pyq = snap.val();
+        const pdfLink = (pyq && (pyq.url || pyq.pdf)) ? (pyq.url || pyq.pdf) : "";
+        
+        if (pdfLink) {
+          renderBook(fixGoogleDriveUrl(pdfLink), 'pyq');
+        } else {
+          rBody.innerHTML = `
+            <div class="error-box">
+              <div style="font-size:2.5rem; margin-bottom:10px;">⏳</div>
+              <h3>ਇਹ ਪੇਪਰ ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</h3>
+              <p style="color:#666; margin:8px 0;">ਕਿਰਪਾ ਕਰਕੇ ਅੱਪਲੋਡ ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p>
+              <a href="index.html#pyq" class="btn btn-primary" style="margin-top:15px; background:#e8590c; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; display:inline-block;">← ਸਾਰੇ PYQs ਦੇਖੋ</a>
+            </div>
+          `;
+        }
+      });
+      return;
+    }
+
+    // 📖 2. Books ਮੋਡ (ਕਿਤਾਬਾਂ ਲਈ ਚੈੱਕ)
     db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
       const cfg = snap.val() || {};
       const fullUrl = cfg.pdf || "";
       const demoUrl = cfg.demoPdf || cfg.pdf || "";
 
-      // 1. ਡੈਮੋ ਮੋਡ
+      // ਡੈਮੋ ਮੋਡ
       if (isDemo) {
         if (!demoUrl) {
           rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3><p style="color:#666; margin:8px 0;">Upload ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p></div>`;
@@ -260,7 +320,7 @@
         return;
       }
 
-      // 2. ਫੁੱਲ ਬੁੱਕ ਮੋਡ (ਲੌਗਇਨ ਚੈੱਕ)
+      // ਫੁੱਲ ਬੁੱਕ ਮੋਡ (ਲੌਗਇਨ ਚੈੱਕ)
       if (!u) {
         rBody.innerHTML = `
           <div class="error-box">
@@ -310,5 +370,6 @@
     });
   });
 </script>
+
 </body>
 </html>

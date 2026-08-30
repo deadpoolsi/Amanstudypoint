@@ -58,7 +58,9 @@
     <div class="hero-btns">
       <a href="#books" class="btn btn-primary">📚 View Books</a>
       <a href="#quiz" class="btn btn-ghost">🎯 Daily Mock Test</a>
-      <a href="#pyqs" class="btn btn-ghost" style="background:#e7f5ff; color:#1971c2; border-color:#a5d8ff;">📑 Free PYQs</a>
+      <a href="#pyq" class="btn btn-ghost" style="text-decoration:none;" onclick="document.getElementById('pyq')?.scrollIntoView({behavior:'smooth'}); return false;">
+  📑 Free PYQs
+</a>
     </div>
   </div>
 </section>
@@ -146,12 +148,16 @@
 </section>
 
 
-<!-- Previous Year Papers (PYQ Section) -->
-<section id="pyqs" class="section section-alt">
+<!-- 📑 PYQ Section -->
+<section class="section" id="pyq">
   <div class="container">
     <h2>📑 Free Previous Year Papers (PYQ)</h2>
-    <p class="section-sub">ਪੰਜਾਬ ਪੁਲਿਸ, ਪਟਵਾਰੀ ਅਤੇ PSSSB ਦੇ ਪੁਰਾਣੇ ਹੱਲ ਕੀਤੇ ਪੇਪਰ ਮੁਫ਼ਤ ਡਾਊਨਲੋਡ ਕਰੋ</p>
-    <div id="pyqListContainer" class="grid">Loading papers...</div>
+    <p class="section-sub">ਸਾਰੇ ਪੰਜਾਬ ਐਗਜ਼ਾਮਾਂ ਦੇ ਪਿਛਲੇ ਸਾਲਾਂ ਦੇ ਹੱਲ ਕੀਤੇ ਪੇਪਰ ਮੁਫ਼ਤ ਪੜ੍ਹੋ</p>
+    
+    <!-- ਪੇਪਰਾਂ ਦੇ ਕਾਰਡ ਇਸ ਬਾਕਸ ਵਿੱਚ ਆਟੋਮੈਟਿਕ ਲੋਡ ਹੋਣਗੇ -->
+    <div id="pyqList">
+      <p style="text-align:center; padding:20px; color:#888;">⏳ Loading PYQ Papers...</p>
+    </div>
   </div>
 </section>
 

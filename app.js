@@ -383,24 +383,64 @@ function closeModal() {
   if (m) { m.hidden = true; m.style.display = "none"; }
 }
 
-/* 6. Free PYQ Loader */
+/* 6. Free PYQ Loader (Compact & No-Gap Card) */
 function loadPublicPYQs() {
-  const container = document.getElementById("pyqListContainer");
+  const container = document.getElementById("pyqListContainer") || document.getElementById("pyqList");
   if (!container) return;
+
   db.ref("pyqList").on("value", snap => {
     const data = snap.val();
-    if (!data) { container.innerHTML = "<p style='text-align:center;grid-column:1/-1;'>ਕੋਈ ਪੇਪਰ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</p>"; return; }
-    container.innerHTML = Object.values(data).map(p => `
-      <div class="card" style="padding:16px; display:flex; flex-direction:column; justify-content:space-between;">
-        <div>
-          <span class="pill" style="position:static; margin-bottom:6px; display:inline-block;">${p.exam}</span>
-          <h3 style="font-size:1.05rem; margin:6px 0;">${p.title}</h3>
-          <small style="color:#777;">📅 Added: ${p.date}</small>
+    if (!data) {
+      container.innerHTML = "<p style='text-align:center; color:#888; padding:15px; font-size:0.85rem;'>ਕੋਈ ਪੇਪਰ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</p>";
+      return;
+    }
+
+    const keys = Object.keys(data);
+    container.innerHTML = keys.map(key => {
+      const p = data[key];
+      const views = (p.views || 0).toLocaleString();
+      return `
+        <div style="background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; margin:0 auto 10px auto; max-width:550px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:block; height:auto; min-height:auto;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:8px;">${p.exam || 'Exam'}</span>
+            <span style="font-size:0.8rem; color:#e8590c; font-weight:700;">👁️ ${views}+ Views</span>
+          </div>
+          <h3 style="font-size:1rem; font-weight:700; margin:4px 0 3px 0; color:#222; line-height:1.3;">${p.title}</h3>
+          <div style="color:#777; font-size:0.78rem; margin-bottom:10px;">📅 Added: ${p.date || 'Recently'}</div>
+          <button type="button" onclick="openSecurePYQ('${key}')" class="btn btn-primary" style="background:#1971c2; color:#fff; border:none; cursor:pointer; font-weight:bold; border-radius:8px; padding:8px 12px; font-size:0.85rem; width:100%; display:block; text-align:center;">
+            📖 View & Read Paper
+          </button>
         </div>
-        <a href="${p.url}" target="_blank" class="btn btn-primary btn-small" style="margin-top:12px; background:#1971c2;">📥 Download PDF Paper</a>
-      </div>
-    `).join("");
+      `;
+    }).join("");
   });
+}
+
+
+
+// 👁️ ਸਿਰਫ਼ 1 ਯੂਜ਼ਰ / ਡਿਵਾਈਸ ਦਾ 1 ਹੀ ਵਿਊ ਕਾਊਂਟ ਹੋਵੇਗਾ
+function openSecurePYQ(key) {
+  const viewedKey = "viewed_pyq_" + key;
+
+  // ਜੇਕਰ ਇਸ ਫ਼ੋਨ/ਬ੍ਰਾਊਜ਼ਰ ਨੇ ਪਹਿਲਾਂ ਇਹ ਪੇਪਰ ਨਹੀਂ ਦੇਖਿਆ
+  if (!localStorage.getItem(viewedKey)) {
+    localStorage.setItem(viewedKey, "true");
+    
+    // ਸਿਰਫ਼ ਪਹਿਲੀ ਵਾਰ ਵਿਊ +1 ਹੋਵੇਗਾ
+    db.ref("pyqList/" + key + "/views").transaction(currentViews => {
+      return (currentViews || 0) + 1;
+    });
+  }
+
+  // ਰੀਡਰ ਪੇਜ 'ਤੇ ਭੇਜੋ
+  window.location.href = `reader.html?id=${key}&type=pyq`;
+}
+
+// 🚀 ਪੇਜ ਖੁੱਲ੍ਹਦੇ ਹੀ ਫੰਕਸ਼ਨ ਚਲਾਓ
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadPublicPYQs);
+} else {
+  loadPublicPYQs();
 }
 
 /* 7. Student Analytics Progress */
@@ -514,9 +554,14 @@ function initQuiz() {
             <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b></p>
             <div class="quiz-score-num" style="font-size:2rem; font-weight:800; color:#e8590c; margin:10px 0;">${prev.score} / ${prev.total}</div>
             <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
-            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer;">
-              🎖️ Download Official Certificate
-            </button>
+                    <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
+          🎖️ Download Official Certificate
+        </button>
+
+        <!-- 🟢 WhatsApp Share Button -->
+        <button class="btn btn-block" onclick="shareCertificateWhatsApp('${u.name}', ${prev.score}, ${prev.total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span>📲</span> Share Result on WhatsApp
+        </button>
           </div>
         `;
       } else {
@@ -896,7 +941,10 @@ document.addEventListener("DOMContentLoaded", () => {
   initLiveBooksConfig();
   renderBooksRealtime();
   loadPublicPYQs();
-  initReader();
+    const params = new URLSearchParams(window.location.search);
+  if (params.get('type') !== 'pyq') {
+    initReader();
+  }
   initLogin();
   initQuiz();
   const m = document.getElementById("modal");
@@ -1066,3 +1114,113 @@ window.addEventListener('appinstalled', () => {
   const btn = document.getElementById('installAppBtn');
   if (btn) btn.style.display = 'none'; // ਇੰਸਟਾਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਬਟਨ ਆਪਣੇ ਆਪ ਹਟ ਜਾਵੇਗਾ
 });
+
+// 🏆 1. ਆਟੋਮੈਟਿਕ ਸਰਟੀਫਿਕੇਟ ਬਣਾਉਣ ਅਤੇ WhatsApp ਸ਼ੇਅਰ ਕਰਨ ਵਾਲਾ ਫੰਕਸ਼ਨ
+async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 700;
+  const ctx = canvas.getContext("2d");
+
+  // ਬੈਕਗ੍ਰਾਊਂਡ ਅਤੇ ਬਾਰਡਰ
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 1200, 700);
+
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = "#e8590c";
+  ctx.strokeRect(20, 20, 1160, 660);
+
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#fab005";
+  ctx.strokeRect(35, 35, 1130, 630);
+
+  // ਹੈਡਰ ਅਤੇ ਬ੍ਰਾਂਡਿੰਗ
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#e8590c";
+  ctx.font = "bold 44px -apple-system, sans-serif";
+  ctx.fillText("📘 AMAN STUDY POINT", 600, 110);
+
+  ctx.fillStyle = "#555555";
+  ctx.font = "600 24px -apple-system, sans-serif";
+  ctx.fillText("MOCK TEST PERFORMANCE CERTIFICATE", 600, 155);
+
+  // ਸਰਟੀਫਾਈ ਟੈਕਸਟ
+  ctx.fillStyle = "#777777";
+  ctx.font = "22px -apple-system, sans-serif";
+  ctx.fillText("This is proudly presented to", 600, 230);
+
+  // ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ
+  ctx.fillStyle = "#1971c2";
+  ctx.font = "bold 48px -apple-system, sans-serif";
+  ctx.fillText(studentName || "Proud Aspirant", 600, 295);
+
+  // ਲਾਈਨ
+  ctx.beginPath();
+  ctx.moveTo(350, 315);
+  ctx.lineTo(850, 315);
+  ctx.strokeStyle = "#dee2e6";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // ਐਗਜ਼ਾਮ ਅਤੇ ਵਧਾਈ ਸੰਦੇਸ਼
+  ctx.fillStyle = "#333333";
+  ctx.font = "24px -apple-system, sans-serif";
+  ctx.fillText(`for successfully attempting the "${examTitle || 'Punjab Govt Exams'}" Mock Test`, 600, 370);
+
+  // ਸਕੋਰ ਬਾਕਸ
+  const percentage = Math.round((score / total) * 100);
+  ctx.fillStyle = "#f8f9fa";
+  ctx.fillRect(360, 410, 480, 110);
+  ctx.strokeStyle = "#e9ecef";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(360, 410, 480, 110);
+
+  ctx.fillStyle = "#2b8a3e";
+  ctx.font = "bold 38px -apple-system, sans-serif";
+  ctx.fillText(`Score: ${score} / ${total} (${percentage}%)`, 600, 465);
+
+  ctx.fillStyle = "#666666";
+  ctx.font = "600 20px -apple-system, sans-serif";
+  ctx.fillText("⭐ Verified Performance Result ⭐", 600, 500);
+
+  // ਮਿਤੀ ਅਤੇ ਵੈਰੀਫਿਕੇਸ਼ਨ
+  const today = new Date().toLocaleDateString('en-GB');
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#777777";
+  ctx.font = "20px -apple-system, sans-serif";
+  ctx.fillText(`📅 Date: ${today}`, 70, 620);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#e8590c";
+  ctx.font = "bold 20px -apple-system, sans-serif";
+  ctx.fillText("Official Study Partner — Aman Study Point", 1130, 620);
+
+  // ਸ਼ੇਅਰ ਟੈਕਸਟ ਮੈਸੇਜ
+  const shareText = `🎯 ਮੈਂ Aman Study Point 'ਤੇ Daily Mock Test ਦਿੱਤਾ!\n🏆 ਮੇਰਾ ਸਕੋਰ: ${score}/${total} (${percentage}%)\n\nਤੁਸੀਂ ਵੀ ਆਪਣੀ ਤਿਆਰੀ ਪਰਖੋ ਅਤੇ ਫ੍ਰੀ ਮੌਕ ਟੈਸਟ ਦਿਓ 👉 ${window.location.origin}`;
+
+  // ਮੋਬਾਈਲ 'ਤੇ ਫੋਟੋ ਸਿੱਧੀ WhatsApp 'ਤੇ ਸ਼ੇਅਰ ਕਰਨ ਲਈ
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], "Aman_Study_Point_Certificate.png", { type: "image/png" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "My Mock Test Certificate",
+          text: shareText
+        });
+      } catch (err) {
+        console.log("Sharing failed", err);
+      }
+    } else {
+      // ਕੰਪਿਊਟਰ ਜਾਂ ਪੁਰਾਣੇ ਬ੍ਰਾਊਜ਼ਰ ਲਈ ਆਟੋਮੈਟਿਕ ਡਾਊਨਲੋਡ + WhatsApp ਲਿੰਕ
+      const link = document.createElement("a");
+      link.download = "My_MockTest_Certificate.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+      window.open(waUrl, "_blank");
+    }
+  }, "image/png");
+}

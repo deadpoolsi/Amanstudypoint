@@ -643,3 +643,71 @@ footer {
     gap: 16px !important;
   }
 }
+
+/* 📊 Compact & Clean Analytics Stat Boxes */
+#userAnalyticsBox .card {
+  padding: 16px 12px !important;
+  min-height: auto !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  border-radius: 12px !important;
+}
+
+#userAnalyticsBox h2, 
+#userAnalyticsBox .stat-num {
+  font-size: 2.2rem !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  font-weight: 800 !important;
+}
+
+#userAnalyticsBox p, 
+#userAnalyticsBox small,
+#userAnalyticsBox .stat-label {
+  font-size: 0.82rem !important;
+  color: #666 !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+#userAnalyticsBox .card:has(h4),
+#userAnalyticsBox > div:last-child {
+  padding: 14px 16px !important;
+  min-height: auto !important;
+}
+
+/* 📑 Compact PYQ Card */
+#pyqListContainer .card,
+#pyqList .card,
+#pyq .card {
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  margin-bottom: 8px !important;
+}
+
+#pyqListContainer h3,
+#pyqList h3,
+#pyq h3 {
+  font-size: 0.95rem !important;
+  margin: 3px 0 !important;
+  line-height: 1.3 !important;
+}
+
+#pyqListContainer small,
+#pyqList small,
+#pyq small {
+  font-size: 0.75rem !important;
+}
+
+#pyqListContainer button,
+#pyqList button,
+#pyq button {
+  padding: 7px 12px !important;
+  margin-top: 8px !important;
+  font-size: 0.85rem !important;
+  border-radius: 6px !important;
+}

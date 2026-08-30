@@ -26,7 +26,7 @@ const BOOKS = [
   { id: "maths", cat: "maths", emoji: "🔢", title: "Mathematics", sub: "Banking • SSC", defaultPrice: 99, pdf: "", demoPdf: "" },
   { id: "reasoning", cat: "maths", emoji: "🧩", title: "Reasoning Ability", sub: "SSC • Police • Banking", defaultPrice: 99, pdf: "", demoPdf: "" },
   { id: "history", cat: "gk", emoji: "🏛️", title: "History of Punjab", sub: "General Preparation", defaultPrice: 99, pdf: "", demoPdf: "" },
-  { id: "science", cat: "gk", emoji: "🔬", title: "General Science", sub: "SSC • Patwari", defaultPrice: 99, pdf: "", demoPdf: "" },
+  { id: "science", cat: "gk", emoji: "📗", title: "English", sub: "SSC • Patwari", defaultPrice: 99, pdf: "", demoPdf: "" },
   { id: "constitution", cat: "gk", emoji: "⚖️", title: "Indian Constitution", sub: "SSC • Police", defaultPrice: 99, pdf: "", demoPdf: "" },
   { id: "computer", cat: "language", emoji: "💻", title: "Computer Awareness", sub: "All Competitive Exams", defaultPrice: 99, pdf: "", demoPdf: "" }
 ];

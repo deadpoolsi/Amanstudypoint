@@ -615,19 +615,22 @@ function saveTodayDayConfig() {
   });
 }
 
-// ਕਿਤਾਬ ਦਾ ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਡਾਟਾ ਲੋਡ ਕਰੋ
+// ਕਿਤਾਬ ਦਾ ਡਾਟਾ ਅਤੇ ਸੀਕਰੇਟ PDF ਲੋਡ ਕਰੋ
 function loadSelectedBookData() {
   const bookId = document.getElementById("adminBookSelect").value;
   db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
     const data = snap.val() || {};
-    document.getElementById("adminBookPdfUrl").value = data.pdf || "";
     document.getElementById("adminBookDemoPdfUrl").value = data.demoPdf || "";
     document.getElementById("adminBookPrice").value = data.price || 99;
     document.getElementById("adminBookStatus").value = data.status || "available";
   });
+  // ਸੀਕਰੇਟ ਵਾਲਟ ਵਿੱਚੋਂ Full PDF ਚੈੱਕ ਕਰੋ
+  db.ref("bookVault/" + bookId).once("value", snap => {
+    document.getElementById("adminBookPdfUrl").value = snap.val() || "";
+  });
 }
 
-// ਕਿਤਾਬ ਦਾ ਡਾਟਾ Firebase ਵਿੱਚ ਸੇਵ ਕਰੋ
+// ਕਿਤਾਬ ਦਾ ਡਾਟਾ ਅਤੇ ਸੀਕਰੇਟ ਵੱਖਰੇ ਸੁਰੱਖਿਅਤ ਸਟੋਰੇਜ (Vault) ਵਿੱਚ ਸੇਵ ਕਰੋ
 function saveAdminBookData() {
   const bookId = document.getElementById("adminBookSelect").value;
   const pdf = document.getElementById("adminBookPdfUrl").value.trim();
@@ -636,12 +639,13 @@ function saveAdminBookData() {
   const status = document.getElementById("adminBookStatus").value;
 
   db.ref("siteSettings/booksConfig/" + bookId).update({
-    pdf,
     demoPdf,
     price,
     status
-  }).then(() => {
-    alert("✅ ਕਿਤਾਬ ਦਾ ਡਾਟਾ ਅਤੇ PDF ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਡੇਟ ਹੋ ਗਏ ਹਨ!");
+  });
+
+  db.ref("bookVault/" + bookId).set(pdf).then(() => {
+    alert("✅ ਕਿਤਾਬ ਦਾ ਡਾਟਾ ਅਤੇ ਸੀਕਰੇਟ PDF ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਏ!");
   });
 }
 

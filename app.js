@@ -551,7 +551,7 @@ function initQuiz() {
           <div class="quiz-score-card" style="text-align:center; padding:25px;">
             <div style="font-size:3rem;">✅</div>
             <h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਦੇ ਚੁੱਕੇ ਹੋ!</h3>
-            <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b></p>
+            <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b> <span id="userStreakBadge"></span></p>
             <div class="quiz-score-num" style="font-size:2rem; font-weight:800; color:#e8590c; margin:10px 0;">${prev.score} / ${prev.total}</div>
             <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
                     <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
@@ -564,6 +564,10 @@ function initQuiz() {
         </button>
           </div>
         `;
+        updateDailyStreak(u.phone).then(streak => {
+  const badgeEl = document.getElementById("userStreakBadge");
+  if (badgeEl) badgeEl.innerHTML = renderStreakBadge(streak);
+});
       } else {
         db.ref("dailyQuiz").once("value", qSnap => {
           activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
@@ -1223,4 +1227,47 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
       window.open(waUrl, "_blank");
     }
   }, "image/png");
+}
+
+/* 🔥 Daily Study Streak System */
+function getTodayDateStr(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+async function updateDailyStreak(phone) {
+  if (!phone) return 1;
+  const today = getTodayDateStr();
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = getTodayDateStr(yesterdayDate);
+
+  try {
+    const snap = await db.ref("users/" + phone + "/streakData").once("value");
+    const data = snap.val() || { streak: 0, lastDate: "" };
+    let currentStreak = data.streak || 0;
+
+    if (data.lastDate === today) {
+      return currentStreak;
+    } else if (data.lastDate === yesterday) {
+      currentStreak += 1;
+    } else {
+      currentStreak = 1;
+    }
+
+    await db.ref("users/" + phone + "/streakData").set({
+      streak: currentStreak,
+      lastDate: today
+    });
+    return currentStreak;
+  } catch (e) {
+    return 1;
+  }
+}
+
+function renderStreakBadge(streak) {
+  if (!streak || streak < 1) return "";
+  return `<span style="background:#fff3bf; color:#d9480f; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:20px; border:1px solid #ffd43b; display:inline-flex; align-items:center; gap:3px; margin-left:6px;">🔥 ${streak} Day${streak > 1 ? 's' : ''} Streak</span>`;
 }

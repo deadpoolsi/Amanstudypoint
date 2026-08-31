@@ -25,11 +25,12 @@
 
 <!-- PIN Lock Screen -->
 <div id="adminAuthBox">
-  <h2>🔒 Admin Verification</h2>
-  <p style="color:#666; font-size:0.9rem; margin-top:5px;">Enter Secret PIN to access panel</p>
-  <input type="password" id="adminPinInput" class="pin-input" placeholder="••••••" maxlength="10">
-  <button class="btn btn-primary btn-block" onclick="checkAdminPin()">🔓 Unlock Panel</button>
-  <div id="pinError" style="color:#e03131; margin-top:10px; font-size:0.9rem; display:none;">⚠️ Invalid PIN Code!</div>
+  <h2>🔒 Admin Login</h2>
+  <p style="color:#666; font-size:0.9rem; margin:5px 0 14px;">Aman Study Point Administration</p>
+  <input type="email" id="adminEmailInput" placeholder="Admin Email" style="width:100%; padding:10px; margin-bottom:10px; border:1.5px solid #ccc; border-radius:8px; box-sizing:border-box;">
+  <input type="password" id="adminPassInput" placeholder="Password" style="width:100%; padding:10px; margin-bottom:12px; border:1.5px solid #ccc; border-radius:8px; box-sizing:border-box;">
+  <button class="btn btn-primary btn-block" onclick="handleAdminLogin()" style="width:100%; padding:10px; font-weight:700;">🔓 Unlock Panel</button>
+  <div id="authError" style="color:#e03131; margin-top:10px; font-size:0.85rem; display:none;"></div>
 </div>
 
 <!-- Admin Dashboard -->
@@ -214,11 +215,12 @@ Ans: B"></textarea>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
 // @ts-nocheck
-const ADMIN_SECRET_PIN = "73503";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
@@ -233,7 +235,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
+const auth = firebase.auth();
 const ALL_BOOKS_META = [
   { id: "combo", title: "🔥 Mega Combo (All 8 Books)" },
   { id: "punjabi", title: "1. Punjabi Grammar" },
@@ -248,31 +250,41 @@ const ALL_BOOKS_META = [
 
 let currentResultsData = [];
 
-function checkAdminPin() {
-  if (document.getElementById("adminPinInput").value === ADMIN_SECRET_PIN) {
-    sessionStorage.setItem("asp_admin_auth", "true");
-    showDashboard();
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById("adminAuthBox").style.display = "none";
+    document.getElementById("adminDashboard").style.display = "block";
+    loadFirebaseData();
+    loadTimerSetting();
+    loadBooksConfig();
+    loadCouponConfig();
+    loadAdminPYQs();
+    if (typeof loadPopupPosterConfig === 'function') loadPopupPosterConfig();
+    if (typeof loadTodayDayConfig === 'function') loadTodayDayConfig();
   } else {
-    document.getElementById("pinError").style.display = "block";
+    document.getElementById("adminAuthBox").style.display = "block";
+    document.getElementById("adminDashboard").style.display = "none";
   }
-}
+});
 
-function showDashboard() {
-  document.getElementById("adminAuthBox").style.display = "none";
-  document.getElementById("adminDashboard").style.display = "block";
-  loadFirebaseData();
-  loadTimerSetting();
-  loadBooksConfig();
-  loadCouponConfig();
-  loadAdminPYQs();
+function handleAdminLogin() {
+  const email = document.getElementById("adminEmailInput").value.trim();
+  const pass = document.getElementById("adminPassInput").value.trim();
+  const err = document.getElementById("authError");
+  if (!email || !pass) {
+    err.textContent = "⚠️ ਈਮੇਲ ਅਤੇ ਪਾਸਵਰਡ ਭਰੋ!";
+    err.style.display = "block";
+    return;
+  }
+  auth.signInWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = "⚠️ " + e.message;
+    err.style.display = "block";
+  });
 }
 
 function adminLogout() {
-  sessionStorage.removeItem("asp_admin_auth");
-  location.reload();
+  auth.signOut().then(() => location.reload());
 }
-
-if (sessionStorage.getItem("asp_admin_auth") === "true") showDashboard();
 
 /* 1. Notice Announcement */
 function updateAnnouncement() {

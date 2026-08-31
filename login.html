@@ -257,50 +257,53 @@ function hideError() {
   document.getElementById("loginError").style.display = "none";
 }
 
-// --- 📝 100% SAFE REGISTRATION (NO FAKE IDs) ---
-function handleRegister() {
+// 🔒 ਪਾਸਵਰਡ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੋਡ (Hash) ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ
+async function hashPassword(plainText) {
+  const msgUint8 = new TextEncoder().encode(plainText);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// --- 📝 SAFE REGISTRATION WITH HASHED PASSWORD ---
+async function handleRegister() {
   hideError();
   const name = document.getElementById("regName").value.trim();
   const phone = document.getElementById("regPhone").value.trim();
   const pass = document.getElementById("regPass").value.trim();
 
-  // 1. ਨਾਮ ਚੈੱਕ
   if (name.length < 3) {
     showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਨਾਮ ਭਰੋ (ਘੱਟੋ-ਘੱਟ 3 ਅੱਖਰ)।");
     return;
   }
-
-  // 2. ਸਿਰਫ਼ 10 ਅੰਕਾਂ ਦਾ ਅਸਲੀ ਮੋਬਾਈਲ ਨੰਬਰ (6, 7, 8 ਜਾਂ 9 ਤੋਂ ਸ਼ੁਰੂ)
   const phoneRegex = /^[6-9]\d{9}$/;
   if (!phoneRegex.test(phone)) {
-    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ (ਜਿਵੇਂ: 9876543210)।");
+    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
     return;
   }
-
-  // 3. ਪਾਸਵਰਡ ਚੈੱਕ
   if (!pass || pass.length < 4) {
     showError("⚠️ ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 4 ਅੱਖਰਾਂ ਜਾਂ ਅੰਕਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
     return;
   }
 
-  // Firebase ਵਿੱਚ ਚੈੱਕ ਕਰੋ
+  const securePassword = await hashPassword(pass);
+
   db.ref("accounts/" + phone).once("value", snap => {
     if (snap.exists()) {
-      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਰਜਿਸਟਰ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ Login ਕਰੋ!");
+      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਰਜਿਸਟਰ ਹੈ। Login ਕਰੋ!");
       return;
     }
 
     const userData = {
       name: name,
       phone: phone,
-      password: pass,
+      password: securePassword,
       createdAt: new Date().toLocaleString(),
       authType: "phone"
     };
 
-    // accounts ਅਤੇ users ਦੋਵਾਂ ਨੋਡਾਂ 'ਤੇ ਸਹੀ ਡਾਟਾ ਸੇਵ ਕਰੋ
     db.ref("accounts/" + phone).set(userData);
-    db.ref("users/" + phone).update({ name: name, phone: phone, password: pass });
+    db.ref("users/" + phone).update({ name: name, phone: phone });
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", name);
@@ -309,8 +312,8 @@ function handleRegister() {
   });
 }
 
-// --- 🔐 LOGIN FUNCTION ---
-function handleLogin() {
+// --- 🔐 SAFE LOGIN WITH HASH CHECK ---
+async function handleLogin() {
   hideError();
   const phone = document.getElementById("loginPhone").value.trim();
   const pass = document.getElementById("loginPass").value.trim();
@@ -320,22 +323,24 @@ function handleLogin() {
     return;
   }
 
+  const enteredHash = await hashPassword(pass);
+
   db.ref("accounts/" + phone).once("value", snap => {
     const acc = snap.val();
     if (!acc) {
-      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ। ਪਹਿਲਾਂ 'New Account' ਬਣਾਓ!");
+      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
       return;
     }
 
-    if (acc.password !== pass) {
+    // ਨਵਾਂ ਇਨਕ੍ਰਿਪਟਿਡ ਜਾਂ ਪੁਰਾਣਾ ਪਾਸਵਰਡ ਦੋਵੇਂ ਚੈੱਕ ਹੋਣਗੇ
+    if (acc.password === enteredHash || acc.password === pass || acc.pass === pass) {
+      localStorage.setItem("pp_session", phone);
+      localStorage.setItem("pp_name", acc.name || "Student");
+      alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+      window.location.href = "index.html";
+    } else {
       showError("⚠️ ਪਾਸਵਰਡ ਗ਼ਲਤ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
-      return;
     }
-
-    localStorage.setItem("pp_session", phone);
-    localStorage.setItem("pp_name", acc.name || "Student");
-    alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
-    window.location.href = "index.html";
   });
 }
 
@@ -399,6 +404,15 @@ function sendForgotWhatsApp() {
     window.open(`https://api.whatsapp.com/send?phone=919041321843&text=${msg}`, "_blank");
   });
 }
+
+// 🔒 ਪਾਸਵਰਡ ਨੂੰ ਸਕਿਓਰ ਕੋਡ (Hash) ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ
+async function hashPassword(plainText) {
+  const msgUint8 = new TextEncoder().encode(plainText);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 </script>
 </body>
 </html>

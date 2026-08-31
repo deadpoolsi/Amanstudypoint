@@ -250,8 +250,10 @@ const ALL_BOOKS_META = [
 
 let currentResultsData = [];
 
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
 auth.onAuthStateChanged(user => {
-  if (user) {
+  if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
     document.getElementById("adminAuthBox").style.display = "none";
     document.getElementById("adminDashboard").style.display = "block";
     loadFirebaseData();
@@ -264,8 +266,16 @@ auth.onAuthStateChanged(user => {
   } else {
     document.getElementById("adminAuthBox").style.display = "block";
     document.getElementById("adminDashboard").style.display = "none";
+    if (user && user.email && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      const err = document.getElementById("authError");
+      if (err) {
+        err.textContent = "⛔ Access Denied! Only Admin can access this panel.";
+        err.style.display = "block";
+      }
+    }
   }
 });
+
 
 function handleAdminLogin() {
   const email = document.getElementById("adminEmailInput").value.trim();

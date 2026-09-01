@@ -271,7 +271,6 @@
     const rBody = document.getElementById("readerBody");
     const u = typeof currentUser === 'function' ? currentUser() : null;
 
-    // 🎁 PYQ ਵਿੱਚ ਪ੍ਰਮੋਸ਼ਨਲ ਬੈਨਰ ਦਿਖਾਓ
     if (isPyq) {
       const promo = document.getElementById('pyqPromoBar');
       if (promo) promo.style.display = 'flex';
@@ -282,93 +281,69 @@
       return;
     }
 
-    // 📄 1. PYQ (Previous Year Papers) ਮੋਡ (ਸੁਰੱਖਿਅਤ ਤੇ ਮੁਫ਼ਤ ਰੀਡਰ)
+    // 📄 1. PYQ ਮੋਡ
     if (isPyq) {
       db.ref("pyqList/" + bookId).once("value", snap => {
         const pyq = snap.val();
         const pdfLink = (pyq && (pyq.url || pyq.pdf)) ? (pyq.url || pyq.pdf) : "";
-        
         if (pdfLink) {
           renderBook(fixGoogleDriveUrl(pdfLink), 'pyq');
         } else {
-          rBody.innerHTML = `
-            <div class="error-box">
-              <div style="font-size:2.5rem; margin-bottom:10px;">⏳</div>
-              <h3>ਇਹ ਪੇਪਰ ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</h3>
-              <p style="color:#666; margin:8px 0;">ਕਿਰਪਾ ਕਰਕੇ ਅੱਪਲੋਡ ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p>
-              <a href="index.html#pyq" class="btn btn-primary" style="margin-top:15px; background:#e8590c; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; display:inline-block;">← ਸਾਰੇ PYQs ਦੇਖੋ</a>
-            </div>
-          `;
+          rBody.innerHTML = `<div class="error-box"><h3>ਇਹ ਪੇਪਰ ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</h3></div>`;
         }
       });
       return;
     }
 
-    // 📖 2. Books ਮੋਡ (ਕਿਤਾਬਾਂ ਲਈ ਚੈੱਕ)
-    db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
-      const cfg = snap.val() || {};
-      const fullUrl = cfg.pdf || "";
-      const demoUrl = cfg.demoPdf || cfg.pdf || "";
-
-      // ਡੈਮੋ ਮੋਡ
-      if (isDemo) {
+    // 📖 2. ਡੈਮੋ ਮੋਡ
+    if (isDemo) {
+      db.ref("siteSettings/booksConfig/" + bookId).once("value", snap => {
+        const cfg = snap.val() || {};
+        const demoUrl = cfg.demoPdf || cfg.pdf || "";
         if (!demoUrl) {
-          rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3><p style="color:#666; margin:8px 0;">Upload ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p></div>`;
+          rBody.innerHTML = `<div class="error-box"><h3>⏳ Demo PDF ਫ਼ਿਲਹਾਲ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।</h3></div>`;
           return;
         }
         renderBook(fixGoogleDriveUrl(demoUrl), true);
-        return;
-      }
+      });
+      return;
+    }
 
-      // ਫੁੱਲ ਬੁੱਕ ਮੋਡ (ਲੌਗਇਨ ਚੈੱਕ)
-      if (!u) {
+    // 🔒 3. Full Book ਮੋਡ (ਸਰਵਰ API ਰਾਹੀਂ ਸੁਰੱਖਿਅਤ ਫੈਚ)
+    if (!u) {
+      rBody.innerHTML = `
+        <div class="error-box">
+          <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
+          <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
+          <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
+          <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
+        </div>
+      `;
+      return;
+    }
+
+    fetch("/api/get-book", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: bookId, phone: u.phone })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.pdfUrl) {
+        renderBook(fixGoogleDriveUrl(data.pdfUrl), false);
+      } else {
         rBody.innerHTML = `
           <div class="error-box">
-            <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
-            <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
-            <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
-            <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
+            <div style="font-size:2.5rem; margin-bottom:10px;">🔒</div>
+            <h3>ਕਿਤਾਬ ਲਾਕ ਹੈ</h3>
+            <p style="color:#666; margin:8px 0 16px;">${data.message || 'ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਇਹ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।'}</p>
+            <a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🛒 ਕਿਤਾਬ ਖਰੀਦੋ</a>
           </div>
         `;
-        return;
       }
-
-      // ਯੂਜ਼ਰ ਦੀ ਖਰੀਦਦਾਰੀ ਚੈੱਕ ਕਰੋ
-      db.ref("users/" + u.phone).once("value", uSnap => {
-        const uData = uSnap.val() || {};
-        const booksObj = uData.books || {};
-        const purchasesObj = uData.purchases || {};
-
-        const isUnlocked = booksObj[bookId] === true || booksObj['combo'] === true || purchasesObj[bookId] === true || purchasesObj['combo'] === true;
-
-        if (!isUnlocked) {
-          rBody.innerHTML = `
-            <div class="error-box">
-              <div style="font-size:2.5rem; margin-bottom:10px;">🔒</div>
-              <h3>ਕਿਤਾਬ ਲਾਕ ਹੈ</h3>
-              <p style="color:#666; margin:8px 0 16px;">ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਇਹ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।</p>
-              <a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🛒 ਕਿਤਾਬ ਖਰੀਦੋ</a>
-            </div>
-          `;
-          return;
-        }
-
-        // ਸਿਰਫ਼ ਅਨਲੌਕ ਹੋਣ 'ਤੇ ਸੀਕਰੇਟ ਵਾਲਟ ਵਿੱਚੋਂ ਲਿੰਕ ਲੋਡ ਕਰੋ
-        db.ref("bookVault/" + bookId).once("value", vSnap => {
-          const finalPdfUrl = vSnap.val() || demoUrl;
-          if (!finalPdfUrl) {
-            rBody.innerHTML = `
-              <div class="error-box">
-                <div style="font-size:2.5rem; margin-bottom:10px;">⏳</div>
-                <h3>Full Book PDF ਵਿੱਚ ਫ਼ਿਲਹਾਲ ਕੁੱਝ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ</h3>
-                <p style="color:#666; margin:8px 0;">Upload ਹੋਣ ਤੱਕ ਇੰਤਜ਼ਾਰ ਕਰੋ।</p>
-              </div>
-            `;
-            return;
-          }
-          renderBook(fixGoogleDriveUrl(finalPdfUrl), false);
-        });
-      });
+    })
+    .catch(() => {
+      rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</h3></div>`;
     });
   });
 </script>

@@ -45,6 +45,16 @@ const currentUser = () => {
   return p ? { phone: p, name: localStorage.getItem("pp_name") || "Student" } : null;
 };
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function toast(m) {
   const t = document.getElementById("toast");
   if (!t) return;
@@ -750,43 +760,51 @@ function finishTest() {
   clearQuizState();
 
   const u = currentUser();
-  const total = activeQuiz.length;
   const box = document.getElementById("quizBox");
+  if (!u || !box) return;
 
-  if (u) {
-    db.ref("userAttempts/" + u.phone + "/" + quizVersion).set({
-      score: qScore,
-      total: total,
-      time: new Date().toLocaleString()
-    });
+  box.innerHTML = `<div style="text-align:center; padding:30px;"><div style="font-size:2.5rem;">⏳</div><h3>ਟੈਸਟ ਦਾ ਨਤੀਜਾ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ...</h3></div>`;
 
-    db.ref("quizResults").push({
-      name: u.name,
+  // ਵਿਦਿਆਰਥੀ ਦੇ ਚੁਣੇ ਜਵਾਬ ਸਰਵਰ 'ਤੇ ਭੇਜੋ
+  const selectedIndexes = userAns.map(a => a.selected);
+
+  fetch("/api/submit-quiz", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       phone: u.phone,
-      score: qScore,
-      total: total,
-      version: quizVersion,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-  }
+      name: u.name,
+      userAnswers: selectedIndexes,
+      version: quizVersion
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      qScore = data.score;
+      const total = data.total;
+      const pct = data.percentage;
 
-  loadBoard();
-
-  const pct = Math.round((qScore / total) * 100);
-  if (box) {
-    box.innerHTML = `
-      <div class="quiz-score-card" style="text-align:center; padding:25px;">
-        <div style="font-size:3rem;">🎉</div>
-        <h3>Test Completed!</h3>
-        <p style="color:#666; margin:6px 0;">Student: <b>${u ? u.name : 'Student'}</b></p>
-        <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${qScore} / ${total}</div>
-        <p style="color:#2b8a3e; font-weight:700; margin-bottom:16px;">Marks: ${pct}%</p>
-        <button class="btn btn-primary" onclick="generateCertificate('${u ? u.name : 'Student'}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">
-          🎖️ Download Official Certificate
-        </button>
-      </div>
-    `;
-  }
+      box.innerHTML = `
+        <div class="quiz-score-card" style="text-align:center; padding:25px;">
+          <div style="font-size:3rem;">🎉</div>
+          <h3>Test Completed!</h3>
+          <p style="color:#666; margin:6px 0;">Student: <b>${escapeHtml(u.name)}</b></p>
+          <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${qScore} / ${total}</div>
+          <p style="color:#2b8a3e; font-weight:700; margin-bottom:16px;">Marks: ${pct}%</p>
+          <button class="btn btn-primary" onclick="generateCertificate('${escapeHtml(u.name)}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">
+            🎖️ Download Official Certificate
+          </button>
+        </div>
+      `;
+      loadBoard();
+    } else {
+      box.innerHTML = `<div style="text-align:center; padding:25px; color:#e03131;"><h3>⚠️ ${data.message || 'Error submitting test'}</h3></div>`;
+    }
+  })
+  .catch(() => {
+    box.innerHTML = `<div style="text-align:center; padding:25px; color:#e03131;"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</h3></div>`;
+  });
 }
 
 function generateCertificate(name, score, total) {

@@ -53,7 +53,14 @@ function toast(m) {
   setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-function logout() {
+async function logout() {
+  try {
+    if (typeof firebase !== "undefined" && firebase.auth) {
+      await firebase.auth().signOut();
+    }
+  } catch (e) {
+    console.warn("Firebase sign-out warning:", e);
+  }
   clearSession();
   localStorage.removeItem("pp_name");
   toast("Logged out ✓");
@@ -336,35 +343,37 @@ function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
     theme: {
       color: "#e8590c"
     },
-    handler: function (response) {
+    handler: async function (response) {
       if (response.razorpay_payment_id) {
-        // ਪੇਮੈਂਟ ਹਿਸਟਰੀ ਸੇਵ ਕਰੋ
-        const payRecord = {
-          paymentId: response.razorpay_payment_id,
-          phone: u.phone,
-          name: u.name,
-          bookId: bookId,
-          itemName: itemName,
-          amount: finalPrice,
-          couponUsed: couponCode || "NONE",
-          date: new Date().toLocaleString(),
-          status: "SUCCESS"
-        };
-        db.ref("payments/" + response.razorpay_payment_id).set(payRecord);
+        toast("⏳ ਵੈਰੀਫਾਈ ਹੋ ਰਿਹਾ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇੰਤਜ਼ਾਰ ਕਰੋ...");
 
-        // ਵਿਦਿਆਰਥੀ ਦੇ ਖਾਤੇ ਵਿੱਚ ਕਿਤਾਬਾਂ ਆਟੋਮੈਟਿਕ ਅਨਲੌਕ ਕਰੋ
-        if (bookId === "combo") {
-          BOOKS.forEach(b => {
-            db.ref("users/" + u.phone + "/books/" + b.id).set(true);
+        // ਸਰਵਰ API ਰਾਹੀਂ ਸੁਰੱਖਿਅਤ ਵੈਰੀਫਿਕੇਸ਼ਨ
+        try {
+          const res = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              bookId: bookId,
+              itemName: itemName,
+              phone: u.phone,
+              name: u.name,
+              amount: finalPrice
+            })
           });
-          db.ref("users/" + u.phone + "/books/combo").set(true);
-        } else {
-          db.ref("users/" + u.phone + "/books/" + bookId).set(true);
-        }
 
-        closeModal();
-        alert(`🎉 ਵਧਾਈਆਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ।\nPayment ID: ${response.razorpay_payment_id}\nਕਿਤਾਬ ਤੁਰੰਤ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।`);
-        drawBooks();
+          const result = await res.json();
+
+          if (result.success) {
+            closeModal();
+            alert(`🎉 ਵਧਾਈਆਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ।\nPayment ID: ${response.razorpay_payment_id}\nਕਿਤਾਬ ਤੁਰੰਤ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।`);
+            drawBooks();
+          } else {
+            alert("⚠️ ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ ਹੋ ਗਈ: " + (result.message || "Error"));
+          }
+        } catch (err) {
+          alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
+        }
       }
     },
     modal: {
@@ -895,28 +904,24 @@ function loadBoard() {
 
 
 function initLogin() {
-  const tL = document.getElementById("tabLogin"), tR = document.getElementById("tabReg"), fL = document.getElementById("formLogin"), fR = document.getElementById("formReg"), err = document.getElementById("loginError");
+  const tL = document.getElementById("tabLogin");
+  const tR = document.getElementById("tabReg");
+  const fL = document.getElementById("formLogin");
+  const fR = document.getElementById("formReg");
+
   if (!tL || !fL) return;
-  tL.onclick = () => { tL.classList.add("active"); tR.classList.remove("active"); fL.style.display = "block"; fR.style.display = "none"; };
-  tR.onclick = () => { tR.classList.add("active"); tL.classList.remove("active"); fR.style.display = "block"; fL.style.display = "none"; };
-  if (session()) { location.replace("index.html"); return; }
-  fR.onsubmit = e => {
-    e.preventDefault();
-    const name = document.getElementById("regName").value.trim(), phone = document.getElementById("regPhone").value.trim(), pass = document.getElementById("regPass").value;
-    if (phone.length < 10 || pass.length < 4) { err.textContent = "Please fill details correctly"; err.style.display = "block"; return; }
-    db.ref("accounts/" + phone).get().then(s => {
-      if (s.exists()) { err.textContent = "Number already registered!"; err.style.display = "block"; }
-      else { db.ref("accounts/" + phone).set({ name, phone, pass }).then(() => { setSession(phone); localStorage.setItem("pp_name", name); location.href = "index.html"; }); }
-    });
-  };
-  fL.onsubmit = e => {
-    e.preventDefault();
-    const phone = document.getElementById("loginPhone").value.trim(), pass = document.getElementById("loginPass").value;
-    db.ref("accounts/" + phone).get().then(s => {
-      if (s.exists() && s.val().pass === pass) { setSession(phone); localStorage.setItem("pp_name", s.val().name); location.href = "index.html"; }
-      else { err.textContent = "Invalid mobile or password!"; err.style.display = "block"; }
-    });
-  };
+
+  // login.html owns the real Firebase Authentication handlers.
+  // IMPORTANT: Do not overwrite form onsubmit here, otherwise the
+  // Firebase Auth login/register functions in login.html get bypassed.
+  if (typeof switchTab === "function") {
+    tL.onclick = () => switchTab("login");
+    if (tR) tR.onclick = () => switchTab("reg");
+  }
+
+  if (session()) {
+    location.replace("index.html");
+  }
 }
 
 function initReader() {

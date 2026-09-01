@@ -198,7 +198,7 @@
     </div>
     <div class="field">
       <label>🔒 Set Password (ਪਾਸਵਰਡ ਬਣਾਓ)</label>
-      <input type="password" id="regPass" placeholder="Choose password (min 4 chars)" minlength="4" required>
+      <input type="password" id="regPass" placeholder="Choose password (min 6 chars)" minlength="6" required>
     </div>
     <button type="submit" class="btn-submit">🎉 Create Account</button>
   </form>
@@ -265,84 +265,109 @@ async function hashPassword(plainText) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// --- 📝 SAFE REGISTRATION WITH HASHED PASSWORD ---
+// --- 🆕 FIREBASE AUTH STUDENT REGISTRATION ---
 async function handleRegister() {
   hideError();
+
   const name = document.getElementById("regName").value.trim();
   const phone = document.getElementById("regPhone").value.trim();
-  const pass = document.getElementById("regPass").value.trim();
+  const pass = document.getElementById("regPass").value;
 
-  if (name.length < 3) {
-    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਨਾਮ ਭਰੋ (ਘੱਟੋ-ਘੱਟ 3 ਅੱਖਰ)।");
-    return;
-  }
-  const phoneRegex = /^[6-9]\d{9}$/;
-  if (!phoneRegex.test(phone)) {
-    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
-    return;
-  }
-  if (!pass || pass.length < 4) {
-    showError("⚠️ ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 4 ਅੱਖਰਾਂ ਜਾਂ ਅੰਕਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
-    return;
-  }
+  if (name.length < 3) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਨਾਮ ਭਰੋ।");
+  if (!/^[6-9]\d{9}$/.test(phone)) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ mobile number ਭਰੋ।");
+  if (pass.length < 6) return showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 characters ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
 
-  const securePassword = await hashPassword(pass);
+  const authEmail = phone + "@amanstudypoint.student";
 
-  db.ref("accounts/" + phone).once("value", snap => {
-    if (snap.exists()) {
-      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਰਜਿਸਟਰ ਹੈ। Login ਕਰੋ!");
-      return;
+  try {
+    // Firebase Authentication is the source of truth for student credentials.
+    const credential = await firebase.auth().createUserWithEmailAndPassword(authEmail, pass);
+    const user = credential.user;
+    if (!user) throw new Error("Firebase did not return a user.");
+
+    try { await user.updateProfile({ displayName: name }); } catch (e) {
+      console.warn("Profile update warning:", e);
     }
 
-    const userData = {
-      name: name,
-      phone: phone,
-      password: securePassword,
-      createdAt: new Date().toLocaleString(),
-      authType: "phone"
-    };
-
-    db.ref("accounts/" + phone).set(userData);
-    db.ref("users/" + phone).update({ name: name, phone: phone });
+    // Database profile is optional. A database permission error must NOT make
+    // the already-created Firebase Auth account look like registration failed.
+    try {
+      await db.ref("accounts/" + phone).update({
+        name, phone, uid: user.uid, email: authEmail,
+        authType: "email-password",
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      await db.ref("users/" + phone).update({ name, phone, uid: user.uid, email: authEmail });
+    } catch (dbError) {
+      console.warn("Student profile database save skipped:", dbError);
+    }
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", name);
-    alert("🎉 ਖਾਤਾ ਸਫਲਤਾਪੂਰਵਕ ਬਣ ਗਿਆ ਹੈ!");
+    alert("🎉 Account successfully ਬਣ ਗਿਆ!");
     window.location.href = "index.html";
-  });
+  } catch (error) {
+    console.error("STUDENT REGISTRATION ERROR:", error);
+    if (error.code === "auth/email-already-in-use") {
+      showError("⚠️ ਇਹ mobile number ਪਹਿਲਾਂ ਹੀ registered ਹੈ। Login ਕਰੋ।");
+    } else if (error.code === "auth/weak-password") {
+      showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 characters ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
+    } else if (error.code === "auth/operation-not-allowed") {
+      showError("⚠️ Firebase ਵਿੱਚ Email/Password Authentication enabled ਨਹੀਂ ਹੈ।");
+    } else if (error.code === "auth/network-request-failed") {
+      showError("⚠️ Internet connection ਦੀ ਸਮੱਸਿਆ ਹੈ।");
+    } else {
+      showError("⚠️ Registration error: " + (error.message || error.code));
+    }
+  }
 }
 
-// --- 🔐 SAFE LOGIN WITH HASH CHECK ---
+// --- 🔐 MOBILE + PASSWORD LOGIN ---
 async function handleLogin() {
   hideError();
+
   const phone = document.getElementById("loginPhone").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
+  const pass = document.getElementById("loginPass").value;
 
-  if (phone.length !== 10) {
-    showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ 10 ਅੰਕਾਂ ਦਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
-    return;
-  }
+  if (!/^[6-9]\d{9}$/.test(phone)) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ।");
+  if (!pass || pass.length < 6) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ।");
 
-  const enteredHash = await hashPassword(pass);
+  const authEmail = phone + "@amanstudypoint.student";
 
-  db.ref("accounts/" + phone).once("value", snap => {
-    const acc = snap.val();
-    if (!acc) {
-      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
-      return;
+  try {
+    // IMPORTANT: Login uses the SAME Firebase Auth credentials used at registration.
+    const credential = await firebase.auth().signInWithEmailAndPassword(authEmail, pass);
+    const user = credential.user;
+
+    // Database profile is optional. Even if RTDB rules deny access, Auth login
+    // has already succeeded, so do not turn it into a login failure.
+    let studentName = (user && user.displayName) || "Student";
+    try {
+      const snap = await db.ref("accounts/" + phone).once("value");
+      const acc = snap.val() || {};
+      studentName = acc.name || studentName;
+    } catch (dbError) {
+      console.warn("Student profile read skipped:", dbError);
     }
 
-    // ਨਵਾਂ ਇਨਕ੍ਰਿਪਟਿਡ ਜਾਂ ਪੁਰਾਣਾ ਪਾਸਵਰਡ ਦੋਵੇਂ ਚੈੱਕ ਹੋਣਗੇ
-    if (acc.password === enteredHash || acc.password === pass || acc.pass === pass) {
-      localStorage.setItem("pp_session", phone);
-      localStorage.setItem("pp_name", acc.name || "Student");
-      alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
-      window.location.href = "index.html";
+    localStorage.setItem("pp_session", phone);
+    localStorage.setItem("pp_name", studentName);
+    alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+    window.location.href = "index.html";
+  } catch (error) {
+    console.error("Student Login Error:", error);
+    if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+      showError("⚠️ ਮੋਬਾਈਲ ਨੰਬਰ ਜਾਂ password ਗਲਤ ਹੈ।");
+    } else if (error.code === "auth/too-many-requests") {
+      showError("⚠️ ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ ਹੈ। ਕੁਝ ਸਮੇਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    } else if (error.code === "auth/network-request-failed") {
+      showError("⚠️ Internet connection ਦੀ ਸਮੱਸਿਆ ਹੈ।");
     } else {
-      showError("⚠️ ਪਾਸਵਰਡ ਗ਼ਲਤ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+      showError("⚠️ Login ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + (error.message || error.code));
     }
-  });
+  }
 }
+
 
 // --- 🌐 GOOGLE LOGIN ---
 function loginWithGoogle() {
@@ -387,21 +412,31 @@ function cancelForgot() {
 
 function sendForgotWhatsApp() {
   const phone = document.getElementById("forgotPhone").value.trim();
-  if (phone.length !== 10) {
-    alert("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ 10 ਅੰਕਾਂ ਦਾ ਰਜਿਸਟਰਡ ਨੰਬਰ ਭਰੋ।");
+
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    alert("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
     return;
   }
 
   db.ref("accounts/" + phone).once("value", snap => {
     const acc = snap.val();
+
     if (!acc) {
-      alert("⚠️ ਇਹ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
+      alert("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
       return;
     }
 
-    const pass = acc.password || "No password set";
-    const msg = encodeURIComponent(`Hello Sir,\nI forgot my password for Aman Study Point.\nName: ${acc.name}\nRegistered Phone: ${phone}\nPlease send my password.`);
-    window.open(`https://api.whatsapp.com/send?phone=919041321843&text=${msg}`, "_blank");
+    const msg = encodeURIComponent(
+      `Hello Sir,\n\nI forgot my Aman Study Point account password.\n\n` +
+      `Name: ${acc.name || "Student"}\n` +
+      `Registered Mobile: ${phone}\n\n` +
+      `Please help me reset my password.`
+    );
+
+    window.open(
+      `https://api.whatsapp.com/send?phone=919041321843&text=${msg}`,
+      "_blank"
+    );
   });
 }
 

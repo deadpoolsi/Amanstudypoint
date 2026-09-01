@@ -252,10 +252,29 @@ let currentResultsData = [];
 
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
 
+// Admin access is allowed only for the exact Firebase Authentication email.
+function isAdminUser(user) {
+  return !!(user && user.email &&
+    user.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase());
+}
+
+// Keep admin authentication limited to the current browser session.
+try {
+  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+} catch (e) {
+  console.warn("Session persistence setup failed:", e);
+}
+
 auth.onAuthStateChanged(user => {
-  if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-    document.getElementById("adminAuthBox").style.display = "none";
-    document.getElementById("adminDashboard").style.display = "block";
+  const authBox = document.getElementById("adminAuthBox");
+  const dashboard = document.getElementById("adminDashboard");
+  const err = document.getElementById("authError");
+
+  if (isAdminUser(user)) {
+    authBox.style.display = "none";
+    dashboard.style.display = "block";
+    if (err) err.style.display = "none";
+
     loadFirebaseData();
     loadTimerSetting();
     loadBooksConfig();
@@ -263,33 +282,70 @@ auth.onAuthStateChanged(user => {
     loadAdminPYQs();
     if (typeof loadPopupPosterConfig === 'function') loadPopupPosterConfig();
     if (typeof loadTodayDayConfig === 'function') loadTodayDayConfig();
-  } else {
-    document.getElementById("adminAuthBox").style.display = "block";
-    document.getElementById("adminDashboard").style.display = "none";
-    if (user && user.email && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      const err = document.getElementById("authError");
-      if (err) {
-        err.textContent = "⛔ Access Denied! Only Admin can access this panel.";
-        err.style.display = "block";
-      }
+    return;
+  }
+
+  authBox.style.display = "block";
+  dashboard.style.display = "none";
+
+  // If a non-admin Firebase account is already signed in, immediately sign it out.
+  if (user) {
+    if (err) {
+      err.textContent = "⛔ Access Denied! Only Admin can access this panel.";
+      err.style.display = "block";
     }
+    auth.signOut().catch(() => {});
   }
 });
 
-
-function handleAdminLogin() {
-  const email = document.getElementById("adminEmailInput").value.trim();
-  const pass = document.getElementById("adminPassInput").value.trim();
+async function handleAdminLogin() {
+  const emailInput = document.getElementById("adminEmailInput");
+  const passInput = document.getElementById("adminPassInput");
+  const button = document.querySelector('#adminAuthBox button[onclick="handleAdminLogin()"]');
   const err = document.getElementById("authError");
+
+  const email = emailInput.value.trim();
+  const pass = passInput.value;
+
+  err.style.display = "none";
+
   if (!email || !pass) {
     err.textContent = "⚠️ ਈਮੇਲ ਅਤੇ ਪਾਸਵਰਡ ਭਰੋ!";
     err.style.display = "block";
     return;
   }
-  auth.signInWithEmailAndPassword(email, pass).catch(e => {
-    err.textContent = "⚠️ " + e.message;
+
+  // Do not even attempt Firebase admin login for another email.
+  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    err.textContent = "⛔ ਇਹ Admin Email ਨਹੀਂ ਹੈ।";
     err.style.display = "block";
-  });
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "⏳ Checking...";
+  }
+
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    let message = "⚠️ Login ਨਹੀਂ ਹੋ ਸਕਿਆ।";
+    if (e && e.code === "auth/invalid-credential") {
+      message = "⚠️ Email ਜਾਂ Password ਗਲਤ ਹੈ।";
+    } else if (e && e.code === "auth/too-many-requests") {
+      message = "⚠️ ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ ਹੈ। ਕੁਝ ਸਮੇਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।";
+    } else if (e && e.code === "auth/network-request-failed") {
+      message = "⚠️ Internet/Firebase connection ਦੀ ਸਮੱਸਿਆ ਹੈ।";
+    }
+    err.textContent = message;
+    err.style.display = "block";
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "🔓 Unlock Panel";
+    }
+  }
 }
 
 function adminLogout() {
@@ -519,10 +575,10 @@ function loadFirebaseData() {
       <div class="user-card">
         <div>
           <b>${index + 1}. ${u.name}</b> (📱 ${u.phone})
-          <div style="margin-top:3px;">Password: <span class="pwd-badge">${u.pass}</span></div>
-        </div>
-        <button class="btn-del-icon" onclick="deleteStudentAccount('${u.phone}', '${u.name}')">🗑️ Delete</button>
-      </div>
+          <div style="margin-top:6px; color:#666; font-size:0.85rem;">
+  🔒 Password: Hidden
+</div>
+         </div>
     `).join("");
   });
 }

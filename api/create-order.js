@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const { amount, bookId } = req.body;
-  const RAZORPAY_KEY_ID = "rzp_live_TVWYBLz18w4R54";
+  const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstIGLQ";
   const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
   if (!amount || !RAZORPAY_KEY_SECRET) {

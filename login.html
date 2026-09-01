@@ -322,7 +322,49 @@ async function handleRegister() {
   }
 }
 
-// --- 📝 REGISTRATION (ਸਰਵਰ-ਸਾਈਡ ਸੁਰੱਖਿਅਤ) ---
+// --- 🔐 MOBILE + PASSWORD LOGIN ---
+async function handleLogin() {
+  hideError();
+
+  const phone = document.getElementById("loginPhone").value.trim();
+  const pass = document.getElementById("loginPass").value;
+
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ!");
+  }
+  if (!pass || pass.length < 6) {
+    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ!");
+  }
+
+  const authEmail = phone + "@amanstudypoint.student";
+
+  try {
+    const credential = await firebase.auth().signInWithEmailAndPassword(authEmail, pass);
+    const user = credential.user;
+
+    let studentName = (user && user.displayName) || "Student";
+    try {
+      const snap = await db.ref("accounts/" + phone).once("value");
+      const acc = snap.val() || {};
+      if (acc.name) studentName = acc.name;
+    } catch (e) {}
+
+    localStorage.setItem("pp_session", phone);
+    localStorage.setItem("pp_name", studentName);
+    alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+    window.location.href = "index.html";
+  } catch (error) {
+    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+      showError("⚠️ ਮੋਬਾਈਲ ਨੰਬਰ ਜਾਂ ਪਾਸਵਰਡ ਗ਼ਲਤ ਹੈ!");
+    } else if (error.code === "auth/too-many-requests") {
+      showError("⚠️ ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ ਹੈ। ਕੁਝ ਸਮੇਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    } else {
+      showError("⚠️ Login ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + error.message);
+    }
+  }
+}
+
+// --- 📝 REGISTRATION ---
 async function handleRegister() {
   hideError();
 
@@ -340,30 +382,38 @@ async function handleRegister() {
     return showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 ਅੱਖਰਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ!");
   }
 
+  const authEmail = phone + "@amanstudypoint.student";
+
   try {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "register",
-        name: name,
-        phone: phone,
-        password: pass
-      })
+    const credential = await firebase.auth().createUserWithEmailAndPassword(authEmail, pass);
+    const user = credential.user;
+
+    if (user) {
+      await user.updateProfile({ displayName: name });
+    }
+
+    // ਪ੍ਰੋਫਾਈਲ ਡਾਟਾਬੇਸ ਵਿੱਚ ਸੇਵ ਕਰੋ
+    await db.ref("accounts/" + phone).set({
+      name: name,
+      phone: phone,
+      createdAt: new Date().toISOString()
     });
 
-    const data = await res.json();
+    await db.ref("users/" + phone).update({
+      name: name,
+      phone: phone
+    });
 
-    if (data.success) {
-      localStorage.setItem("pp_session", data.user.phone);
-      localStorage.setItem("pp_name", data.user.name);
-      alert("✅ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਸਫਲ ਰਹੀ! ਜੀ ਆਇਆਂ ਨੂੰ।");
-      window.location.href = "index.html";
-    } else {
-      showError("⚠️ " + (data.message || "ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਦੌਰਾਨ ਸਮੱਸਿਆ ਆਈ!"));
-    }
+    localStorage.setItem("pp_session", phone);
+    localStorage.setItem("pp_name", name);
+    alert("✅ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਸਫਲ ਰਹੀ! ਜੀ ਆਇਆਂ ਨੂੰ।");
+    window.location.href = "index.html";
   } catch (error) {
-    showError("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
+    if (error.code === "auth/email-already-in-use") {
+      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਤੋਂ ਰਜਿਸਟਰਡ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਲੌਗਇਨ ਕਰੋ।");
+    } else {
+      showError("⚠️ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + error.message);
+    }
   }
 }
 

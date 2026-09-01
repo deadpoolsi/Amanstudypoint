@@ -336,7 +336,7 @@ function applyCoupon(originalPrice, id, name) {
   }
 }
 
-function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
+async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
   const u = currentUser();
   if (!u) {
     if (typeof toast === "function") toast("Please login first 🔐");
@@ -344,64 +344,79 @@ function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
     return;
   }
 
-  // ਰਕਮ ਨੂੰ ਸਹੀ ਨੰਬਰ ਅਤੇ ਪੈਸਿਆਂ ਵਿੱਚ ਬਦਲੋ
   const numPrice = Number(finalPrice) || 99;
-  const amountInPaise = Math.round(numPrice * 100);
-
-  const options = {
-    key: "rzp_live_TVWYBLz18w4R54",
-    amount: amountInPaise,
-    currency: "INR",
-    name: "Aman Study Point",
-    description: itemName || "Study Material",
-    prefill: {
-      name: u.name || "Student",
-      contact: u.phone || ""
-    },
-    theme: {
-      color: "#e8590c"
-    },
-    handler: async function (response) {
-      try {
-        const verifyRes = await fetch("/api/verify-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            razorpay_payment_id: response.razorpay_payment_id,
-            bookId: bookId,
-            phone: u.phone,
-            name: u.name,
-            amount: numPrice
-          })
-        });
-
-        const data = await verifyRes.json();
-
-        if (data.success) {
-          alert("🎉 ਪੇਮੈਂਟ ਸਫਲ ਰਹੀ! ਕਿਤਾਬ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।");
-          window.location.reload();
-        } else {
-          alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ!"));
-        }
-      } catch (err) {
-        alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
-      }
-    },
-    modal: {
-      ondismiss: function () {
-        console.log("Payment popup closed");
-      }
-    }
-  };
 
   try {
+    // 1. ਪਹਿਲਾਂ ਸਰਵਰ ਤੋਂ ਅਧਿਕਾਰਤ Order ID ਲਵੋ
+    const orderRes = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: numPrice, bookId: bookId })
+    });
+
+    const orderData = await orderRes.json();
+
+    if (!orderData.success) {
+      alert("⚠️ Order Error: " + (orderData.message || "Razorpay ਆਰਡਰ ਨਹੀਂ ਬਣ ਸਕਿਆ"));
+      return;
+    }
+
+    // 2. Razorpay Checkout ਸ਼ੁਰੂ ਕਰੋ
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "Aman Study Point",
+      description: itemName || "Study Material",
+      order_id: orderData.orderId, // ਅਸਲ Order ID
+      prefill: {
+        name: u.name || "Student",
+        contact: u.phone || ""
+      },
+      theme: {
+        color: "#e8590c"
+      },
+      handler: async function (response) {
+        try {
+          const verifyRes = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              bookId: bookId,
+              phone: u.phone,
+              name: u.name,
+              amount: numPrice
+            })
+          });
+
+          const data = await verifyRes.json();
+
+          if (data.success) {
+            alert("🎉 ਪੇਮੈਂਟ ਸਫਲ ਰਹੀ! ਕਿਤਾਬ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।");
+            window.location.reload();
+          } else {
+            alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ!"));
+          }
+        } catch (err) {
+          alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          console.log("Payment popup closed");
+        }
+      }
+    };
+
     const rzp = new Razorpay(options);
     rzp.on("payment.failed", function (resp) {
       alert("⚠️ Payment Failed: " + (resp.error.description || "ਟ੍ਰਾਂਜੈਕਸ਼ਨ ਰੱਦ ਹੋ ਗਈ"));
     });
     rzp.open();
   } catch (err) {
-    alert("⚠️ Razorpay SDK ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।");
+    alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
   }
 }
 

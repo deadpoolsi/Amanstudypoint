@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   const { amount, bookId } = req.body;
   const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstIGLQ";
-  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET ? process.env.RAZORPAY_KEY_SECRET.trim() : "";
 
   if (!amount || !RAZORPAY_KEY_SECRET) {
     return res.status(400).json({ success: false, message: "Amount or Server Secret missing" });
@@ -31,7 +31,10 @@ export default async function handler(req, res) {
     const orderData = await rzpRes.json();
 
     if (!rzpRes.ok) {
-      return res.status(rzpRes.status).json({ success: false, message: orderData.error?.description || "Order creation failed" });
+      return res.status(rzpRes.status).json({ 
+        success: false, 
+        message: orderData.error?.description || "Razorpay Authentication Failed" 
+      });
     }
 
     return res.status(200).json({

@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const { razorpay_payment_id, bookId, phone, name, amount } = req.body;
-  const RAZORPAY_KEY_ID = "rzp_live_TVWYBLz18w4R54";
+  const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstIGLQ";
   const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
   const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
   const DB_SECRET = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";

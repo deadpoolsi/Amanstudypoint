@@ -411,41 +411,24 @@ function cancelForgot() {
 }
 
 function sendForgotWhatsApp() {
-  const phone = document.getElementById("forgotPhone").value.trim();
+  const phoneInput = document.getElementById("forgotPhone");
+  const phone = phoneInput ? phoneInput.value.trim() : "";
 
   if (!/^[6-9]\d{9}$/.test(phone)) {
-    alert("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ।");
+    alert("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਵਾਲਾ ਮੋਬਾਈਲ ਨੰਬਰ ਭਰੋ ਜੀ!");
     return;
   }
 
-  db.ref("accounts/" + phone).once("value", snap => {
-    const acc = snap.val();
+  const msg = encodeURIComponent(
+    `🔒 *Aman Study Point — Password Reset Request*\n\n` +
+    `📱 Registered Mobile: ${phone}\n\n` +
+    `ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ ਸਰ, ਮੈਂ ਆਪਣਾ ਪਾਸਵਰਡ ਭੁੱਲ ਗਿਆ ਹਾਂ। ਕਿਰਪਾ ਕਰਕੇ ਮੇਰਾ ਪਾਸਵਰਡ ਰੀਸੈੱਟ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰੋ ਜੀ।`
+  );
 
-    if (!acc) {
-      alert("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਰਜਿਸਟਰ ਨਹੀਂ ਹੈ!");
-      return;
-    }
+  const adminWhatsApp = "9041321843";
+  const waUrl = `https://api.whatsapp.com/send?phone=91${adminWhatsApp}&text=${msg}`;
 
-    const msg = encodeURIComponent(
-      `Hello Sir,\n\nI forgot my Aman Study Point account password.\n\n` +
-      `Name: ${acc.name || "Student"}\n` +
-      `Registered Mobile: ${phone}\n\n` +
-      `Please help me reset my password.`
-    );
-
-    window.open(
-      `https://api.whatsapp.com/send?phone=919041321843&text=${msg}`,
-      "_blank"
-    );
-  });
-}
-
-// 🔒 ਪਾਸਵਰਡ ਨੂੰ ਸਕਿਓਰ ਕੋਡ (Hash) ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ
-async function hashPassword(plainText) {
-  const msgUint8 = new TextEncoder().encode(plainText);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  window.open(waUrl, "_blank");
 }
 
 </script>

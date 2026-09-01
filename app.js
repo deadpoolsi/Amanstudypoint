@@ -338,63 +338,71 @@ function applyCoupon(originalPrice, id, name) {
 
 function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
   const u = currentUser();
-  if (!u) return;
+  if (!u) {
+    if (typeof toast === "function") toast("Please login first 🔐");
+    setTimeout(() => { location.href = "login.html"; }, 800);
+    return;
+  }
+
+  // ਰਕਮ ਨੂੰ ਸਹੀ ਨੰਬਰ ਅਤੇ ਪੈਸਿਆਂ ਵਿੱਚ ਬਦਲੋ
+  const numPrice = Number(finalPrice) || 99;
+  const amountInPaise = Math.round(numPrice * 100);
 
   const options = {
-    key: RAZORPAY_KEY_ID,
-    amount: finalPrice * 100, // paise ਵਿੱਚ
+    key: "rzp_live_TVWYBLz18w4R54",
+    amount: amountInPaise,
     currency: "INR",
     name: "Aman Study Point",
-    description: `Unlock ${itemName}`,
+    description: itemName || "Study Material",
     prefill: {
-      name: u.name || "",
+      name: u.name || "Student",
       contact: u.phone || ""
     },
     theme: {
       color: "#e8590c"
     },
     handler: async function (response) {
-      if (response.razorpay_payment_id) {
-        toast("⏳ ਵੈਰੀਫਾਈ ਹੋ ਰਿਹਾ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇੰਤਜ਼ਾਰ ਕਰੋ...");
+      try {
+        const verifyRes = await fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            bookId: bookId,
+            phone: u.phone,
+            name: u.name,
+            amount: numPrice
+          })
+        });
 
-        // ਸਰਵਰ API ਰਾਹੀਂ ਸੁਰੱਖਿਅਤ ਵੈਰੀਫਿਕੇਸ਼ਨ
-        try {
-          const res = await fetch("/api/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_payment_id: response.razorpay_payment_id,
-              bookId: bookId,
-              itemName: itemName,
-              phone: u.phone,
-              name: u.name,
-              amount: finalPrice
-            })
-          });
+        const data = await verifyRes.json();
 
-          const result = await res.json();
-
-          if (result.success) {
-            closeModal();
-            alert(`🎉 ਵਧਾਈਆਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ।\nPayment ID: ${response.razorpay_payment_id}\nਕਿਤਾਬ ਤੁਰੰਤ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।`);
-            drawBooks();
-          } else {
-            alert("⚠️ ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ ਹੋ ਗਈ: " + (result.message || "Error"));
-          }
-        } catch (err) {
-          alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
+        if (data.success) {
+          alert("🎉 ਪੇਮੈਂਟ ਸਫਲ ਰਹੀ! ਕਿਤਾਬ ਅਨਲੌਕ ਹੋ ਗਈ ਹੈ।");
+          window.location.reload();
+        } else {
+          alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ!"));
         }
+      } catch (err) {
+        alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
       }
     },
     modal: {
       ondismiss: function () {
-        console.log("Payment cancelled");
+        console.log("Payment popup closed");
       }
     }
   };
 
-  const rzp = new Razorpay(options);
-  rzp.open();
+  try {
+    const rzp = new Razorpay(options);
+    rzp.on("payment.failed", function (resp) {
+      alert("⚠️ Payment Failed: " + (resp.error.description || "ਟ੍ਰਾਂਜੈਕਸ਼ਨ ਰੱਦ ਹੋ ਗਈ"));
+    });
+    rzp.open();
+  } catch (err) {
+    alert("⚠️ Razorpay SDK ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।");
+  }
 }
 
 function closeModal() {

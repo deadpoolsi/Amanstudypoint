@@ -329,90 +329,41 @@ async function handleLogin() {
   const phone = document.getElementById("loginPhone").value.trim();
   const pass = document.getElementById("loginPass").value;
 
-  if (!/^[6-9]\d{9}$/.test(phone)) {
-    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ!");
-  }
-  if (!pass || pass.length < 6) {
-    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ!");
-  }
+  if (!/^[6-9]\d{9}$/.test(phone)) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ।");
+  if (!pass || pass.length < 6) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ।");
 
   const authEmail = phone + "@amanstudypoint.student";
 
   try {
+    // IMPORTANT: Login uses the SAME Firebase Auth credentials used at registration.
     const credential = await firebase.auth().signInWithEmailAndPassword(authEmail, pass);
     const user = credential.user;
 
+    // Database profile is optional. Even if RTDB rules deny access, Auth login
+    // has already succeeded, so do not turn it into a login failure.
     let studentName = (user && user.displayName) || "Student";
     try {
       const snap = await db.ref("accounts/" + phone).once("value");
       const acc = snap.val() || {};
-      if (acc.name) studentName = acc.name;
-    } catch (e) {}
+      studentName = acc.name || studentName;
+    } catch (dbError) {
+      console.warn("Student profile read skipped:", dbError);
+    }
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", studentName);
     alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
     window.location.href = "index.html";
   } catch (error) {
-    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-      showError("⚠️ ਮੋਬਾਈਲ ਨੰਬਰ ਜਾਂ ਪਾਸਵਰਡ ਗ਼ਲਤ ਹੈ!");
+    console.error("Student Login Error:", error);
+    if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+      showError("⚠️ ਮੋਬਾਈਲ ਨੰਬਰ ਜਾਂ password ਗਲਤ ਹੈ।");
     } else if (error.code === "auth/too-many-requests") {
       showError("⚠️ ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ ਹੈ। ਕੁਝ ਸਮੇਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    } else if (error.code === "auth/network-request-failed") {
+      showError("⚠️ Internet connection ਦੀ ਸਮੱਸਿਆ ਹੈ।");
     } else {
-      showError("⚠️ Login ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + error.message);
-    }
-  }
-}
-
-// --- 📝 REGISTRATION ---
-async function handleRegister() {
-  hideError();
-
-  const name = document.getElementById("regName") ? document.getElementById("regName").value.trim() : "Student";
-  const phone = document.getElementById("regPhone").value.trim();
-  const pass = document.getElementById("regPass").value;
-
-  if (!name) {
-    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਨਾਮ ਭਰੋ ਜੀ!");
-  }
-  if (!/^[6-9]\d{9}$/.test(phone)) {
-    return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ!");
-  }
-  if (!pass || pass.length < 6) {
-    return showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 ਅੱਖਰਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ!");
-  }
-
-  const authEmail = phone + "@amanstudypoint.student";
-
-  try {
-    const credential = await firebase.auth().createUserWithEmailAndPassword(authEmail, pass);
-    const user = credential.user;
-
-    if (user) {
-      await user.updateProfile({ displayName: name });
-    }
-
-    // ਪ੍ਰੋਫਾਈਲ ਡਾਟਾਬੇਸ ਵਿੱਚ ਸੇਵ ਕਰੋ
-    await db.ref("accounts/" + phone).set({
-      name: name,
-      phone: phone,
-      createdAt: new Date().toISOString()
-    });
-
-    await db.ref("users/" + phone).update({
-      name: name,
-      phone: phone
-    });
-
-    localStorage.setItem("pp_session", phone);
-    localStorage.setItem("pp_name", name);
-    alert("✅ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਸਫਲ ਰਹੀ! ਜੀ ਆਇਆਂ ਨੂੰ।");
-    window.location.href = "index.html";
-  } catch (error) {
-    if (error.code === "auth/email-already-in-use") {
-      showError("⚠️ ਇਹ ਮੋਬਾਈਲ ਨੰਬਰ ਪਹਿਲਾਂ ਤੋਂ ਰਜਿਸਟਰਡ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਲੌਗਇਨ ਕਰੋ।");
-    } else {
-      showError("⚠️ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + error.message);
+      showError("⚠️ Login ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + (error.message || error.code));
     }
   }
 }

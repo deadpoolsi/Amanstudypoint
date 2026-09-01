@@ -259,8 +259,7 @@ function drawBooks() {
 }
 
 /* 5. Checkout Modal with Coupon Discount & Razorpay Gateway */
-const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ
-  ";
+const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ";
 function openBuy(id) {
   const u = currentUser();
   if (!u) { toast("Please login first 👇"); setTimeout(() => location.href = "login.html", 800); return; }

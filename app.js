@@ -457,20 +457,22 @@ function loadPublicPYQs() {
   });
 }
 
-
-
-// 👁️ ਸਿਰਫ਼ 1 ਯੂਜ਼ਰ / ਡਿਵਾਈਸ ਦਾ 1 ਹੀ ਵਿਊ ਕਾਊਂਟ ਹੋਵੇਗਾ
-function openSecurePYQ(key) {
+// 👁️ ਸੁਰੱਖਿਅਤ ਅਤੇ ਸਹੀ ਵਿਊ ਕਾਊਂਟਰ (ਹਰ ਸੈਸ਼ਨ ਦਾ 1 ਵਿਊ)
+async function openSecurePYQ(key) {
   const viewedKey = "viewed_pyq_" + key;
 
-  // ਜੇਕਰ ਇਸ ਫ਼ੋਨ/ਬ੍ਰਾਊਜ਼ਰ ਨੇ ਪਹਿਲਾਂ ਇਹ ਪੇਪਰ ਨਹੀਂ ਦੇਖਿਆ
-  if (!localStorage.getItem(viewedKey)) {
-    localStorage.setItem(viewedKey, "true");
-    
-    // ਸਿਰਫ਼ ਪਹਿਲੀ ਵਾਰ ਵਿਊ +1 ਹੋਵੇਗਾ
-    db.ref("pyqList/" + key + "/views").transaction(currentViews => {
-      return (currentViews || 0) + 1;
-    });
+  // ਜੇਕਰ ਇਸ ਸੈਸ਼ਨ ਵਿੱਚ ਪੇਪਰ ਪਹਿਲਾਂ ਨਹੀਂ ਖੋਲ੍ਹਿਆ
+  if (!sessionStorage.getItem(viewedKey)) {
+    sessionStorage.setItem(viewedKey, "true");
+    try {
+      if (typeof db !== "undefined") {
+        await db.ref("pyqList/" + key + "/views").transaction(currentViews => {
+          return (currentViews || 0) + 1;
+        });
+      }
+    } catch (err) {
+      console.warn("View update error:", err);
+    }
   }
 
   // ਰੀਡਰ ਪੇਜ 'ਤੇ ਭੇਜੋ

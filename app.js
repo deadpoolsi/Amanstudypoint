@@ -1393,3 +1393,43 @@ function syncPurchasedBooks() {
 document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });
+
+// 🔍 Smart AI Study Doubt Solver Function
+async function askDoubtAI() {
+  const inp = document.getElementById("aiDoubtInput");
+  const resBox = document.getElementById("aiDoubtResult");
+  const btn = document.getElementById("aiSearchBtn");
+
+  if (!inp || !resBox || !btn) return;
+  const q = inp.value.trim();
+
+  if (q.length < 3) {
+    alert("ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਸਵਾਲ ਲਿਖੋ!");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "⏳ ਲੱਭ ਰਿਹਾ ਹੈ...";
+  resBox.style.display = "block";
+  resBox.innerHTML = "<span style='color:#777;'>AI ਅਧਿਆਪਕ ਸਹੀ ਉੱਤਰ ਤਿਆਰ ਕਰ ਰਿਹਾ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇੰਤਜ਼ਾਰ ਕਰੋ...</span>";
+
+  try {
+    const res = await fetch("/api/ask-doubt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: q })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      resBox.innerHTML = `<b>ਉੱਤਰ:</b><br>${data.answer.replace(/\n/g, '<br>')}`;
+    } else {
+      resBox.innerHTML = `<span style="color:#c92a2a;">${data.message || 'ਕੋਈ ਸਮੱਸਿਆ ਆਈ ਹੈ।'}</span>`;
+    }
+  } catch (err) {
+    resBox.innerHTML = `<span style="color:#c92a2a;">ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "🔍 ਲੱਭੋ";
+  }
+}

@@ -1370,3 +1370,31 @@ document.addEventListener('keydown', e => {
     return false;
   }
 });
+
+// 🔄 Firebase ਵਿੱਚੋਂ ਖਰੀਦੀਆਂ ਕਿਤਾਬਾਂ ਲਾਈਵ ਸਿੰਕ ਕਰੋ
+function syncPurchasedBooks() {
+  const u = (typeof currentUser === "function") ? currentUser() : null;
+  if (!u || !u.phone) return;
+
+  if (typeof db !== "undefined") {
+    db.ref("users/" + u.phone + "/books").on("value", snap => {
+      const liveBooks = snap.val() || {};
+      
+      // ਲੋਕਲ ਸਟੋਰੇਜ ਵਿੱਚ ਯੂਜ਼ਰ ਦੀਆਂ ਕਿਤਾਬਾਂ ਅੱਪਡੇਟ ਕਰੋ
+      u.books = liveBooks;
+      localStorage.setItem("asp_user", JSON.stringify(u));
+
+      // ਬਟਨਾਂ ਨੂੰ "Buy" ਤੋਂ "Read" ਵਿੱਚ ਬਦਲਣ ਲਈ ਬੁੱਕ ਲਿਸਟ ਦੁਬਾਰਾ ਰੈਂਡਰ ਕਰੋ
+      if (typeof renderBooks === "function") {
+        renderBooks();
+      } else if (typeof loadBooks === "function") {
+        loadBooks();
+      }
+    });
+  }
+}
+
+// ਪੇਜ ਲੋਡ ਹੁੰਦੇ ਹੀ ਚਲਾਓ
+document.addEventListener("DOMContentLoaded", () => {
+  syncPurchasedBooks();
+});

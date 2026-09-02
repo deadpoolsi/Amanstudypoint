@@ -94,10 +94,9 @@ function toggleDarkMode() {
   if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
 }
 
-
 /* 3. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
-  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ । ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
+  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
@@ -136,7 +135,6 @@ function updateComboUI(cfg) {
 }
 
 function initLiveBooksConfig() {
-  // 1. ਜ਼ੀਰੋ ਦੇਰੀ: ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਡਾਟਾ ਤੁਰੰਤ ਦਿਖਾਓ
   const cachedCfg = localStorage.getItem('asp_cached_books_cfg');
   if (cachedCfg) {
     try {
@@ -152,7 +150,6 @@ function initLiveBooksConfig() {
     activeCoupon = snap.val();
   });
 
-  // 2. Firebase ਤੋਂ ਲਾਈਵ ਸਿੰਕ
   db.ref('siteSettings/booksConfig').on('value', snap => {
     liveBooksConfig = snap.val() || {};
     localStorage.setItem('asp_cached_books_cfg', JSON.stringify(liveBooksConfig));
@@ -168,7 +165,7 @@ function renderAccount() {
   if (u) {
     b.textContent = "👤 " + u.name;
     b.onclick = () => editStudentName();
-b.title = "Click to Edit Name";
+    b.title = "Click to Edit Name";
     b.href = "#myBooks";
     if (anNav) anNav.style.display = "inline-block";
     loadUserAnalytics();
@@ -207,7 +204,6 @@ function renderBooksRealtime() {
     });
   }
 }
-
 
 function filterBooks(cat, btn) {
   activeCategory = cat;
@@ -294,7 +290,6 @@ function showModal(title, price, id, name) {
     <div class="pay-book" style="font-size:1.1rem; font-weight:bold; color:#e8590c; margin-bottom:6px;">${title}</div>
     <div class="pay-price" id="modalPriceDisplay" style="font-size:1.3rem; font-weight:bold; margin-bottom:12px;">Price: ₹${price}</div>
 
-    <!-- 🏷️ Coupon Code Box -->
     <div style="margin: 10px 0 16px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px dashed #ffa94d;">
       <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਕੋਡ ਲਗਾਓ):</div>
       <div style="display: flex; gap: 6px;">
@@ -304,7 +299,6 @@ function showModal(title, price, id, name) {
       <div id="couponMsg" style="font-size:0.8rem; margin-top:6px;"></div>
     </div>
 
-    <!-- 💳 Razorpay Instant Pay Button -->
     <div id="modalPayBtnBox">
       <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${price})" style="background:#1971c2; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
         ⚡ Pay ₹${price} via Razorpay (GPay/PhonePe/Cards)
@@ -334,7 +328,6 @@ function applyCoupon(originalPrice, id, name) {
   msg.innerHTML = `<span style="color:#2b8a3e; font-weight:700;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${discountAmount} ਦੀ ਛੋਟ ਮਿਲੀ (${activeCoupon.discount}% Off)</span>`;
   pDisp.innerHTML = `Price: <s style="color:#888;">₹${originalPrice}</s> <b style="color:#2b8a3e;">₹${finalPrice}</b>`;
 
-  // ਡਿਸਕਾਊਂਟ ਵਾਲੇ ਰੇਟ ਨਾਲ ਬਟਨ ਅੱਪਡੇਟ ਕਰੋ
   if (btnBox) {
     btnBox.innerHTML = `
       <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${finalPrice}, '${inp}')" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
@@ -355,7 +348,6 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
   const numPrice = Number(finalPrice) || 99;
 
   try {
-    // 1. ਪਹਿਲਾਂ ਸਰਵਰ ਤੋਂ ਅਧਿਕਾਰਤ Order ID ਲਵੋ
     const orderRes = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -369,14 +361,13 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
       return;
     }
 
-    // 2. Razorpay Checkout ਸ਼ੁਰੂ ਕਰੋ
     const options = {
       key: orderData.keyId,
       amount: orderData.amount,
       currency: orderData.currency,
       name: "Aman Study Point",
       description: itemName || "Study Material",
-      order_id: orderData.orderId, // ਅਸਲ Order ID
+      order_id: orderData.orderId,
       prefill: {
         name: u.name || "Student",
         contact: u.phone || ""
@@ -433,7 +424,7 @@ function closeModal() {
   if (m) { m.hidden = true; m.style.display = "none"; }
 }
 
-/* 6. Free PYQ Loader (Compact & No-Gap Card) */
+/* 6. Free PYQ Loader */
 function loadPublicPYQs() {
   const container = document.getElementById("pyqListContainer") || document.getElementById("pyqList");
   if (!container) return;
@@ -466,18 +457,15 @@ function loadPublicPYQs() {
   });
 }
 
-// 👁️ ਸਥਾਈ ਯੂਨੀਕ ਵਿਊ ਕਾਊਂਟਰ (1 ਯੂਜ਼ਰ/ਡਿਵਾਈਸ = ਸਿਰਫ਼ 1 ਵਾਰ ਵਿਊ)
 function openSecurePYQ(key) {
   const u = currentUser();
   const storageKey = u ? ("asp_pyq_seen_" + u.phone + "_" + key) : ("asp_pyq_seen_guest_" + key);
 
-  // ਜੇਕਰ ਪਹਿਲਾਂ ਕਦੇ ਦੇਖਿਆ ਹੈ, ਤਾਂ ਸਿੱਧਾ ਪੇਪਰ ਖੋਲ੍ਹੋ (ਵਿਊ ਨਹੀਂ ਵਧੇਗਾ)
   if (localStorage.getItem(storageKey) === "done") {
     window.location.href = `reader.html?id=${key}&type=pyq`;
     return;
   }
 
-  // ਪਹਿਲੀ ਵਾਰ ਲਈ ਲੌਕ ਕਰੋ
   localStorage.setItem(storageKey, "done");
 
   try {
@@ -494,7 +482,6 @@ function openSecurePYQ(key) {
     window.location.href = `reader.html?id=${key}&type=pyq`;
   }, 200);
 }
-
 
 /* 7. Student Analytics Progress */
 function loadUserAnalytics() {
@@ -541,7 +528,7 @@ function loadUserAnalytics() {
   });
 }
 
-/* 8. Quiz Engine (Auto-Submit Notice, Timer, Auto-Resume & Leaderboard) */
+/* 8. Quiz Engine */
 let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false, quizTotalMins = 20;
 
 function getProgressKey() {
@@ -568,7 +555,6 @@ function clearQuizState() {
   if (key) localStorage.removeItem(key);
 }
 
-// ⚠️ ਟੈਸਟ ਚੱਲਦੇ ਸਮੇਂ ਬਾਹਰ ਜਾਣ 'ਤੇ ਸੇਵ ਕਰੋ
 window.addEventListener('beforeunload', (e) => {
   if (isTimerStarted && qIdx < activeQuiz.length) {
     saveQuizState();
@@ -607,20 +593,18 @@ function initQuiz() {
             <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b> <span id="userStreakBadge"></span></p>
             <div class="quiz-score-num" style="font-size:2rem; font-weight:800; color:#e8590c; margin:10px 0;">${prev.score} / ${prev.total}</div>
             <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
-                    <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
-          🎖️ Download Official Certificate
-        </button>
-
-        <!-- 🟢 WhatsApp Share Button -->
-        <button class="btn btn-block" onclick="shareCertificateWhatsApp('${u.name}', ${prev.score}, ${prev.total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
-          <span>📲</span> Share Result on WhatsApp
-        </button>
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
+              🎖️ Download Official Certificate
+            </button>
+            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${u.name}', ${prev.score}, ${prev.total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>📲</span> Share Result on WhatsApp
+            </button>
           </div>
         `;
         updateDailyStreak(u.phone).then(streak => {
-  const badgeEl = document.getElementById("userStreakBadge");
-  if (badgeEl) badgeEl.innerHTML = renderStreakBadge(streak);
-});
+          const badgeEl = document.getElementById("userStreakBadge");
+          if (badgeEl) badgeEl.innerHTML = renderStreakBadge(streak);
+        });
       } else {
         db.ref("dailyQuiz").once("value", qSnap => {
           activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
@@ -672,7 +656,6 @@ function showQuizStartScreen() {
       <h3 style="color:#e8590c; margin-bottom:6px;">Daily Punjab Exam Mock Test</h3>
       <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">ਵਿਦਿਆਰਥੀ: <b>${u.name}</b></p>
       
-      <!-- ⚠️ ਸਪੱਸ਼ਟ ਆਟੋ-ਸਬਮਿਟ ਹਦਾਇਤ ਬਾਕਸ -->
       <div style="background:#fff4e6; border:1.5px dashed #ffa94d; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
         <h4 style="color:#d9480f; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
           ⚠️ ਜ਼ਰੂਰੀ ਹਦਾਇਤ (Important Rule):
@@ -680,7 +663,7 @@ function showQuizStartScreen() {
         <ul style="font-size:0.88rem; color:#444; line-height:1.5; padding-left:18px; margin:0;">
           <li>ਕੁੱਲ ਸਵਾਲ: <b>${activeQuiz.length}</b> | ਕੁੱਲ ਸਮਾਂ: <b>${quizTotalMins} ਮਿੰਟ</b></li>
           <li style="color:#c92a2a; font-weight:700; margin-top:6px;">
-            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਦਿੱਤਾ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਸਮਾਂ ਖ਼ਤਮ ਹੋਣ 'ਤੇ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਅਟੈਮਪਟ ਕੀਤੇ ਹੋਣਗੇ , ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ!
+            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਦਿੱਤਾ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਸਮਾਂ ਖ਼ਤਮ ਹੋਣ 'ਤੇ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਅਟੈਮਪਟ ਕੀਤੇ ਹੋਣਗੇ, ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ!
           </li>
           <li style="margin-top:4px;">ਟੈਸਟ ਪੂਰਾ ਹੋਣ 'ਤੇ ਸਰਟੀਫਿਕੇਟ ਮਿਲੇਗਾ।</li>
         </ul>
@@ -714,7 +697,7 @@ function startTimer() {
     }
     if (qSecs <= 0) { 
       clearInterval(qTimer); 
-      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਅਟੈਮਪਟ ਕੀਤੇ ਸਵਾਲਾਂ  ਮੁਤਾਬਕ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
+      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਅਟੈਮਪਟ ਕੀਤੇ ਸਵਾਲਾਂ ਮੁਤਾਬਕ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
       finishTest(); 
     }
   }, 1000);
@@ -730,7 +713,6 @@ function renderQ() {
   const m = Math.floor(qSecs / 60), s = qSecs % 60;
   
   box.innerHTML = `
-    <!-- 💡 ਐਕਟਿਵ ਟੈਸਟ ਦੌਰਾਨ ਸਪੱਸ਼ਟ ਨੋਟਿਸ -->
     <div style="background:#fff9db; border:1px solid #fab005; padding:6px 10px; border-radius:6px; font-size:0.78rem; color:#f08c00; margin-bottom:10px; font-weight:600; text-align:center;">
       ⚠️ ਜੇਕਰ ਟੈਸਟ ਕੱਟਿਆ ਗਿਆ, ਤਾਂ ਸਮਾਂ ਪੂਰਾ ਹੋਣ 'ਤੇ ਅਟੈਮਪਟ ਸਵਾਲ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਜਾਣਗੇ।
     </div>
@@ -787,6 +769,7 @@ function checkAns(selectedIdx) {
   }, 1000);
 }
 
+// 🎯 ਅੱਪਡੇਟ ਕੀਤਾ finishTest ਫੰਕਸ਼ਨ (ਦੋਵੇਂ ਬਟਨ ਤੁਰੰਤ ਦਿਖਣਗੇ)
 function finishTest() {
   clearInterval(qTimer);
   qTimer = null;
@@ -799,7 +782,6 @@ function finishTest() {
 
   box.innerHTML = `<div style="text-align:center; padding:30px;"><div style="font-size:2.5rem;">⏳</div><h3>ਟੈਸਟ ਦਾ ਨਤੀਜਾ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ...</h3></div>`;
 
-  // ਵਿਦਿਆਰਥੀ ਦੇ ਚੁਣੇ ਜਵਾਬ ਸਰਵਰ 'ਤੇ ਭੇਜੋ
   const selectedIndexes = userAns.map(a => a.selected);
 
   fetch("/api/submit-quiz", {
@@ -823,14 +805,24 @@ function finishTest() {
         <div class="quiz-score-card" style="text-align:center; padding:25px;">
           <div style="font-size:3rem;">🎉</div>
           <h3>Test Completed!</h3>
-          <p style="color:#666; margin:6px 0;">Student: <b>${escapeHtml(u.name)}</b></p>
+          <p style="color:#666; margin:6px 0;">Student: <b>${escapeHtml(u.name)}</b> <span id="userStreakBadge"></span></p>
           <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${qScore} / ${total}</div>
           <p style="color:#2b8a3e; font-weight:700; margin-bottom:16px;">Marks: ${pct}%</p>
-          <button class="btn btn-primary" onclick="generateCertificate('${escapeHtml(u.name)}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">
-            🎖️ Download Official Certificate
-          </button>
+          
+          <div style="display:flex; flex-direction:column; gap:10px; max-width:280px; margin:0 auto;">
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${escapeHtml(u.name)}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:bold; width:100%;">
+              🎖️ Download Official Certificate
+            </button>
+            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${escapeHtml(u.name)}', ${qScore}, ${total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>📲</span> Share Result on WhatsApp
+            </button>
+          </div>
         </div>
       `;
+      updateDailyStreak(u.phone).then(streak => {
+        const badgeEl = document.getElementById("userStreakBadge");
+        if (badgeEl) badgeEl.innerHTML = renderStreakBadge(streak);
+      });
       loadBoard();
     } else {
       box.innerHTML = `<div style="text-align:center; padding:25px; color:#e03131;"><h3>⚠️ ${data.message || 'Error submitting test'}</h3></div>`;
@@ -848,11 +840,9 @@ function generateCertificate(name, score, total) {
   canvas.height = 600;
   const ctx = canvas.getContext("2d");
 
-  // Certificate Background
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, 900, 600);
 
-  // Border
   ctx.strokeStyle = "#e8590c";
   ctx.lineWidth = 14;
   ctx.strokeRect(20, 20, 860, 560);
@@ -860,7 +850,6 @@ function generateCertificate(name, score, total) {
   ctx.lineWidth = 4;
   ctx.strokeRect(32, 32, 836, 536);
 
-  // Header Title
   ctx.fillStyle = "#e8590c";
   ctx.font = "bold 34px sans-serif";
   ctx.textAlign = "center";
@@ -874,29 +863,24 @@ function generateCertificate(name, score, total) {
   ctx.font = "20px sans-serif";
   ctx.fillText("This is proudly presented to", 450, 190);
 
-  // Student Name
   ctx.fillStyle = "#1971c2";
   ctx.font = "bold 40px sans-serif";
   ctx.fillText(name.toUpperCase(), 450, 250);
 
-  // Score Info
   ctx.fillStyle = "#333333";
   ctx.font = "20px sans-serif";
   ctx.fillText(`for scoring ${score} out of ${total} (${percentage}% Marks)`, 450, 310);
   ctx.fillText(`in the Punjab Competitive Exam Daily Mock Test Series`, 450, 345);
 
-  // Date & Badge
   const dateStr = new Date().toLocaleDateString('en-GB');
   ctx.fillStyle = "#777777";
   ctx.font = "16px sans-serif";
   ctx.fillText(`Date: ${dateStr}  •  Status: Verified Participant`, 450, 420);
 
-  // Signature
   ctx.fillStyle = "#e8590c";
   ctx.font = "bold 20px sans-serif";
   ctx.fillText("Aman Study Point Mansa", 450, 500);
 
-  // Download Trigger
   const link = document.createElement("a");
   link.download = `Certificate_${name.replace(/\s+/g, '_')}.png`;
   link.href = canvas.toDataURL("image/png");
@@ -920,11 +904,9 @@ function loadBoard() {
   const list = document.getElementById("leaderboardList");
   if (!list) return;
 
-  // 1. ਮੌਜੂਦਾ ਨਵੇਂ ਟੈਸਟ ਦਾ ਵਰਜਨ ਚੈੱਕ ਕਰੋ
   db.ref("quizVersion").on("value", vSnap => {
     const curVer = vSnap.val() || "v1";
 
-    // 2. ਸਿਰਫ਼ ਉਸੇ ਨਵੇਂ ਵਰਜਨ ਵਾਲੇ ਟੈਸਟ ਦੇ ਨਤੀਜੇ ਦਿਖਾਓ
     db.ref("quizResults").on("value", snap => {
       const data = snap.val();
       if (!data) {
@@ -933,7 +915,7 @@ function loadBoard() {
       }
 
       const items = Object.values(data)
-        .filter(r => r.version === curVer) // ਕੇਵਲ ਨਵੇਂ ਟੈਸਟ ਦੇ ਰਿਜ਼ਲਟ
+        .filter(r => r.version === curVer)
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
 
@@ -954,7 +936,6 @@ function loadBoard() {
   });
 }
 
-
 function initLogin() {
   const tL = document.getElementById("tabLogin");
   const tR = document.getElementById("tabReg");
@@ -963,9 +944,6 @@ function initLogin() {
 
   if (!tL || !fL) return;
 
-  // login.html owns the real Firebase Authentication handlers.
-  // IMPORTANT: Do not overwrite form onsubmit here, otherwise the
-  // Firebase Auth login/register functions in login.html get bypassed.
   if (typeof switchTab === "function") {
     tL.onclick = () => switchTab("login");
     if (tR) tR.onclick = () => switchTab("reg");
@@ -976,36 +954,12 @@ function initLogin() {
   }
 }
 
-function initReader() {
-  const body = document.getElementById("readerBody");
-  if (!body) return;
-  const params = new URLSearchParams(location.search), id = params.get("id"), isDemo = params.get("demo") === "true", b = BOOKS.find(x => x.id === id), u = currentUser();
-  if (isDemo && b) {
-    const rh = document.getElementById("readerHead");
-    if (rh) rh.innerHTML = `<div class="emoji">${b.emoji}</div><h1>${b.title} (Free Demo Sample)</h1><div class="meta">Sample Preview • ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਖਰੀਦੋ</div><div style="margin-top:12px;"><button class="btn btn-primary btn-small" onclick="openBuy('${b.id}')">🛒 Buy Full Book</button></div>`;
-    body.innerHTML = `<div style="position:relative;width:100%;height:80vh;border:2px solid var(--line);border-radius:14px;overflow:hidden;"><iframe src="${b.demoPdf || b.pdf || ''}" style="width:100%;height:100%;border:none;"></iframe></div>`;
-    return;
-  }
-  if (!u) { body.innerHTML = '<div class="reader-note" style="margin-top:60px">❌ Please login first.<br><br><a class="btn btn-primary" href="login.html">🔐 Login</a></div>'; return; }
-  db.ref("users/" + u.phone + "/books/" + id).get().then(snap => {
-    if (snap.val() === true) {
-      const rh = document.getElementById("readerHead");
-      if (rh && b) rh.innerHTML = `<div class="emoji">${b.emoji}</div><h1>${b.title}</h1><div class="meta">${b.sub} • Full Unlocked</div>`;
-      body.innerHTML = `<div style="position:relative;width:100%;height:80vh;border:2px solid var(--line);border-radius:14px;overflow:hidden;"><div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;display:flex;flex-direction:column;justify-content:space-around;align-items:center;opacity:0.18;transform:rotate(-25deg);user-select:none;"><h2>${u.name} — ${u.phone}</h2><h2>${u.name} — ${u.phone}</h2></div><iframe src="${b ? b.pdf : ''}" style="width:100%;height:100%;border:none;"></iframe></div>`;
-    } else { body.innerHTML = '<div class="reader-note" style="margin-top:60px">🔒 Book is locked. Admin approval required.<br><br><a class="btn btn-primary" href="index.html#books">📚 View Books</a></div>'; }
-  });
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   renderAccount();
   initLiveBooksConfig();
   renderBooksRealtime();
   loadPublicPYQs();
-    const params = new URLSearchParams(window.location.search);
-  if (params.get('type') !== 'pyq') {
-    // initReader();
-  }
   initLogin();
   initQuiz();
   const m = document.getElementById("modal");
@@ -1014,7 +968,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mc) mc.onclick = closeModal;
 });
 
-// --- STUDENT NAME EDIT FUNCTION ---
 function editStudentName() {
   const u = currentUser();
   if (!u) return;
@@ -1031,7 +984,6 @@ function editStudentName() {
   }
 }
 
-// --- GOOGLE SIGN IN FUNCTION ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
@@ -1040,7 +992,6 @@ function loginWithGoogle() {
       const name = user.displayName || "Student";
       const identifier = user.phoneNumber || user.email.split('@')[0];
 
-      // Save to Firebase Database
       db.ref("accounts/" + identifier).update({
         name: name,
         phone: identifier,
@@ -1058,7 +1009,6 @@ function loginWithGoogle() {
     });
 }
 
-// --- LIVE POPUP POSTER LISTENER ---
 function closePosterModal() {
   const pm = document.getElementById("posterModal");
   if (pm) pm.style.display = "none";
@@ -1087,13 +1037,11 @@ if (typeof db !== 'undefined') {
   });
 }
 
-// --- ☰ SIDEBAR HAMBURGER MENU TOGGLE ---
 function toggleNavMenu() {
   const nav = document.getElementById("navLinks");
   if (nav) nav.classList.toggle("menu-open");
 }
 
-// ਮੈਨਿਊ ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਆਪਸ਼ਨ ਦਬਾਉਣ 'ਤੇ ਮੈਨਿਊ ਆਪਣੇ ਆਪ ਬੰਦ ਹੋ ਜਾਵੇ
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#navLinks a, #navLinks button").forEach(item => {
     item.addEventListener("click", () => {
@@ -1105,7 +1053,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- 📅 TODAY'S SPECIAL DAY LISTENER (Zero-Delay) ---
 function renderDailyDay(data) {
   const sec = document.getElementById("dailyDaySection");
   if (!sec) return;
@@ -1131,13 +1078,11 @@ function renderDailyDay(data) {
   }
 }
 
-// 1. ਮੈਮਰੀ ਵਿੱਚੋਂ ਤੁਰੰਤ ਲੋਡ ਕਰੋ
 const cachedDay = localStorage.getItem("asp_cached_daily_day");
 if (cachedDay) {
   try { renderDailyDay(JSON.parse(cachedDay)); } catch(e) {}
 }
 
-// 2. Firebase ਤੋਂ ਲਾਈਵ ਸਿੰਕ
 if (typeof db !== 'undefined') {
   db.ref("siteSettings/todayDay").on("value", snap => {
     const data = snap.val();
@@ -1150,7 +1095,6 @@ if (typeof db !== 'undefined') {
   });
 }
 
-// --- 📲 DIRECT 1-CLICK PWA INSTALL ---
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.deferredPrompt = e;
@@ -1173,17 +1117,15 @@ function installPWA() {
 window.addEventListener('appinstalled', () => {
   window.deferredPrompt = null;
   const btn = document.getElementById('installAppBtn');
-  if (btn) btn.style.display = 'none'; // ਇੰਸਟਾਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਬਟਨ ਆਪਣੇ ਆਪ ਹਟ ਜਾਵੇਗਾ
+  if (btn) btn.style.display = 'none';
 });
 
-// 🏆 1. ਆਟੋਮੈਟਿਕ ਸਰਟੀਫਿਕੇਟ ਬਣਾਉਣ ਅਤੇ WhatsApp ਸ਼ੇਅਰ ਕਰਨ ਵਾਲਾ ਫੰਕਸ਼ਨ
 async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   const canvas = document.createElement("canvas");
   canvas.width = 1200;
   canvas.height = 700;
   const ctx = canvas.getContext("2d");
 
-  // ਬੈਕਗ੍ਰਾਊਂਡ ਅਤੇ ਬਾਰਡਰ
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, 1200, 700);
 
@@ -1195,7 +1137,6 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   ctx.strokeStyle = "#fab005";
   ctx.strokeRect(35, 35, 1130, 630);
 
-  // ਹੈਡਰ ਅਤੇ ਬ੍ਰਾਂਡਿੰਗ
   ctx.textAlign = "center";
   ctx.fillStyle = "#e8590c";
   ctx.font = "bold 44px -apple-system, sans-serif";
@@ -1205,17 +1146,14 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   ctx.font = "600 24px -apple-system, sans-serif";
   ctx.fillText("MOCK TEST PERFORMANCE CERTIFICATE", 600, 155);
 
-  // ਸਰਟੀਫਾਈ ਟੈਕਸਟ
   ctx.fillStyle = "#777777";
   ctx.font = "22px -apple-system, sans-serif";
   ctx.fillText("This is proudly presented to", 600, 230);
 
-  // ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ
   ctx.fillStyle = "#1971c2";
   ctx.font = "bold 48px -apple-system, sans-serif";
   ctx.fillText(studentName || "Proud Aspirant", 600, 295);
 
-  // ਲਾਈਨ
   ctx.beginPath();
   ctx.moveTo(350, 315);
   ctx.lineTo(850, 315);
@@ -1223,12 +1161,10 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // ਐਗਜ਼ਾਮ ਅਤੇ ਵਧਾਈ ਸੰਦੇਸ਼
   ctx.fillStyle = "#333333";
   ctx.font = "24px -apple-system, sans-serif";
   ctx.fillText(`for successfully attempting the "${examTitle || 'Punjab Govt Exams'}" Mock Test`, 600, 370);
 
-  // ਸਕੋਰ ਬਾਕਸ
   const percentage = Math.round((score / total) * 100);
   ctx.fillStyle = "#f8f9fa";
   ctx.fillRect(360, 410, 480, 110);
@@ -1244,7 +1180,6 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   ctx.font = "600 20px -apple-system, sans-serif";
   ctx.fillText("⭐ Verified Performance Result ⭐", 600, 500);
 
-  // ਮਿਤੀ ਅਤੇ ਵੈਰੀਫਿਕੇਸ਼ਨ
   const today = new Date().toLocaleDateString('en-GB');
   ctx.textAlign = "left";
   ctx.fillStyle = "#777777";
@@ -1256,10 +1191,8 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   ctx.font = "bold 20px -apple-system, sans-serif";
   ctx.fillText("Official Study Partner — Aman Study Point", 1130, 620);
 
-  // ਸ਼ੇਅਰ ਟੈਕਸਟ ਮੈਸੇਜ
   const shareText = `🎯 ਮੈਂ Aman Study Point 'ਤੇ Daily Mock Test ਦਿੱਤਾ!\n🏆 ਮੇਰਾ ਸਕੋਰ: ${score}/${total} (${percentage}%)\n\nਤੁਸੀਂ ਵੀ ਆਪਣੀ ਤਿਆਰੀ ਪਰਖੋ ਅਤੇ ਫ੍ਰੀ ਮੌਕ ਟੈਸਟ ਦਿਓ 👉 ${window.location.origin}`;
 
-  // ਮੋਬਾਈਲ 'ਤੇ ਫੋਟੋ ਸਿੱਧੀ WhatsApp 'ਤੇ ਸ਼ੇਅਰ ਕਰਨ ਲਈ
   canvas.toBlob(async (blob) => {
     const file = new File([blob], "Aman_Study_Point_Certificate.png", { type: "image/png" });
 
@@ -1274,7 +1207,6 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
         console.log("Sharing failed", err);
       }
     } else {
-      // ਕੰਪਿਊਟਰ ਜਾਂ ਪੁਰਾਣੇ ਬ੍ਰਾਊਜ਼ਰ ਲਈ ਆਟੋਮੈਟਿਕ ਡਾਊਨਲੋਡ + WhatsApp ਲਿੰਕ
       const link = document.createElement("a");
       link.download = "My_MockTest_Certificate.png";
       link.href = canvas.toDataURL("image/png");
@@ -1286,7 +1218,6 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
   }, "image/png");
 }
 
-/* 🔥 Daily Study Streak System */
 function getTodayDateStr(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -1328,7 +1259,7 @@ function renderStreakBadge(streak) {
   if (!streak || streak < 1) return "";
   return `<span style="background:#fff3bf; color:#d9480f; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:20px; border:1px solid #ffd43b; display:inline-flex; align-items:center; gap:3px; margin-left:6px;">🔥 ${streak} Day${streak > 1 ? 's' : ''} Streak</span>`;
 }
-// 🔒 ਸਿੰਗਲ ਡਿਵਾਈਸ ਲੌਗਇਨ ਨਿਗਰਾਨੀ
+
 function enforceSingleDeviceLogin() {
   const u = currentUser();
   if (!u) return;
@@ -1342,14 +1273,12 @@ function enforceSingleDeviceLogin() {
   if (typeof db !== "undefined") {
     const userRef = db.ref("users/" + u.phone + "/currentDeviceId");
 
-    // ਜਦੋਂ ਸੈਸ਼ਨ ਸ਼ੁਰੂ ਹੋਵੇ ਤਾਂ ਡਿਵਾਈਸ ਆਈਡੀ ਸੈੱਟ ਕਰੋ (ਜੇਕਰ ਪਹਿਲਾਂ ਨਹੀਂ ਹੈ)
     userRef.once("value", snap => {
       if (!snap.exists()) {
         userRef.set(localDeviceId);
       }
     });
 
-    // ਦੂਜੇ ਡਿਵਾਈਸ ਤੋਂ ਲੌਗਇਨ ਹੋਣ 'ਤੇ ਪੁਰਾਣੇ ਡਿਵਾਈਸ ਤੋਂ ਆਟੋ-ਲੌਗਆਉਟ
     userRef.on("value", snap => {
       const activeDevice = snap.val();
       if (activeDevice && activeDevice !== localDeviceId) {
@@ -1360,16 +1289,13 @@ function enforceSingleDeviceLogin() {
   }
 }
 
-// ਲੌਗਇਨ ਹੋਣ 'ਤੇ ਡਿਵਾਈਸ ਚੈੱਕ ਸ਼ੁਰੂ ਕਰੋ
 document.addEventListener("DOMContentLoaded", () => {
   enforceSingleDeviceLogin();
 });
 
-// 🔒 ਰਾਈਟ-ਕਲਿੱਕ ਅਤੇ ਸ਼ਾਰਟਕੱਟ ਕੀਅਜ਼ ਬਲਾਕ
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 document.addEventListener('keydown', e => {
-  // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U ਬਲਾਕ
   if (
     e.keyCode === 123 ||
     (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
@@ -1380,7 +1306,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// 🔄 Firebase ਵਿੱਚੋਂ ਖਰੀਦੀਆਂ ਕਿਤਾਬਾਂ ਲਾਈਵ ਸਿੰਕ ਕਰੋ
 function syncPurchasedBooks() {
   const u = (typeof currentUser === "function") ? currentUser() : null;
   if (!u || !u.phone) return;
@@ -1390,13 +1315,12 @@ function syncPurchasedBooks() {
       const un = snap.val() || {};
       userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
       if (typeof drawBooks === "function") {
-        drawBooks(); // ਸਹੀ ਫੰਕਸ਼ਨ ਜੋ ਬਟਨ ਨੂੰ "Read" ਬਣਾਉਂਦਾ ਹੈ
+        drawBooks();
       }
     });
   }
 }
 
-// ਪੇਜ ਲੋਡ ਹੁੰਦੇ ਹੀ ਚਲਾਓ
 document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });

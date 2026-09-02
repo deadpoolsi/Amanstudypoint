@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ success: false, message: "⚠️ API Key Vercel ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ। Redeploy ਕਰੋ।" });
+    return res.status(500).json({ success: false, message: "⚠️ API Key Vercel ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।" });
   }
 
   const systemInstruction = 
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   const prompt = `${systemInstruction}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: "${query}"`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (data.error) {
-      return res.status(400).json({ success: false, message: "API Error: " + (data.error.message || "ਗਲਤ ਕੀਅ") });
+      return res.status(400).json({ success: false, message: "API Error: " + (data.error.message || "ਸਮੱਸਿਆ ਆਈ") });
     }
 
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;

@@ -1319,3 +1319,39 @@ function renderStreakBadge(streak) {
   if (!streak || streak < 1) return "";
   return `<span style="background:#fff3bf; color:#d9480f; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:20px; border:1px solid #ffd43b; display:inline-flex; align-items:center; gap:3px; margin-left:6px;">🔥 ${streak} Day${streak > 1 ? 's' : ''} Streak</span>`;
 }
+// 🔒 ਸਿੰਗਲ ਡਿਵਾਈਸ ਲੌਗਇਨ ਨਿਗਰਾਨੀ
+function enforceSingleDeviceLogin() {
+  const u = currentUser();
+  if (!u) return;
+
+  let localDeviceId = localStorage.getItem("asp_device_id");
+  if (!localDeviceId) {
+    localDeviceId = "dev_" + Math.random().toString(36).substring(2) + Date.now();
+    localStorage.setItem("asp_device_id", localDeviceId);
+  }
+
+  if (typeof db !== "undefined") {
+    const userRef = db.ref("users/" + u.phone + "/currentDeviceId");
+
+    // ਜਦੋਂ ਸੈਸ਼ਨ ਸ਼ੁਰੂ ਹੋਵੇ ਤਾਂ ਡਿਵਾਈਸ ਆਈਡੀ ਸੈੱਟ ਕਰੋ (ਜੇਕਰ ਪਹਿਲਾਂ ਨਹੀਂ ਹੈ)
+    userRef.once("value", snap => {
+      if (!snap.exists()) {
+        userRef.set(localDeviceId);
+      }
+    });
+
+    // ਦੂਜੇ ਡਿਵਾਈਸ ਤੋਂ ਲੌਗਇਨ ਹੋਣ 'ਤੇ ਪੁਰਾਣੇ ਡਿਵਾਈਸ ਤੋਂ ਆਟੋ-ਲੌਗਆਉਟ
+    userRef.on("value", snap => {
+      const activeDevice = snap.val();
+      if (activeDevice && activeDevice !== localDeviceId) {
+        alert("⚠️ ਤੁਹਾਡਾ ਖਾਤਾ ਕਿਸੇ ਹੋਰ ਡਿਵਾਈਸ 'ਤੇ ਖੁੱਲ੍ਹ ਚੁੱਕਾ ਹੈ। ਤੁਸੀਂ ਇੱਥੋਂ ਲੌਗਆਉਟ ਹੋ ਰਹੇ ਹੋ।");
+        logout();
+      }
+    });
+  }
+}
+
+// ਲੌਗਇਨ ਹੋਣ 'ਤੇ ਡਿਵਾਈਸ ਚੈੱਕ ਸ਼ੁਰੂ ਕਰੋ
+document.addEventListener("DOMContentLoaded", () => {
+  enforceSingleDeviceLogin();
+});

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
   const DB_SECRET = process.env.FIREBASE_DB_SECRET;
-  const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
+  const DB_BASE = "https://aman-study-point-default-rtdb.firebaseio.com";
 
   try {
     // 1. Firebase Identity Toolkit ਰਾਹੀਂ Token ਵੈਰੀਫਾਈ ਕਰੋ
@@ -43,38 +43,36 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "ਸਹੀ ਵਿਦਿਆਰਥੀ ਅਕਾਊਂਟ ਨਹੀਂ ਮਿਲਿਆ" });
     }
 
-    const authParam = DB_SECRET ? `?auth=${DB_SECRET}` : "";
+    // Secret auth string
+    const secretQuery = DB_SECRET ? `?auth=${DB_SECRET}` : "";
 
-    // 2. ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਕੋਲ ਕਿਤਾਬ ਹੈ
-    const purchaseRes = await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${authParam}`);
-    const purchaseText = await purchaseRes.text();
-
-    let isPurchased = false;
-    try {
-      isPurchased = JSON.parse(purchaseText);
-    } catch (e) {
-      return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਰਿਸਪਾਂਸ ਅਵੈਧ ਹੈ: " + purchaseText });
+    // 2. ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਕੋਲ ਕਿਤਾਬ ਅਨਲੌਕ ਹੈ
+    const purchaseUrl = `${DB_BASE}/users/${phone}/books/${bookId}.json${secretQuery}`;
+    const purchaseRes = await fetch(purchaseUrl);
+    
+    if (!purchaseRes.ok) {
+      return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋਇਆ (Status: " + purchaseRes.status + ")" });
     }
+
+    const isPurchased = await purchaseRes.json();
 
     if (!isPurchased) {
       return res.status(403).json({ success: false, message: "🔒 ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਇਹ ਕਿਤਾਬ ਖਰੀਦੋ" });
     }
 
     // 3. Vault ਵਿੱਚੋਂ PDF ਦਾ ਲਿੰਕ ਲਵੋ
-    const vaultRes = await fetch(`${FIREBASE_DB_URL}/bookVault/${bookId}.json${authParam}`);
-    const vaultText = await vaultRes.text();
+    const vaultUrl = `${DB_BASE}/bookVault/${bookId}.json${secretQuery}`;
+    const vaultRes = await fetch(vaultUrl);
     
-    let bookData = null;
-    try {
-      bookData = JSON.parse(vaultText);
-    } catch (e) {
-      return res.status(500).json({ success: false, message: "ਵਾਲਟ ਰਿਸਪਾਂਸ ਅਵੈਧ ਹੈ: " + vaultText });
+    if (!vaultRes.ok) {
+      return res.status(500).json({ success: false, message: "ਵਾਲਟ ਐਕਸੈਸ ਅਸਫਲ (Status: " + vaultRes.status + ")" });
     }
 
+    const bookData = await vaultRes.json();
     const pdfUrl = bookData?.pdfUrl || bookData?.url || (typeof bookData === 'string' ? bookData : null);
 
     if (!pdfUrl) {
-      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਵਾਲਟ ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ" });
+      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਅਜੇ ਅੱਪਲੋਡ ਨਹੀਂ ਕੀਤੀ ਗਈ।" });
     }
 
     return res.status(200).json({

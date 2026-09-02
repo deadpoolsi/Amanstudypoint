@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
  <style>
-  /* 🔒 ਟੈਕਸਟ ਕਾਪੀ ਅਤੇ ਸਿਲੈਕਸ਼ਨ ਬੰਦ */
+  /* 🔒 ਟੈਕਸਟ ਕਾਪੀ, ਸਿਲੈਕਸ਼ਨ ਅਤੇ ਪ੍ਰਿੰਟ ਬੰਦ */
   body, html, iframe {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -35,7 +35,7 @@
     margin: 0 auto;
     background: #fff;
     min-height: 90vh;
-    padding-bottom: 70px; /* ਬੈਨਰ ਲਈ ਹੇਠਾਂ ਥਾਂ */
+    padding-bottom: 70px;
   }
 
   .pdf-wrapper {
@@ -46,7 +46,7 @@
     background: #525659;
   }
   
-  /* 🛡️ 1. Pop-out Blocker */
+  /* 🛡️ 1. Pop-out Blocker (Google Drive ਨਵੀਂ ਟੈਬ 'ਚ ਖੁੱਲ੍ਹਣ ਤੋਂ ਰੋਕਣ ਲਈ) */
   .popout-blocker {
     position: absolute;
     top: 0;
@@ -58,7 +58,7 @@
     cursor: default;
   }
 
-  /* 🛡️ 2. Clean Watermark */
+  /* 🛡️ 2. Dynamic Clean Watermark */
   .watermark-overlay {
     position: absolute;
     top: 0;
@@ -143,16 +143,22 @@
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
 
 <script>
-  // ਸੁਰੱਖਿਆ ਨਿਯਮ
+  // 🔒 ਸੁਰੱਖਿਆ ਨਿਯਮ: ਰਾਈਟ-ਕਲਿੱਕ ਅਤੇ ਸ਼ਾਰਟਕੱਟ ਬਲਾਕ
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
-    if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c')) {
+    if (
+      e.keyCode === 123 ||
+      (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+      (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c'))
+    ) {
       e.preventDefault();
       alert("⚠️ Content is protected by Aman Study Point.");
+      return false;
     }
   });
 
@@ -343,8 +349,8 @@
     })
     .then(res => res.json())
     .then(data => {
-      if (data.success && data.pdfUrl) {
-        renderBook(fixGoogleDriveUrl(data.pdfUrl), false);
+      if (data.success && (data.url || data.pdfUrl)) {
+        renderBook(fixGoogleDriveUrl(data.url || data.pdfUrl), false);
       } else {
         rBody.innerHTML = `
           <div class="error-box">

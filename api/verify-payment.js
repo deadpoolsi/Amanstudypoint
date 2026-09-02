@@ -1,86 +1,65 @@
+import crypto from "crypto";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Only POST allowed" });
   }
 
-  const { razorpay_payment_id, bookId, phone, name, amount } = req.body;
-  const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ";
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    phone,
+    bookId
+  } = req.body;
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !phone || !bookId) {
+    return res.status(400).json({ success: false, message: "ਅਧੂਰੀ ਜਾਣਕਾਰੀ (Missing payment details)" });
+  }
+
   const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+  if (!RAZORPAY_KEY_SECRET) {
+    return res.status(500).json({ success: false, message: "Server configuration missing secret" });
+  }
+
+  // 🔒 1. Razorpay HMAC SHA256 Signature Verification
+  const body = razorpay_order_id + "|" + razorpay_payment_id;
+  const expectedSignature = crypto
+    .createHmac("sha256", RAZORPAY_KEY_SECRET)
+    .update(body.toString())
+    .digest("hex");
+
+  if (expectedSignature !== razorpay_signature) {
+    return res.status(400).json({ success: false, message: "ਅਵੈਧ ਪੇਮੈਂਟ ਸਿਗਨੇਚਰ (Tampered Payment)" });
+  }
+
+  // 🔒 2. ਸਿਰਫ਼ ਵੈਰੀਫਾਈ ਹੋਣ ਤੋਂ ਬਾਅਦ ਸਰਵਰ ਸੀਕਰੇਟ ਰਾਹੀਂ ਕਿਤਾਬ ਅਨਲੌਕ ਕਰੋ
   const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
   const DB_SECRET = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
-  if (!razorpay_payment_id || !bookId || !phone || !amount) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
-  }
-
-  if (!RAZORPAY_KEY_SECRET) {
-    return res.status(500).json({ success: false, message: "Server configuration error: Key Secret missing" });
-  }
-
   try {
-    // 1. Razorpay ਸਰਵਰ ਤੋਂ ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ
-    const authHeader = "Basic " + Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64");
-    const rzpRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
-      headers: { Authorization: authHeader }
-    });
-
-    if (!rzpRes.ok) {
-      return res.status(400).json({ success: false, message: "Invalid Razorpay Payment ID" });
-    }
-
-    const paymentData = await rzpRes.json();
-
-    if (paymentData.status !== "captured") {
-      return res.status(400).json({ success: false, message: `Payment not captured. Status: ${paymentData.status}` });
-    }
-
-    const expectedAmountPaise = Math.round(Number(amount) * 100);
-    if (paymentData.amount < expectedAmountPaise) {
-      return res.status(400).json({ success: false, message: "Paid amount is less than required price" });
-    }
-
-    // 2. Replay Attack ਰੋਕੋ
-    const checkPayment = await fetch(`${FIREBASE_DB_URL}/payments/${razorpay_payment_id}.json${DB_SECRET}`);
-    const existingRecord = await checkPayment.json();
-    if (existingRecord && existingRecord.status === "SUCCESS") {
-      return res.status(400).json({ success: false, message: "This payment has already been processed" });
-    }
-
-    // 3. ਕਿਤਾਬ ਅਨਲੌਕ ਕਰੋ
-    const updatePayload = {};
-    if (bookId === "combo" || bookId === "all_combo") {
-      ["punjabi", "gk", "maths", "reasoning", "history", "science", "constitution", "computer", "combo"].forEach(id => {
-        updatePayload[id] = true;
-      });
-    } else {
-      updatePayload[bookId] = true;
-    }
-
-    await fetch(`${FIREBASE_DB_URL}/users/${phone}/books.json${DB_SECRET}`, {
-      method: "PATCH",
+    // ਵਿਦਿਆਰਥੀ ਦੇ ਖਾਤੇ ਵਿੱਚ ਕਿਤਾਬ ਅਨਲੌਕ
+    await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${DB_SECRET}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatePayload)
+      body: JSON.stringify(true)
     });
 
-    // 4. ਪੇਮੈਂਟ ਰਿਕਾਰਡ ਦਰਜ ਕਰੋ
+    // ਪੇਮੈਂਟ ਰਿਕਾਰਡ ਸੇਵ
     await fetch(`${FIREBASE_DB_URL}/payments/${razorpay_payment_id}.json${DB_SECRET}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        phone: phone,
+        bookId: bookId,
+        orderId: razorpay_order_id,
         paymentId: razorpay_payment_id,
-        phone,
-        name: name || "Student",
-        bookId,
-        amount: Number(amount),
-        currency: paymentData.currency,
-        verifiedBy: "Razorpay_Official_Server",
-        date: new Date().toLocaleString(),
-        status: "SUCCESS"
+        timestamp: new Date().toISOString()
       })
     });
 
-    return res.status(200).json({ success: true, message: "Payment verified successfully and book unlocked!" });
+    return res.status(200).json({ success: true, message: "ਭੁਗਤਾਨ ਸਫਲ ਰਿਹਾ ਅਤੇ ਕਿਤਾਬ ਅਨਲੌਕ ਹੋ ਗਈ!" });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਅੱਪਡੇਟ ਅਸਫਲ: " + error.message });
   }
 }

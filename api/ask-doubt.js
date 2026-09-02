@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const { query } = req.body;
-  if (!query || query.trim().length < 3) {
+  if (!query || query.trim().length < 2) {
     return res.status(400).json({ success: false, message: "ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਸਵਾਲ ਲਿਖੋ।" });
   }
 
@@ -15,11 +15,10 @@ export default async function handler(req, res) {
 
   const systemPrompt = 
 `ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ ਅਧਿਕਾਰਤ Study AI Expert ਹੋ।
-ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਓ।
-ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
+ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਓ।
 ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਦਿਓ।`;
 
-  // 1. ਸਭ ਤੋਂ ਪਹਿਲਾਂ Google Interactions API ਰਾਹੀਂ ਕੋਸ਼ਿਸ਼ ਕਰੋ (Google ਦਾ ਨਵਾਂ ਸਿਫ਼ਾਰਿਸ਼ ਕੀਤਾ ਤਰੀਕਾ)
+  // 1. ਸਭ ਤੋਂ ਪਹਿਲਾਂ Google Interactions API ਰਾਹੀਂ ਕਾਲ (ਜੋ Google ਨੇ ਮੰਗਿਆ ਹੈ)
   try {
     const interRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions?key=${apiKey}`, {
       method: "POST",
@@ -30,52 +29,48 @@ export default async function handler(req, res) {
     });
 
     const interData = await interRes.json();
-    const interText = interData.output || interData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (interRes.ok && interText) {
-      return res.status(200).json({ success: true, answer: interText });
+    if (interRes.ok) {
+      const ans = interData.output || interData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (ans) return res.status(200).json({ success: true, answer: ans });
     }
-  } catch (e) {
-    // ਫਾਲਬੈਕ 'ਤੇ ਜਾਓ
-  }
+  } catch (e) {}
 
-  // 2. ਫਾਲਬੈਕ: generateContent ਲਈ ਮਾਡਲ ਲੱਭੋ (ਅਪ੍ਰਚਲਿਤ gemini-2.5 ਨੂੰ ਛੱਡ ਕੇ)
+  // 2. ਦੂਜੀ ਕੋਸ਼ਿਸ਼: gemini-3.6-flash (ਜੋ ਮੈਸੇਜ ਵਿੱਚ ਲਿਖਿਆ ਹੈ)
   try {
-    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    const listData = await listRes.json();
+    const flashRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}` }] }]
+      })
+    });
 
-    if (listData.models && Array.isArray(listData.models)) {
-      // 2.5-flash ਨੂੰ ਫਿਲਟਰ ਕਰਕੇ ਬਾਹਰ ਕੱਢੋ
-      const workingModels = listData.models
-        .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
-        .map(m => m.name.replace("models/", ""))
-        .filter(name => !name.includes("2.5"));
-
-      for (const model of workingModels) {
-        try {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}` }] }]
-            })
-          });
-
-          const data = await resp.json();
-          const ans = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (resp.ok && ans) {
-            return res.status(200).json({ success: true, answer: ans });
-          }
-        } catch (err) {
-          continue;
-        }
-      }
+    const flashData = await flashRes.json();
+    const ans = flashData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (flashRes.ok && ans) {
+      return res.status(200).json({ success: true, answer: ans });
     }
-  } catch (err) {
-    //
-  }
+  } catch (e) {}
+
+  // 3. ਤੀਜੀ ਕੋਸ਼ਿਸ਼: gemini-pro (ਕਲਾਸਿਕ ਬੈਕਅੱਪ)
+  try {
+    const proRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}` }] }]
+      })
+    });
+
+    const proData = await proRes.json();
+    const ans = proData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (proRes.ok && ans) {
+      return res.status(200).json({ success: true, answer: ans });
+    }
+  } catch (e) {}
 
   return res.status(500).json({
     success: false,
-    message: "ਸਰਵਰ ਜਵਾਬ ਤਿਆਰ ਕਰਨ ਵਿੱਚ ਅਸਮਰੱਥ ਰਿਹਾ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+    message: "ਸਰਵਰ ਕਨੈਕਟ ਨਹੀਂ ਹੋ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
   });
 }

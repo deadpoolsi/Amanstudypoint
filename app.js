@@ -457,34 +457,34 @@ function loadPublicPYQs() {
   });
 }
 
-// 👁️ ਸੁਰੱਖਿਅਤ ਅਤੇ ਸਹੀ ਵਿਊ ਕਾਊਂਟਰ (ਹਰ ਸੈਸ਼ਨ ਦਾ 1 ਵਿਊ)
-async function openSecurePYQ(key) {
-  const viewedKey = "viewed_pyq_" + key;
+// 👁️ ਸਥਾਈ ਯੂਨੀਕ ਵਿਊ ਕਾਊਂਟਰ (1 ਯੂਜ਼ਰ/ਡਿਵਾਈਸ = ਸਿਰਫ਼ 1 ਵਾਰ ਵਿਊ)
+function openSecurePYQ(key) {
+  const u = currentUser();
+  // ਜੇ ਲੌਗਇਨ ਹੈ ਤਾਂ ਉਸਦੇ ਫ਼ੋਨ ਨੰਬਰ ਨਾਲ, ਨਹੀਂ ਤਾਂ ਡਿਵਾਈਸ ਦੇ ਲੋਕਲ ਸਟੋਰੇਜ ਨਾਲ ਪੱਕਾ ਲੌਕ ਕਰੋ
+  const viewedKey = u ? `asp_viewed_pyq_${u.phone}_${key}` : `asp_viewed_pyq_guest_${key}`;
 
-  // ਜੇਕਰ ਇਸ ਸੈਸ਼ਨ ਵਿੱਚ ਪੇਪਰ ਪਹਿਲਾਂ ਨਹੀਂ ਖੋਲ੍ਹਿਆ
-  if (!sessionStorage.getItem(viewedKey)) {
-    sessionStorage.setItem(viewedKey, "true");
+  // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਇਸ ਯੂਜ਼ਰ/ਡਿਵਾਈਸ ਨੇ ਇਹ ਪੇਪਰ ਪਹਿਲਾਂ ਕਦੇ ਦੇਖਿਆ ਹੈ
+  const alreadyViewed = localStorage.getItem(viewedKey);
+
+  if (!alreadyViewed) {
+    // ਤੁਰੰਤ ਮਾਰਕ ਕਰ ਦਿਓ ਤਾਂ ਜੋ ਦੁਬਾਰਾ ਕਲਿੱਕ ਹੋਣ 'ਤੇ ਕਦੇ ਨਾ ਵਧੇ
+    localStorage.setItem(viewedKey, "true");
+
     try {
       if (typeof db !== "undefined") {
-        await db.ref("pyqList/" + key + "/views").transaction(currentViews => {
-          return (currentViews || 0) + 1;
-        });
+        db.ref("pyqList/" + key + "/views").transaction(current => (current || 0) + 1);
       }
     } catch (err) {
-      console.warn("View update error:", err);
+      console.warn("View counter error:", err);
     }
   }
 
-  // ਰੀਡਰ ਪੇਜ 'ਤੇ ਭੇਜੋ
-  window.location.href = `reader.html?id=${key}&type=pyq`;
+  // 150 ਮਿਲੀਸਕਿੰਟ ਬਾਅਦ ਰੀਡਰ ਖੋਲ੍ਹੋ
+  setTimeout(() => {
+    window.location.href = `reader.html?id=${key}&type=pyq`;
+  }, 150);
 }
 
-// 🚀 ਪੇਜ ਖੁੱਲ੍ਹਦੇ ਹੀ ਫੰਕਸ਼ਨ ਚਲਾਓ
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadPublicPYQs);
-} else {
-  loadPublicPYQs();
-}
 
 /* 7. Student Analytics Progress */
 function loadUserAnalytics() {

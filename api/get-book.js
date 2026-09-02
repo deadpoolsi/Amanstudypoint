@@ -15,9 +15,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "ਕਿਤਾਬ ਦੀ ਆਈਡੀ ਗੁੰਮ ਹੈ" });
   }
 
-  const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY; // Vercel Environment Variables ਵਿੱਚ ਸੈੱਟ ਕਰੋ
+  const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+  const DB_SECRET = process.env.FIREBASE_DB_SECRET;
   const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
-  const DB_SECRET = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
   try {
     // 1. Firebase Identity Toolkit ਰਾਹੀਂ Token ਵੈਰੀਫਾਈ ਕਰੋ
@@ -36,32 +36,50 @@ export default async function handler(req, res) {
     }
 
     const authUser = verifyData.users[0];
-    // ਫ਼ੋਨ ਨੰਬਰ ਈਮੇਲ ਵਿੱਚੋਂ ਕੱਢੋ (ਜਿਵੇਂ 9876543210@amanstudypoint.student)
-    const phone = authUser.email ? authUser.email.split("@")[0] : null;
+    const email = authUser.email || "";
+    const phone = email.includes("@") ? email.split("@")[0] : null;
 
     if (!phone) {
       return res.status(400).json({ success: false, message: "ਸਹੀ ਵਿਦਿਆਰਥੀ ਅਕਾਊਂਟ ਨਹੀਂ ਮਿਲਿਆ" });
     }
 
-    // 2. ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਇਸ ਵਿਦਿਆਰਥੀ ਕੋਲ ਕਿਤਾਬ ਦਾ ਅਧਿਕਾਰ ਹੈ
-    const purchaseRes = await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${DB_SECRET}`);
-    const isPurchased = await purchaseRes.json();
+    const authParam = DB_SECRET ? `?auth=${DB_SECRET}` : "";
+
+    // 2. ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਕੋਲ ਕਿਤਾਬ ਹੈ
+    const purchaseRes = await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${authParam}`);
+    const purchaseText = await purchaseRes.text();
+
+    let isPurchased = false;
+    try {
+      isPurchased = JSON.parse(purchaseText);
+    } catch (e) {
+      return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਰਿਸਪਾਂਸ ਅਵੈਧ ਹੈ: " + purchaseText });
+    }
 
     if (!isPurchased) {
       return res.status(403).json({ success: false, message: "🔒 ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਇਹ ਕਿਤਾਬ ਖਰੀਦੋ" });
     }
 
-    // 3. ਸਰਵਰ ਵਾਲਟ ਵਿੱਚੋਂ PDF ਦਾ ਲਿੰਕ ਦਿਓ
-    const vaultRes = await fetch(`${FIREBASE_DB_URL}/bookVault/${bookId}.json${DB_SECRET}`);
-    const bookData = await vaultRes.json();
+    // 3. Vault ਵਿੱਚੋਂ PDF ਦਾ ਲਿੰਕ ਲਵੋ
+    const vaultRes = await fetch(`${FIREBASE_DB_URL}/bookVault/${bookId}.json${authParam}`);
+    const vaultText = await vaultRes.text();
+    
+    let bookData = null;
+    try {
+      bookData = JSON.parse(vaultText);
+    } catch (e) {
+      return res.status(500).json({ success: false, message: "ਵਾਲਟ ਰਿਸਪਾਂਸ ਅਵੈਧ ਹੈ: " + vaultText });
+    }
 
-    if (!bookData || !bookData.pdfUrl) {
-      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ ਫਾਈਲ ਨਹੀਂ ਮਿਲੀ" });
+    const pdfUrl = bookData?.pdfUrl || bookData?.url || (typeof bookData === 'string' ? bookData : null);
+
+    if (!pdfUrl) {
+      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਵਾਲਟ ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ" });
     }
 
     return res.status(200).json({
       success: true,
-      pdfUrl: bookData.pdfUrl
+      pdfUrl: pdfUrl
     });
 
   } catch (err) {

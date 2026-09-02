@@ -164,8 +164,8 @@ function renderAccount() {
   if (!b) return;
   if (u) {
     b.textContent = "👤 " + u.name;
-    b.onclick = () => openStudentTab('books');
-    b.title = "View My Books";
+    b.onclick = () => editStudentName();
+    b.title = "Click to Edit Name";
     b.href = "javascript:void(0)";
     if (anNav) anNav.style.display = "inline-block";
     if (!lo) {
@@ -181,6 +181,7 @@ function renderAccount() {
   } else {
     b.textContent = "🔐 Login";
     b.href = "login.html";
+    b.onclick = null;
     if (lo) lo.remove();
     if (anNav) anNav.style.display = "none";
   }

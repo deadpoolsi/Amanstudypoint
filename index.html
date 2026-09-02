@@ -28,7 +28,6 @@
   }
 </style>
   
-  
 <link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
 
@@ -62,9 +61,9 @@
 
     <nav id="navLinks">
       <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
-      <a href="#books" onclick="toggleNavMenu()">📚 Books</a>
       <a href="#quiz" onclick="toggleNavMenu()">🎯 Daily Test</a>
-      <a href="#pyqs" onclick="toggleNavMenu()">📑 PYQ Papers</a>
+      <a href="#books" onclick="toggleNavMenu()">📚 Books</a>
+      <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
       <a href="#analytics" id="analyticsNav" style="display:none;" onclick="toggleNavMenu()">📊 My Progress</a>
       <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
       <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
@@ -79,36 +78,102 @@
     <h1>Complete Exam Preparation <span>in Punjabi</span></h1>
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
-      <a href="#books" class="btn btn-primary">📚 View Books</a>
-      <a href="#quiz" class="btn btn-ghost">🎯 Daily Mock Test</a>
+      <a href="#quiz" class="btn btn-primary" style="background:#e8590c; box-shadow:0 4px 14px rgba(232,89,12,0.35);">🎯 Start Daily Mock Test</a>
+      <a href="#books" class="btn btn-ghost">📚 View Books</a>
       <a href="#pyq" class="btn btn-ghost" style="text-decoration:none;" onclick="document.getElementById('pyq')?.scrollIntoView({behavior:'smooth'}); return false;">
-  📑 Free PYQs
-</a>
+        📑 Free PYQs
+      </a>
     </div>
+  </div>
+</section>
+
+<!-- ਦਿਨ ਵਾਲਾ (Today's Special Fact) -->
+<section class="container" id="dailyDaySection" style="display:none; margin-top:20px; margin-bottom:15px;">
+  <div style="background: linear-gradient(135deg, #f4fbf7, #e8f5e9); border: 1.5px solid #81c784; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+      <span style="background:#2e7d32; color:#fff; font-size:0.75rem; font-weight:bold; padding:3px 10px; border-radius:20px;">
+        🌟 TODAY'S SPECIAL DAY (ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ)
+      </span>
+      <span id="dailyDayDate" style="font-size:0.8rem; color:#2e7d32; font-weight:bold;"></span>
+    </div>
+    
+    <h3 id="dailyDayTitle" style="color:#1b5e20; margin: 6px 0 4px; font-size: 1.15rem;"></h3>
+    <p id="dailyDayWhy" style="color:#333; font-size:0.9rem; line-height:1.5; margin:0 0 6px;"></p>
+    
+    <div id="dailyDayThemeBox" style="display:none; font-size:0.85rem; color:#1b5e20; background:rgba(255,255,255,0.85); padding:6px 10px; border-radius:6px; border-left:4px solid #2e7d32; margin-top:6px;">
+      🎯 <b>ਥੀਮ / ਮੁੱਖ ਤੱਥ:</b> <span id="dailyDayTheme"></span>
+    </div>
+  </div>
+</section>
+
+<!-- 🎯 Daily Quiz (ਸਭ ਤੋਂ ਉੱਪਰ ਲਿਆਂਦਾ ਗਿਆ) -->
+<section id="quiz" class="section" style="padding-top:15px; padding-bottom:30px;">
+  <div class="container">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+      <div>
+        <h2 style="margin:0;">🎯 Daily Free Mock Test</h2>
+        <p class="section-sub" style="margin:4px 0 0 0;">ਰੋਜ਼ਾਨਾ ਨਵਾਂ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਮੁਫ਼ਤ ਸਰਟੀਫਿਕੇਟ ਲਵੋ</p>
+      </div>
+      <span style="background:#ffe8cc; color:#d9480f; font-weight:800; font-size:0.8rem; padding:5px 12px; border-radius:20px; border:1px solid #ffa94d;">
+        🔴 LIVE NOW
+      </span>
+    </div>
+
+    <div class="quiz-box" id="quizBox" style="box-shadow:0 4px 18px rgba(0,0,0,0.06); border-radius:14px;">
+      <p style="text-align:center; padding:30px; color:#777;">⏳ Loading test...</p>
+    </div>
+  </div>
+</section>
+
+<!-- Leaderboard (ਟੈਸਟ ਦੇ ਤੁਰੰਤ ਬਾਅਦ ਲੀਡਰਬੋਰਡ) -->
+<section id="leaderboard" class="section section-alt" style="padding-top:25px; padding-bottom:30px;">
+  <div class="container">
+    <h2>🏆 Today's Top Rankers</h2>
+    <p class="section-sub">ਅੱਜ ਦੇ ਮੌਕ ਟੈਸਟ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਨੰਬਰ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ</p>
+    <div class="leaderboard-card">
+      <div id="leaderboardList">Loading toppers...</div>
+    </div>
+  </div>
+</section>
+
+<!-- Student Analytics / Progress Section -->
+<section id="analytics" class="section" style="display:none;">
+  <div class="container">
+    <h2>📊 My Performance & Test Progress</h2>
+    <p class="section-sub">ਤੁਹਾਡੇ ਪਿਛਲੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟਾਂ ਦਾ ਰਿਕਾਰਡ</p>
+    <div id="userAnalyticsBox"></div>
+  </div>
+</section>
+
+<!-- My Books Section -->
+<section id="myBooks" class="section section-alt" hidden>
+  <div class="container">
+    <h2>🎒 My Books</h2>
+    <p class="section-sub">Your unlocked books are here — read anytime</p>
+    <div id="myBooksGrid" class="grid"></div>
   </div>
 </section>
 
 <!-- Books Section -->
 <section id="books" class="section">
   <div class="container">
-    <h2>📚 Our Books</h2>
+    <h2>📚 Our Books & Notes</h2>
     <p class="section-sub">Affordable high quality notes in Punjabi</p>
 
     <!-- Mega Combo Offer -->
-    <div class="card combo-card" style="border: 2px solid #ffa94d; background: #fff9db;">
-  <span class="badge" style="background:#e8590c; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🔥 BEST VALUE OFFER</span>
-  <h3 style="margin-top:8px;">🎁 All-in-One Mega Combo Pack</h3>
-  <p style="color:#555; font-size:0.9rem;">Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
-  
-  <div class="price" id="combo_price_display" style="font-size:1.6rem; font-weight:bold; color:#e8590c; margin:10px 0;">
-    ₹499 <small style="font-size:0.9rem; color:#777;"><s>₹792</s> (Save ₹293)</small>
-  </div>
+    <div class="card combo-card" style="border: 2px solid #ffa94d; background: #fff9db; margin-bottom:24px;">
+      <span class="badge" style="background:#e8590c; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🔥 BEST VALUE OFFER</span>
+      <h3 style="margin-top:8px;">🎁 All-in-One Mega Combo Pack</h3>
+      <p style="color:#555; font-size:0.9rem;">Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
+      
+      <div class="price" id="combo_price_display" style="font-size:1.6rem; font-weight:bold; color:#e8590c; margin:10px 0;">
+        ₹499 <small style="font-size:0.9rem; color:#777;"><s>₹792</s> (Save ₹293)</small>
+      </div>
 
-  <button class="btn btn-buy btn-block" id="buy_btn_combo" onclick="buyBook('combo')" style="background:#e8590c; color:#fff; width:100%; padding:12px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
-    🛒 Unlock All 8 Books
-  </button>
-</div>
-
+      <button class="btn btn-buy btn-block" id="buy_btn_combo" onclick="openBuyCombo()" style="background:#e8590c; color:#fff; width:100%; padding:12px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
+        🛒 Unlock All 8 Books
+      </button>
+    </div>
 
     <!-- Category Filters -->
     <div class="cat-filters">
@@ -122,62 +187,12 @@
   </div>
 </section>
 
-<!-- My Books Section -->
-<section id="myBooks" class="section section-alt" hidden>
-  <div class="container">
-    <h2>🎒 My Books</h2>
-    <p class="section-sub">Your unlocked books are here — read anytime</p>
-    <div id="myBooksGrid" class="grid"></div>
-  </div>
-</section>
-
-<!-- Student Analytics / Progress Section -->
-<section id="analytics" class="section section-alt" style="display:none;">
-  <div class="container">
-    <h2>📊 My Performance & Test Progress</h2>
-    <p class="section-sub">ਤੁਹਾਡੇ ਪਿਛਲੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟਾਂ ਦਾ ਰਿਕਾਰਡ</p>
-    <div id="userAnalyticsBox"></div>
-  </div>
-</section>
-
-<!-- Daily Quiz -->
-<section id="quiz" class="section">
-  <div class="container">
-    <h2>🎯 Daily Free Mock Test</h2>
-    <p class="section-sub">ਅਸਲ ਪੇਪਰ ਵਾਂਗ ਟਾਈਮਰ ਨਾਲ ਟੈਸਟ ਹੱਲ ਕਰੋ</p>
-    <div class="quiz-box" id="quizBox">
-      <p style="text-align:center;">Loading test...</p>
-    </div>
-  </div>
-</section>
-
-<!-- ਦਿਨ ਵਾਲਾ-->
-<section class="container" id="dailyDaySection" style="display:none; margin-top:20px; margin-bottom:20px;">
-  <div style="background: linear-gradient(135deg, #f4fbf7, #e8f5e9); border: 1.5px solid #81c784; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-      <span style="background:#2e7d32; color:#fff; font-size:0.75rem; font-weight:bold; padding:3px 10px; border-radius:20px;">
-        🌟 TODAY'S SPECIAL DAY (ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ)
-      </span>
-      <span id="dailyDayDate" style="font-size:0.8rem; color:#2e7d32; font-weight:bold;"></span>
-    </div>
-    
-    <h3 id="dailyDayTitle" style="color:#1b5e20; margin: 8px 0 6px; font-size: 1.2rem;"></h3>
-    <p id="dailyDayWhy" style="color:#333; font-size:0.92rem; line-height:1.55; margin:0 0 8px;"></p>
-    
-    <div id="dailyDayThemeBox" style="display:none; font-size:0.85rem; color:#1b5e20; background:rgba(255,255,255,0.8); padding:8px 12px; border-radius:6px; border-left:4px solid #2e7d32; margin-top:8px;">
-      🎯 <b>ਥੀਮ / ਮੁੱਖ ਤੱਥ:</b> <span id="dailyDayTheme"></span>
-    </div>
-  </div>
-</section>
-
-
 <!-- 📑 PYQ Section -->
-<section class="section" id="pyq">
+<section class="section section-alt" id="pyq">
   <div class="container">
     <h2>📑 Free Previous Year Papers (PYQ)</h2>
     <p class="section-sub">ਸਾਰੇ ਪੰਜਾਬ ਐਗਜ਼ਾਮਾਂ ਦੇ ਪਿਛਲੇ ਸਾਲਾਂ ਦੇ ਹੱਲ ਕੀਤੇ ਪੇਪਰ ਮੁਫ਼ਤ ਪੜ੍ਹੋ</p>
     
-    <!-- ਪੇਪਰਾਂ ਦੇ ਕਾਰਡ ਇਸ ਬਾਕਸ ਵਿੱਚ ਆਟੋਮੈਟਿਕ ਲੋਡ ਹੋਣਗੇ -->
     <div id="pyqList">
       <p style="text-align:center; padding:20px; color:#888;">⏳ Loading PYQ Papers...</p>
     </div>
@@ -202,19 +217,8 @@
   </div>
 </section>
 
-<!-- Leaderboard -->
-<section id="leaderboard" class="section section-alt">
-  <div class="container">
-    <h2>🏆 Today's Top Rankers</h2>
-    <p class="section-sub">ਅੱਜ ਦੇ ਮੌਕ ਟੈਸਟ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਨੰਬਰ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ</p>
-    <div class="leaderboard-card">
-      <div id="leaderboardList">Loading toppers...</div>
-    </div>
-  </div>
-</section>
-
 <!-- Contact -->
-<section id="contact" class="section">
+<section id="contact" class="section section-alt">
   <div class="container">
     <h2>📞 Contact Us</h2>
     <p class="section-sub">Have any questions? Get in touch with us</p>
@@ -256,21 +260,11 @@
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script src="app.js"></script>
-
-
-<script>
-  if (typeof db !== 'undefined') {
-    db.ref('siteSettings/announcement').on('value', (snap) => {
-      const val = snap.val();
-      const bar = document.getElementById('topAnnouncement');
-      if (bar && val) bar.innerText = '📢 ' + val;
-    });
-  }
-</script>
 
 <script>
   // 1. ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਨੋਟਿਸ ਬਿਨਾਂ 1 ਸਕਿੰਟ ਦੀ ਦੇਰੀ ਦੇ ਤੁਰੰਤ ਦਿਖਾਓ
@@ -293,6 +287,7 @@
     });
   }
 </script>
+
 <!-- 🖼️ Popup Poster Modal -->
 <div id="posterModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; padding:16px;">
   <div style="position:relative; max-width:400px; width:100%; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:center;">

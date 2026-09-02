@@ -1378,17 +1378,10 @@ function syncPurchasedBooks() {
 
   if (typeof db !== "undefined") {
     db.ref("users/" + u.phone + "/books").on("value", snap => {
-      const liveBooks = snap.val() || {};
-      
-      // ਲੋਕਲ ਸਟੋਰੇਜ ਵਿੱਚ ਯੂਜ਼ਰ ਦੀਆਂ ਕਿਤਾਬਾਂ ਅੱਪਡੇਟ ਕਰੋ
-      u.books = liveBooks;
-      localStorage.setItem("asp_user", JSON.stringify(u));
-
-      // ਬਟਨਾਂ ਨੂੰ "Buy" ਤੋਂ "Read" ਵਿੱਚ ਬਦਲਣ ਲਈ ਬੁੱਕ ਲਿਸਟ ਦੁਬਾਰਾ ਰੈਂਡਰ ਕਰੋ
-      if (typeof renderBooks === "function") {
-        renderBooks();
-      } else if (typeof loadBooks === "function") {
-        loadBooks();
+      const un = snap.val() || {};
+      userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
+      if (typeof drawBooks === "function") {
+        drawBooks(); // ਸਹੀ ਫੰਕਸ਼ਨ ਜੋ ਬਟਨ ਨੂੰ "Read" ਬਣਾਉਂਦਾ ਹੈ
       }
     });
   }

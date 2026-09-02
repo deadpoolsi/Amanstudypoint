@@ -3,35 +3,37 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Only POST allowed" });
   }
 
-  const { bookId, phone } = req.body;
+  const { phone, bookId } = req.body;
+
+  if (!phone || !bookId) {
+    return res.status(400).json({ success: false, message: "Missing phone or bookId" });
+  }
+
   const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
   const DB_SECRET = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
-  if (!bookId || !phone) {
-    return res.status(400).json({ success: false, message: "Book ID and Phone are required" });
-  }
-
   try {
-    // 1. ਸਰਵਰ 'ਤੇ ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਕਿਤਾਬ ਅਨਲੌਕ ਹੈ
-    const userRes = await fetch(`${FIREBASE_DB_URL}/users/${phone}/books.json${DB_SECRET}`);
-    const userBooks = await userRes.json() || {};
+    // 1. ਚੈੱਕ ਕਰੋ ਕਿ ਯੂਜ਼ਰ ਨੇ ਇਹ ਕਿਤਾਬ ਖਰੀਦੀ ਹੈ ਜਾਂ ਨਹੀਂ
+    const checkRes = await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${DB_SECRET}`);
+    const isPurchased = await checkRes.json();
 
-    const isUnlocked = userBooks[bookId] === true || userBooks["combo"] === true || userBooks["all_combo"] === true;
-
-    if (!isUnlocked) {
-      return res.status(403).json({ success: false, message: "ਕਿਤਾਬ ਲਾਕ ਹੈ। ਪਹਿਲਾਂ ਖਰੀਦੋ।" });
+    if (!isPurchased) {
+      return res.status(403).json({ success: false, message: "🔒 ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਇਹ ਕਿਤਾਬ ਖਰੀਦੋ ਜੀ!" });
     }
 
-    // 2. ਲਾਕ ਵਾਲਟ ਵਿੱਚੋਂ ਅਸਲ PDF ਲਿੰਕ ਸੁਰੱਖਿਅਤ ਕੱਢੋ
+    // 2. ਸਿਰਫ਼ ਵੈਰੀਫਾਈ ਹੋਣ 'ਤੇ ਅਸਲ PDF ਲਿੰਕ ਸਰਵਰ ਵਾਲਟ ਵਿੱਚੋਂ ਕੱਢੋ
     const vaultRes = await fetch(`${FIREBASE_DB_URL}/bookVault/${bookId}.json${DB_SECRET}`);
-    const pdfUrl = await vaultRes.json();
+    const bookData = await vaultRes.json();
 
-    if (!pdfUrl) {
-      return res.status(404).json({ success: false, message: "PDF ਲਿੰਕ ਅੱਪਲੋਡ ਨਹੀਂ ਹੈ।" });
+    if (!bookData || !bookData.pdfUrl) {
+      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਨਹੀਂ ਮਿਲੀ!" });
     }
 
-    return res.status(200).json({ success: true, pdfUrl });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(200).json({
+      success: true,
+      url: bookData.pdfUrl
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ: " + err.message });
   }
 }

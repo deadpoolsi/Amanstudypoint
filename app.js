@@ -164,11 +164,10 @@ function renderAccount() {
   if (!b) return;
   if (u) {
     b.textContent = "👤 " + u.name;
-    b.onclick = () => editStudentName();
-    b.title = "Click to Edit Name";
-    b.href = "#myBooks";
+    b.onclick = () => openStudentTab('books');
+    b.title = "View My Books";
+    b.href = "javascript:void(0)";
     if (anNav) anNav.style.display = "inline-block";
-    loadUserAnalytics();
     if (!lo) {
       const a = document.createElement("a");
       a.id = "logoutLink";
@@ -249,15 +248,16 @@ function drawBooks() {
     }).join("");
   }
 
-  const mySec = document.getElementById("myBooks"), myG = document.getElementById("myBooksGrid");
-  if (mySec && myG) {
-    if (userUnlockedBookIds.length === 0) mySec.hidden = true;
-    else {
-      mySec.hidden = false;
+  // 🎒 ਮਾਡਲ ਅੰਦਰ My Books ਦਿਖਾਓ
+  const myG = document.getElementById("myBooksGrid");
+  if (myG) {
+    if (userUnlockedBookIds.length === 0) {
+      myG.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#777; padding:20px;'>ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਅਜੇ ਕੋਈ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।</p>";
+    } else {
       myG.innerHTML = userUnlockedBookIds.map(id => {
         const b = BOOKS.find(x => x.id === id);
         if (!b) return "";
-        return `<div class="book-card"><span class="pill">🎒 Your Book</span><div class="book-emoji">${b.emoji}</div><div class="book-title">${b.title}</div><div class="book-sub">${b.sub}</div><div class="book-bottom"><a class="btn btn-read btn-small" href="reader.html?id=${b.id}">📖 Read Full Book</a></div></div>`;
+        return `<div class="book-card"><span class="pill">🎒 Unlocked</span><div class="book-emoji">${b.emoji}</div><div class="book-title">${b.title}</div><div class="book-sub">${b.sub}</div><div class="book-bottom"><a class="btn btn-read btn-small" href="reader.html?id=${b.id}">📖 Read Full Book</a></div></div>`;
       }).join("");
     }
   }
@@ -487,16 +487,14 @@ function openSecurePYQ(key) {
 function loadUserAnalytics() {
   const u = currentUser();
   const box = document.getElementById("userAnalyticsBox");
-  const sec = document.getElementById("analytics");
   if (!u || !box) return;
 
   db.ref("userAttempts/" + u.phone).on("value", snap => {
     const attempts = snap.val();
     if (!attempts) {
-      if (sec) sec.style.display = "none";
+      box.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>ਅਜੇ ਤੱਕ ਕੋਈ ਟੈਸਟ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।</p>";
       return;
     }
-    if (sec) sec.style.display = "block";
 
     const list = Object.entries(attempts);
     const totalTests = list.length;
@@ -505,21 +503,21 @@ function loadUserAnalytics() {
     const avg = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
 
     box.innerHTML = `
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:16px;">
-        <div class="card" style="padding:14px; text-align:center;">
-          <div style="font-size:1.8rem; font-weight:800; color:#e8590c;">${totalTests}</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:16px;">
+        <div class="card" style="padding:12px; text-align:center; background:#f8f9fa;">
+          <div style="font-size:1.6rem; font-weight:800; color:#e8590c;">${totalTests}</div>
           <small>Total Tests Attempted</small>
         </div>
-        <div class="card" style="padding:14px; text-align:center;">
-          <div style="font-size:1.8rem; font-weight:800; color:#2b8a3e;">${avg}%</div>
+        <div class="card" style="padding:12px; text-align:center; background:#f8f9fa;">
+          <div style="font-size:1.6rem; font-weight:800; color:#2b8a3e;">${avg}%</div>
           <small>Average Accuracy Score</small>
         </div>
       </div>
-      <div class="card" style="padding:14px;">
+      <div class="card" style="padding:12px; background:#fff; border:1px solid #eee;">
         <h4 style="margin-bottom:10px;">📜 Test Attempt History:</h4>
         ${list.reverse().map(([key, a]) => `
-          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
-            <div><b>Test Score:</b> ${a.score} / ${a.total} (${Math.round((a.score/a.total)*100)}%)</div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; font-size:0.88rem;">
+            <div><b>Score:</b> ${a.score} / ${a.total} (${Math.round((a.score/a.total)*100)}%)</div>
             <small style="color:#777;">🕒 ${a.time}</small>
           </div>
         `).join("")}
@@ -769,7 +767,6 @@ function checkAns(selectedIdx) {
   }, 1000);
 }
 
-// 🎯 ਅੱਪਡੇਟ ਕੀਤਾ finishTest ਫੰਕਸ਼ਨ (ਦੋਵੇਂ ਬਟਨ ਤੁਰੰਤ ਦਿਖਣਗੇ)
 function finishTest() {
   clearInterval(qTimer);
   qTimer = null;
@@ -966,7 +963,49 @@ document.addEventListener("DOMContentLoaded", () => {
   if (m) m.onclick = e => { if (e.target === m) closeModal(); };
   const mc = document.getElementById("modalClose");
   if (mc) mc.onclick = closeModal;
+
+  // Student Dashboard Modal ਬਾਹਰ ਕਲਿੱਕ ਕਰਨ 'ਤੇ ਬੰਦ ਹੋਵੇ
+  const sModal = document.getElementById("studentDashboardModal");
+  if (sModal) {
+    sModal.onclick = e => { if (e.target === sModal) closeStudentDashboard(); };
+  }
 });
+
+/* 👤 Student Personal Dashboard Modal Functions */
+function openStudentTab(tab) {
+  const u = currentUser();
+  if (!u) {
+    toast("ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ 🔐");
+    setTimeout(() => location.href = "login.html", 600);
+    return;
+  }
+
+  const modal = document.getElementById("studentDashboardModal");
+  const bContent = document.getElementById("dashMyBooksContent");
+  const aContent = document.getElementById("dashAnalyticsContent");
+  const title = document.getElementById("dashModalTitle");
+
+  if (!modal) return;
+
+  if (tab === "books") {
+    if (title) title.innerText = "🎒 My Unlocked Books";
+    if (bContent) bContent.style.display = "block";
+    if (aContent) aContent.style.display = "none";
+    drawBooks();
+  } else if (tab === "progress") {
+    if (title) title.innerText = "📊 My Test Performance";
+    if (aContent) aContent.style.display = "block";
+    if (bContent) bContent.style.display = "none";
+    loadUserAnalytics();
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeStudentDashboard() {
+  const modal = document.getElementById("studentDashboardModal");
+  if (modal) modal.style.display = "none";
+}
 
 function editStudentName() {
   const u = currentUser();

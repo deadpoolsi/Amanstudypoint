@@ -10,45 +10,55 @@ export default async function handler(req, res) {
 
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) {
-    return res.status(500).json({ success: false, message: "⚠️ GEMINI_API_KEY Vercel Environment Variables ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।" });
+    return res.status(500).json({ success: false, message: "⚠️ GEMINI_API_KEY Vercel ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।" });
   }
 
   const systemPrompt = 
-`ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ Study Expert ਹੋ।
-ਸਿਰਫ਼ ਪੜ੍ਹਾਈ (Punjab Police, Patwari, SSC, Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਓ।
-ਜੇਕਰ ਸਵਾਲ ਪੜ੍ਹਾਈ ਤੋਂ ਬਾਹਰ ਦਾ ਹੋਵੇ ਤਾਂ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਪੜ੍ਹਾਈ ਲਈ ਹੈ।"`;
+`ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ ਅਧਿਕਾਰਤ Study AI Expert ਹੋ।
+ਤੁਹਾਡਾ ਕੰਮ ਸਿਰਫ਼ ਪੜ੍ਹਾਈ (Punjab Police, Patwari, SSC, Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ ਹੈ।
+ਜੇਕਰ ਸਵਾਲ ਪੜ੍ਹਾਈ ਤੋਂ ਬਾਹਰ ਦਾ ਹੋਵੇ ਤਾਂ ਸਿਰਫ਼ ਇਹ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
+ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
 
-  const fullPrompt = `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}`;
+  const payload = {
+    contents: [{
+      parts: [{ text: `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}` }]
+    }]
+  };
 
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: fullPrompt }]
-          }
-        ]
-      })
-    });
+  // Stable Production API Endpoints (v1)
+  const endpoints = [
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`
+  ];
 
-    const data = await response.json();
+  let lastErrorMsg = "";
 
-    if (!response.ok || data.error) {
-      const errDetail = data.error ? `${data.error.code} - ${data.error.message}` : `HTTP ${response.status}`;
-      return res.status(400).json({ success: false, message: "Google API Error: " + errDetail });
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return res.status(200).json({
+          success: true,
+          answer: data.candidates[0].content.parts[0].text
+        });
+      } else if (data.error) {
+        lastErrorMsg = `${data.error.code} - ${data.error.message}`;
+      }
+    } catch (err) {
+      lastErrorMsg = err.message;
     }
-
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!answer) {
-      return res.status(500).json({ success: false, message: "ਜਵਾਬ ਖਾਲੀ ਮਿਲਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
-    }
-
-    return res.status(200).json({ success: true, answer: answer });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "Server Catch Error: " + error.message });
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "Google API Error: " + lastErrorMsg
+  });
 }

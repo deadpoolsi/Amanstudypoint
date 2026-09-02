@@ -460,29 +460,30 @@ function loadPublicPYQs() {
 // 👁️ ਸਥਾਈ ਯੂਨੀਕ ਵਿਊ ਕਾਊਂਟਰ (1 ਯੂਜ਼ਰ/ਡਿਵਾਈਸ = ਸਿਰਫ਼ 1 ਵਾਰ ਵਿਊ)
 function openSecurePYQ(key) {
   const u = currentUser();
-  // ਜੇ ਲੌਗਇਨ ਹੈ ਤਾਂ ਉਸਦੇ ਫ਼ੋਨ ਨੰਬਰ ਨਾਲ, ਨਹੀਂ ਤਾਂ ਡਿਵਾਈਸ ਦੇ ਲੋਕਲ ਸਟੋਰੇਜ ਨਾਲ ਪੱਕਾ ਲੌਕ ਕਰੋ
-  const viewedKey = u ? `asp_viewed_pyq_${u.phone}_${key}` : `asp_viewed_pyq_guest_${key}`;
+  const storageKey = u ? ("asp_pyq_seen_" + u.phone + "_" + key) : ("asp_pyq_seen_guest_" + key);
 
-  // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਇਸ ਯੂਜ਼ਰ/ਡਿਵਾਈਸ ਨੇ ਇਹ ਪੇਪਰ ਪਹਿਲਾਂ ਕਦੇ ਦੇਖਿਆ ਹੈ
-  const alreadyViewed = localStorage.getItem(viewedKey);
-
-  if (!alreadyViewed) {
-    // ਤੁਰੰਤ ਮਾਰਕ ਕਰ ਦਿਓ ਤਾਂ ਜੋ ਦੁਬਾਰਾ ਕਲਿੱਕ ਹੋਣ 'ਤੇ ਕਦੇ ਨਾ ਵਧੇ
-    localStorage.setItem(viewedKey, "true");
-
-    try {
-      if (typeof db !== "undefined") {
-        db.ref("pyqList/" + key + "/views").transaction(current => (current || 0) + 1);
-      }
-    } catch (err) {
-      console.warn("View counter error:", err);
-    }
+  // ਜੇਕਰ ਪਹਿਲਾਂ ਕਦੇ ਦੇਖਿਆ ਹੈ, ਤਾਂ ਸਿੱਧਾ ਪੇਪਰ ਖੋਲ੍ਹੋ (ਵਿਊ ਨਹੀਂ ਵਧੇਗਾ)
+  if (localStorage.getItem(storageKey) === "done") {
+    window.location.href = `reader.html?id=${key}&type=pyq`;
+    return;
   }
 
-  // 150 ਮਿਲੀਸਕਿੰਟ ਬਾਅਦ ਰੀਡਰ ਖੋਲ੍ਹੋ
-  setTimeout(() => {
+  // ਪਹਿਲੀ ਵਾਰ ਲਈ ਲੌਕ ਕਰੋ
+  localStorage.setItem(storageKey, "done");
+
+  try {
+    if (typeof db !== "undefined") {
+      db.ref("pyqList/" + key + "/views").transaction(function(current) {
+        return (current || 0) + 1;
+      });
+    }
+  } catch (err) {
+    console.warn("View update error:", err);
+  }
+
+  setTimeout(function() {
     window.location.href = `reader.html?id=${key}&type=pyq`;
-  }, 150);
+  }, 200);
 }
 
 

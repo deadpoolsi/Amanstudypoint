@@ -21,39 +21,42 @@ export default async function handler(req, res) {
 "⚠️ ਮਾਫ਼ ਕਰਨਾ! ਇਹ ਸਰਚ ਬਾਰ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਸਿਲੇਬਸ ਦੀ ਪੜ੍ਹਾਈ ਲਈ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਵਿਸ਼ੇ ਨਾਲ ਸੰਬੰਧਿਤ ਸਵਾਲ ਹੀ ਪੁੱਛੋ।"
 3. ਪੜ੍ਹਾਈ ਵਾਲੇ ਸਵਾਲਾਂ ਦਾ ਜਵਾਬ ਸਪਸ਼ਟ, ਸਰਲ ਅਤੇ ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਭਾਸ਼ਾ ਵਿੱਚ ਸਟੈਪ-ਬਾਈ-ਸਟੈਪ ਜਾਂ ਪੁਆਇੰਟਾਂ ਵਿੱਚ ਦਿਓ। ਸਹੀ ਉੱਤਰ ਸਭ ਤੋਂ ਪਹਿਲਾਂ ਰੱਖੋ।`;
 
-  const prompt = `${systemInstruction}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: "${query}"`;
+  const payload = {
+    contents: [{
+      parts: [{ text: `${systemInstruction}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: "${query}"` }]
+    }]
+  };
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
+  // ਅਧਿਕਾਰਤ ਸਥਿਰ ਮਾਡਲ ਐਂਡਪੁਆਇੰਟ
+  const urls = [
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`
+  ];
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      }),
-      signal: controller.signal
-    });
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    clearTimeout(timeoutId);
+      const data = await response.json();
 
-    const data = await response.json();
-
-    if (data.error) {
-      return res.status(400).json({ success: false, message: "API Error: " + (data.error.message || "ਸਮੱਸਿਆ ਆਈ") });
+      if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return res.status(200).json({
+          success: true,
+          answer: data.candidates[0].content.parts[0].text
+        });
+      }
+    } catch (e) {
+      // ਅਗਲੇ ਐਂਡਪੁਆਇੰਟ 'ਤੇ ਕੋਸ਼ਿਸ਼ ਕਰੋ
     }
-
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!answer) {
-      return res.status(500).json({ success: false, message: "ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਹੋ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
-    }
-
-    return res.status(200).json({ success: true, answer });
-  } catch (error) {
-    if (error.name === "AbortError") {
-      return res.status(504).json({ success: false, message: "⚠️ ਜਵਾਬ ਦੇਣ ਵਿੱਚ ਸਮਾਂ ਵੱਧ ਲੱਗ ਗਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
-    }
-    return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ: " + error.message });
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "ਸਰਵਰ ਵੱਲੋਂ ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਥੋੜ੍ਹੀ ਦੇਰ ਬਾਅਦ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  });
 }

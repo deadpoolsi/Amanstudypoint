@@ -1004,7 +1004,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPublicPYQs();
     const params = new URLSearchParams(window.location.search);
   if (params.get('type') !== 'pyq') {
-    initReader();
+    // initReader();
   }
   initLogin();
   initQuiz();

@@ -192,13 +192,22 @@ b.title = "Click to Edit Name";
 
 function renderBooksRealtime() {
   const u = currentUser();
-  if (!u) { userUnlockedBookIds = []; drawBooks(); return; }
-  db.ref("users/" + u.phone + "/books").on("value", s => {
-    const un = s.val() || {};
-    userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
-    drawBooks();
-  });
+  if (!u || !u.phone) { 
+    userUnlockedBookIds = []; 
+    drawBooks(); 
+    return; 
+  }
+  if (typeof db !== "undefined") {
+    db.ref("users/" + u.phone + "/books").on("value", s => {
+      const un = s.val() || {};
+      userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
+      drawBooks();
+    }, (error) => {
+      console.warn("Realtime read warning:", error);
+    });
+  }
 }
+
 
 function filterBooks(cat, btn) {
   activeCategory = cat;

@@ -280,7 +280,6 @@ async function handleRegister() {
   const authEmail = phone + "@amanstudypoint.student";
 
   try {
-    // Firebase Authentication is the source of truth for student credentials.
     const credential = await firebase.auth().createUserWithEmailAndPassword(authEmail, pass);
     const user = credential.user;
     if (!user) throw new Error("Firebase did not return a user.");
@@ -289,8 +288,6 @@ async function handleRegister() {
       console.warn("Profile update warning:", e);
     }
 
-    // Database profile is optional. A database permission error must NOT make
-    // the already-created Firebase Auth account look like registration failed.
     try {
       await db.ref("accounts/" + phone).update({
         name, phone, uid: user.uid, email: authEmail,
@@ -301,6 +298,18 @@ async function handleRegister() {
     } catch (dbError) {
       console.warn("Student profile database save skipped:", dbError);
     }
+
+    // 🔔 ਨਵੇਂ ਫ਼ੋਨ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਦਾ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਅਲਰਟ ਭੇਜੋ
+    fetch("/api/notify-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        phone: phone,
+        email: "N/A",
+        authType: "Phone Register"
+      })
+    }).catch(err => console.warn("Telegram alert error:", err));
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", name);
@@ -335,12 +344,9 @@ async function handleLogin() {
   const authEmail = phone + "@amanstudypoint.student";
 
   try {
-    // IMPORTANT: Login uses the SAME Firebase Auth credentials used at registration.
     const credential = await firebase.auth().signInWithEmailAndPassword(authEmail, pass);
     const user = credential.user;
 
-    // Database profile is optional. Even if RTDB rules deny access, Auth login
-    // has already succeeded, so do not turn it into a login failure.
     let studentName = (user && user.displayName) || "Student";
     try {
       const snap = await db.ref("accounts/" + phone).once("value");
@@ -368,7 +374,6 @@ async function handleLogin() {
   }
 }
 
-
 // --- 🌐 GOOGLE LOGIN ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
@@ -376,20 +381,39 @@ function loginWithGoogle() {
     .then((result) => {
       const user = result.user;
       const name = user.displayName || "Student";
-      const identifier = user.phoneNumber || user.email.replace(/[^a-zA-Z0-9]/g, "_");
+      const identifier = user.phoneNumber || user.email.split('@')[0];
 
-      db.ref("accounts/" + identifier).update({
-        name: name,
-        phone: identifier,
-        email: user.email,
-        authType: "google",
-        password: "GOOGLE_AUTH"
-      }).then(() => {
-        db.ref("users/" + identifier).update({ name: name, phone: identifier });
-        localStorage.setItem("pp_session", identifier);
-        localStorage.setItem("pp_name", name);
-        alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
-        window.location.href = "index.html";
+      db.ref("accounts/" + identifier).once("value", (snap) => {
+        const isNewUser = !snap.exists();
+
+        db.ref("accounts/" + identifier).update({
+          name: name,
+          phone: identifier,
+          email: user.email,
+          authType: "google",
+          password: "GOOGLE_AUTH"
+        }).then(() => {
+          db.ref("users/" + identifier).update({ name: name, phone: identifier });
+
+          // 🔔 ਨਵੇਂ ਗੂਗਲ ਲੌਗਇਨ ਦਾ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਅਲਰਟ ਭੇਜੋ
+          if (isNewUser) {
+            fetch("/api/notify-login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: name,
+                phone: identifier,
+                email: user.email,
+                authType: "Google Login"
+              })
+            }).catch(err => console.warn("Telegram alert error:", err));
+          }
+
+          localStorage.setItem("pp_session", identifier);
+          localStorage.setItem("pp_name", name);
+          alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+          window.location.href = "index.html";
+        });
       });
     })
     .catch((error) => {

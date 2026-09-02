@@ -289,7 +289,6 @@
     const isPyq = params.get('type') === 'pyq';
     const isDemo = params.get('demo') === 'true';
     const rBody = document.getElementById("readerBody");
-    const u = typeof currentUser === 'function' ? currentUser() : null;
 
     if (isPyq) {
       const promo = document.getElementById('pyqPromoBar');
@@ -329,41 +328,50 @@
       return;
     }
 
-    // 🔒 3. Full Book ਮੋਡ (ਸਰਵਰ API ਰਾਹੀਂ ਸੁਰੱਖਿਅਤ ਫੈਚ)
-    if (!u) {
-      rBody.innerHTML = `
-        <div class="error-box">
-          <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
-          <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
-          <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
-          <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
-        </div>
-      `;
-      return;
-    }
-
-    fetch("/api/get-book", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId: bookId, phone: u.phone })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && (data.url || data.pdfUrl)) {
-        renderBook(fixGoogleDriveUrl(data.url || data.pdfUrl), false);
-      } else {
+    // 🔒 3. Full Book ਮੋਡ (Firebase Auth ID Token ਵੈਰੀਫਿਕੇਸ਼ਨ)
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
         rBody.innerHTML = `
           <div class="error-box">
-            <div style="font-size:2.5rem; margin-bottom:10px;">🔒</div>
-            <h3>ਕਿਤਾਬ ਲਾਕ ਹੈ</h3>
-            <p style="color:#666; margin:8px 0 16px;">${data.message || 'ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਇਹ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।'}</p>
-            <a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🛒 ਕਿਤਾਬ ਖਰੀਦੋ</a>
+            <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
+            <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
+            <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
+            <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
           </div>
         `;
+        return;
       }
-    })
-    .catch(() => {
-      rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</h3></div>`;
+
+      try {
+        const token = await user.getIdToken();
+
+        const res = await fetch("/api/get-book", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ bookId: bookId })
+        });
+
+        const data = await res.json();
+
+        if (data.success && (data.pdfUrl || data.url)) {
+          renderBook(fixGoogleDriveUrl(data.pdfUrl || data.url), false);
+        } else {
+          rBody.innerHTML = `
+            <div class="error-box">
+              <div style="font-size:2.5rem; margin-bottom:10px;">🔒</div>
+              <h3>ਕਿਤਾਬ ਲਾਕ ਹੈ</h3>
+              <p style="color:#666; margin:8px 0 16px;">${data.message || 'ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਵਿੱਚ ਇਹ ਕਿਤਾਬ ਅਨਲੌਕ ਨਹੀਂ ਹੈ।'}</p>
+              <a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🛒 ਕਿਤਾਬ ਖਰੀਦੋ</a>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error("Fetch book error:", err);
+        rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</h3></div>`;
+      }
     });
   });
 </script>

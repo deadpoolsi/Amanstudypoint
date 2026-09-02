@@ -96,7 +96,7 @@ function toggleDarkMode() {
 
 /* 3. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
-  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਿਹਾ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
+  const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਹਿਆ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
@@ -1024,6 +1024,7 @@ function editStudentName() {
   }
 }
 
+// --- GOOGLE SIGN IN FUNCTION (With Telegram Alert) ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
@@ -1032,16 +1033,36 @@ function loginWithGoogle() {
       const name = user.displayName || "Student";
       const identifier = user.phoneNumber || user.email.split('@')[0];
 
-      db.ref("accounts/" + identifier).update({
-        name: name,
-        phone: identifier,
-        email: user.email,
-        authType: "google"
-      }).then(() => {
-        setSession(identifier);
-        localStorage.setItem("pp_name", name);
-        toast("✅ Google Login Successful!");
-        setTimeout(() => location.href = "index.html", 500);
+      // ਚੈੱਕ ਕਰੋ ਕਿ ਇਹ ਨਵਾਂ ਯੂਜ਼ਰ ਹੈ ਜਾਂ ਪੁਰਾਣਾ
+      db.ref("accounts/" + identifier).once("value", (snap) => {
+        const isNewUser = !snap.exists();
+
+        db.ref("accounts/" + identifier).update({
+          name: name,
+          phone: identifier,
+          email: user.email,
+          authType: "google"
+        }).then(() => {
+          setSession(identifier);
+          localStorage.setItem("pp_name", name);
+
+          // ਜੇਕਰ ਪਹਿਲੀ ਵਾਰ ਲੌਗਇਨ ਕੀਤਾ ਹੈ ਤਾਂ ਸਰਵਰ ਰਾਹੀਂ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਤੁਰੰਤ ਅਲਰਟ ਭੇਜੋ
+          if (isNewUser) {
+            fetch("/api/notify-login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: name,
+                phone: identifier,
+                email: user.email,
+                authType: "Google Login"
+              })
+            }).catch(err => console.warn("Telegram alert error:", err));
+          }
+
+          toast("✅ Google Login Successful!");
+          setTimeout(() => location.href = "index.html", 500);
+        });
       });
     })
     .catch((error) => {

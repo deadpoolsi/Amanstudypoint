@@ -1,57 +1,26 @@
 export default async function handler(req, res) {
+  // ਕੇਵਲ POST ਬੇਨਤੀ ਦੀ ਆਗਿਆ ਦਿਓ
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Only POST allowed" });
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ success: false, message: "ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ (Unauthorized)" });
+  const { bookId, phone } = req.body;
+
+  // ਪੈਰਾਮੀਟਰ ਚੈੱਕ
+  if (!bookId || !phone) {
+    return res.status(400).json({ success: false, message: "ਫ਼ੋਨ ਨੰਬਰ ਜਾਂ ਕਿਤਾਬ ਆਈਡੀ ਗੁੰਮ ਹੈ" });
   }
 
-  const idToken = authHeader.split("Bearer ")[1];
-  const { bookId } = req.body;
-
-  if (!bookId) {
-    return res.status(400).json({ success: false, message: "ਕਿਤਾਬ ਦੀ ਆਈਡੀ ਗੁੰਮ ਹੈ" });
-  }
-
-  const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
   const DB_SECRET = process.env.FIREBASE_DB_SECRET;
   const DB_BASE = "https://aman-study-point-default-rtdb.firebaseio.com";
+  const authQuery = DB_SECRET ? `?auth=${DB_SECRET}` : "";
 
   try {
-    // 1. Firebase Identity Toolkit ਰਾਹੀਂ Token ਵੈਰੀਫਾਈ ਕਰੋ
-    const verifyRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken })
-      }
-    );
-
-    const verifyData = await verifyRes.json();
-    if (!verifyRes.ok || !verifyData.users || verifyData.users.length === 0) {
-      return res.status(401).json({ success: false, message: "ਅਵੈਧ ਜਾਂ ਐਕਸਪਾਇਰ ਟੋਕਨ" });
-    }
-
-    const authUser = verifyData.users[0];
-    const email = authUser.email || "";
-    const phone = email.includes("@") ? email.split("@")[0] : null;
-
-    if (!phone) {
-      return res.status(400).json({ success: false, message: "ਸਹੀ ਵਿਦਿਆਰਥੀ ਅਕਾਊਂਟ ਨਹੀਂ ਮਿਲਿਆ" });
-    }
-
-    // Secret auth string
-    const secretQuery = DB_SECRET ? `?auth=${DB_SECRET}` : "";
-
-    // 2. ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਕੋਲ ਕਿਤਾਬ ਅਨਲੌਕ ਹੈ
-    const purchaseUrl = `${DB_BASE}/users/${phone}/books/${bookId}.json${secretQuery}`;
-    const purchaseRes = await fetch(purchaseUrl);
+    // 1. ਜਾਂਚ ਕਰੋ ਕਿ ਵਿਦਿਆਰਥੀ ਦੇ ਖਾਤੇ ਵਿੱਚ ਕਿਤਾਬ ਖਰੀਦੀ (true) ਹੋਈ ਹੈ
+    const purchaseRes = await fetch(`${DB_BASE}/users/${phone}/books/${bookId}.json${authQuery}`);
     
     if (!purchaseRes.ok) {
-      return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋਇਆ (Status: " + purchaseRes.status + ")" });
+      return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਨਾਲ ਸੰਪਰਕ ਅਸਫਲ ਰਿਹਾ" });
     }
 
     const isPurchased = await purchaseRes.json();
@@ -60,21 +29,23 @@ export default async function handler(req, res) {
       return res.status(403).json({ success: false, message: "🔒 ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਇਹ ਕਿਤਾਬ ਖਰੀਦੋ" });
     }
 
-    // 3. Vault ਵਿੱਚੋਂ PDF ਦਾ ਲਿੰਕ ਲਵੋ
-    const vaultUrl = `${DB_BASE}/bookVault/${bookId}.json${secretQuery}`;
-    const vaultRes = await fetch(vaultUrl);
+    // 2. bookVault ਵਿੱਚੋਂ PDF ਦਾ ਲਿੰਕ ਪ੍ਰਾਪਤ ਕਰੋ
+    const vaultRes = await fetch(`${DB_BASE}/bookVault/${bookId}.json${authQuery}`);
     
     if (!vaultRes.ok) {
-      return res.status(500).json({ success: false, message: "ਵਾਲਟ ਐਕਸੈਸ ਅਸਫਲ (Status: " + vaultRes.status + ")" });
+      return res.status(500).json({ success: false, message: "ਵਾਲਟ ਨਾਲ ਸੰਪਰਕ ਅਸਫਲ ਰਿਹਾ" });
     }
 
     const bookData = await vaultRes.json();
-    const pdfUrl = bookData?.pdfUrl || bookData?.url || (typeof bookData === 'string' ? bookData : null);
+
+    // ਲਿੰਕ ਆਬਜੈਕਟ ਜਾਂ ਸਿੱਧੇ ਸਟਰਿੰਗ ਫਾਰਮੈਟ ਦੋਵਾਂ ਨੂੰ ਸੰਭਾਲੋ
+    const pdfUrl = bookData?.pdfUrl || bookData?.url || (typeof bookData === "string" ? bookData : null);
 
     if (!pdfUrl) {
-      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਅਜੇ ਅੱਪਲੋਡ ਨਹੀਂ ਕੀਤੀ ਗਈ।" });
+      return res.status(404).json({ success: false, message: "ਕਿਤਾਬ ਦੀ PDF ਅਜੇ bookVault ਵਿੱਚ ਅੱਪਲੋਡ ਨਹੀਂ ਕੀਤੀ ਗਈ।" });
     }
 
+    // ਸਫਲ ਰਿਸਪਾਂਸ
     return res.status(200).json({
       success: true,
       pdfUrl: pdfUrl

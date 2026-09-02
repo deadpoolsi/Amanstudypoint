@@ -1076,6 +1076,7 @@ function closePosterModal() {
   sessionStorage.setItem("asp_poster_closed", "true");
 }
 
+// 🚀 Fast Image Preloader for Poster Modal
 if (typeof db !== 'undefined') {
   db.ref('siteSettings/popupPoster').on('value', snap => {
     const data = snap.val();
@@ -1084,14 +1085,21 @@ if (typeof db !== 'undefined') {
     const linkEl = document.getElementById('posterAnchor');
 
     if (data && data.active && data.imgUrl && !sessionStorage.getItem("asp_poster_closed")) {
-      if (imgEl && modal) {
-        imgEl.src = data.imgUrl;
-        if (linkEl) {
-          linkEl.href = data.clickUrl || "javascript:void(0)";
-          if (!data.clickUrl) linkEl.style.cursor = "default";
+      const preloader = new Image();
+      preloader.src = data.imgUrl;
+      preloader.onload = () => {
+        if (imgEl && modal) {
+          imgEl.src = data.imgUrl;
+          if (linkEl) {
+            linkEl.href = data.clickUrl || "javascript:void(0)";
+            if (!data.clickUrl) linkEl.style.cursor = "default";
+          }
+          modal.style.display = "flex";
         }
-        modal.style.display = "flex";
-      }
+      };
+      preloader.onerror = () => {
+        if (modal) modal.style.display = "none";
+      };
     } else {
       if (modal) modal.style.display = "none";
     }

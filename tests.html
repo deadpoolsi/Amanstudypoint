@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Tests — Aman Study Point</title>
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
+  <link rel="stylesheet" href="style.css?v=2">
+  <style>
+    /* 🔒 ਪੂਰੀ ਸੁਰੱਖਿਆ: ਟੈਕਸਟ ਕਾਪੀ ਅਤੇ ਇੰਸਪੈਕਟ ਰੋਕ */
+    body, html {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    @media print { body { display: none !important; } }
+
+    .top-nav {
+      background: #fff;
+      border-bottom: 1.5px solid #eaeaea;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .back-btn {
+      text-decoration: none;
+      color: #212529;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+    .test-card {
+      background: #fff;
+      border: 1.5px solid #e9ecef;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+  </style>
+</head>
+<body>
+
+<header class="top-nav">
+  <a href="index.html" class="back-btn">⬅️ Back to Home</a>
+  <span id="categoryHeading" style="font-weight: 800; color: #e8590c; font-size: 1.05rem;">Mock Tests</span>
+</header>
+
+<div class="container" style="max-width: 800px; margin: 20px auto; padding: 0 14px;">
+
+  <!-- View 1: Tests List View -->
+  <div id="testsListView">
+    <div id="categoryBanner" style="background: linear-gradient(135deg, #fff4e6, #ffe8cc); border: 1.5px solid #ffa94d; border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+      <h2 id="bannerTitle" style="margin: 0 0 4px 0; color: #d9480f; font-size: 1.3rem;">Test Series</h2>
+      <p id="bannerSub" style="margin: 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
+    </div>
+
+    <div id="testItemsContainer">
+      <p style="text-align: center; color: #777; padding: 30px;">⏳ Loading tests...</p>
+    </div>
+  </div>
+
+  <!-- View 2: Active CBT Test Interface -->
+  <div id="cbtTestView" style="display: none;">
+    <div id="quizBox" class="quiz-box" style="background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.06); padding: 16px;"></div>
+  </div>
+
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // 🔒 ਸੁਰੱਖਿਆ: ਕਾਪੀ ਅਤੇ F12/Ctrl+U ਬਲਾਕ
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+    authDomain: "aman-study-point.firebaseapp.com",
+    databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+    projectId: "aman-study-point",
+    storageBucket: "aman-study-point.firebasestorage.app",
+    messagingSenderId: "1059866846804",
+    appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const session = () => localStorage.getItem("pp_session");
+  const currentUser = () => {
+    const p = session();
+    return p ? { phone: p, name: localStorage.getItem("pp_name") || "Student" } : null;
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const curCat = urlParams.get('cat') || 'police';
+
+  const catMeta = {
+    police: { title: "👮‍♂️ Punjab Police Constable & SI", sub: "ਪੰਜਾਬ ਪੁਲਿਸ ਭਰਤੀ ਲਈ ਸਾਰੇ ਫੁੱਲ ਲੈਂਥ ਮੌਕ ਟੈਸਟ" },
+    patwari: { title: "🌾 PSSSB Patwari (Revenue & Canal)", sub: "ਪਟਵਾਰੀ ਭਰਤੀ ਦੇ ਵਿਸ਼ੇਸ਼ ਮੌਕ ਟੈਸਟ" },
+    clerk: { title: "📑 PSSSB Clerk & DEO", sub: "ਕਲਰਕ ਅਤੇ ਹੋਰ ਬੋਰਡ ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਟੈਸਟ" },
+    ssc: { title: "🏛️ SSC & Railway Exams", sub: "ਸੈਂਟਰਲ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੇ ਪੰਜਾਬੀ ਮਾਧਿਅਮ ਟੈਸਟ" }
+  };
+
+  // Header & Banner Setup
+  const meta = catMeta[curCat] || catMeta.police;
+  document.getElementById("categoryHeading").innerText = meta.title;
+  document.getElementById("bannerTitle").innerText = meta.title;
+  document.getElementById("bannerSub").innerText = meta.sub;
+
+  let categoryTests = [];
+  let currentActiveQuiz = [];
+  let activeTestId = "";
+  let userSelections = {};
+  let visitedQuestions = {};
+  let currentQIdx = 0;
+  let qSecs = 1200;
+  let qTimer = null;
+
+  function loadCategoryTests() {
+    const listEl = document.getElementById("testItemsContainer");
+    const u = currentUser();
+
+    // Firebase ਤੋਂ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਪੜ੍ਹੋ (Path: categoryTests/police ਆਦਿ)
+    db.ref("categoryTests/" + curCat).on("value", snap => {
+      const data = snap.val();
+      if (!data) {
+        // ਡਿਫਾਲਟ ਡੈਮੋ ਟੈਸਟ ਜੇਕਰ ਡਾਟਾਬੇਸ ਵਿੱਚ ਅਜੇ ਤੱਕ ਕੁਝ ਨਹੀਂ ਪਾਇਆ
+        listEl.innerHTML = `
+          <div class="test-card">
+            <div>
+              <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">LIVE NOW</span>
+              <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
+              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
+            </div>
+            <button onclick="startSpecificTest('default_test_01')" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+              Start Test 🚀
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const keys = Object.keys(data);
+      listEl.innerHTML = keys.reverse().map((k, index) => {
+        const item = data[k];
+        const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 30);
+        const mins = item.timeMinutes || 20;
+
+        return `
+          <div class="test-card">
+            <div>
+              <span style="background:${index === 0 ? '#ffe8cc' : '#f1f3f5'}; color:${index === 0 ? '#d9480f' : '#495057'}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
+                ${index === 0 ? '🔴 LIVE NEW' : '📁 ARCHIVE'}
+              </span>
+              <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (keys.length - index))}</h3>
+              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
+            </div>
+            <button onclick="startSpecificTest('${k}')" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+              Start Test 🚀
+            </button>
+          </div>
+        `;
+      }).join("");
+    });
+  }
+
+  function startSpecificTest(testId) {
+    const u = currentUser();
+    if (!u) {
+      alert("ਟੈਸਟ ਦੇਣ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
+      window.location.href = "login.html";
+      return;
+    }
+
+    activeTestId = testId;
+
+    if (testId === "default_test_01") {
+      // Main Daily Test ਚੁੱਕੋ
+      db.ref("dailyQuiz").once("value", s => {
+        currentActiveQuiz = (s.exists() && Array.isArray(s.val())) ? s.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
+        launchCBT();
+      });
+    } else {
+      db.ref("categoryTests/" + curCat + "/" + testId).once("value", s => {
+        const t = s.val();
+        currentActiveQuiz = t ? t.questions : [];
+        launchCBT();
+      });
+    }
+  }
+
+  function launchCBT() {
+    document.getElementById("testsListView").style.display = "none";
+    document.getElementById("cbtTestView").style.display = "block";
+    userSelections = {};
+    visitedQuestions = { 0: true };
+    currentQIdx = 0;
+    qSecs = 1200;
+
+    clearInterval(qTimer);
+    qTimer = setInterval(() => {
+      qSecs--;
+      const d = document.getElementById("cbtTimerDisplay");
+      if (d) {
+        const m = Math.floor(qSecs / 60), s = qSecs % 60;
+        d.textContent = `⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
+      if (qSecs <= 0) {
+        clearInterval(qTimer);
+        alert("ਸਮਾਂ ਪੂਰਾ ਹੋ ਗਿਆ! ਟੈਸਟ ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।");
+        finishTest();
+      }
+    }, 1000);
+
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const box = document.getElementById("quizBox");
+    visitedQuestions[currentQIdx] = true;
+    const cur = currentActiveQuiz[currentQIdx];
+    const m = Math.floor(qSecs / 60), s = qSecs % 60;
+    const answeredCount = Object.keys(userSelections).length;
+
+    box.innerHTML = `
+      <div style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div><b>Question ${currentQIdx + 1}</b> / ${currentActiveQuiz.length}</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span style="font-size:0.8rem; background:#e7f5ff; color:#1971c2; font-weight:bold; padding:4px 8px; border-radius:6px;">Solved: ${answeredCount}/${currentActiveQuiz.length}</span>
+          <span id="cbtTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:10px; font-weight:bold;">⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</span>
+        </div>
+      </div>
+
+      <!-- Question Palette -->
+      <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:10px; margin-bottom:12px;">
+        <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:85px; overflow-y:auto;">
+          ${currentActiveQuiz.map((_, i) => {
+            const isAns = userSelections[i] !== undefined;
+            const isVis = visitedQuestions[i] === true;
+            let bg = isAns ? "#2b8a3e" : (isVis ? "#e03131" : "#e9ecef");
+            let col = (isAns || isVis) ? "#fff" : "#333";
+            let border = (i === currentQIdx) ? "border: 2px solid #1971c2; font-weight:bold;" : "border: 1px solid #ccc;";
+            return `<button onclick="jumpTo(${i})" style="width:30px; height:30px; border-radius:6px; background:${bg}; color:${col}; cursor:pointer; ${border}">${i + 1}</button>`;
+          }).join("")}
+        </div>
+      </div>
+
+      <!-- Question Text -->
+      <div style="font-size:1.05rem; font-weight:700; margin-bottom:14px; line-height:1.4;">${cur.q}</div>
+
+      <!-- Options -->
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        ${cur.options.map((opt, idx) => {
+          const sel = userSelections[currentQIdx] === idx;
+          const style = sel ? "background:#e7f5ff; border:2px solid #1971c2; color:#1971c2; font-weight:bold;" : "background:#fff; border:1.5px solid #dee2e6;";
+          return `<button onclick="selectOpt(${idx})" style="text-align:left; padding:12px; border-radius:8px; cursor:pointer; ${style}"><b>${String.fromCharCode(65 + idx)})</b> ${opt}</button>`;
+        }).join("")}
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <button onclick="prevQ()" ${currentQIdx === 0 ? 'disabled' : ''} style="padding:8px 14px; border:1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer;">⬅️ Prev</button>
+          <button onclick="clearOpt()" style="padding:8px 12px; border:1px solid #ffc9c9; color:#e03131; background:#fff; border-radius:6px; cursor:pointer; margin-left:4px;">🗑️ Clear</button>
+        </div>
+        <div>
+          ${currentQIdx < currentActiveQuiz.length - 1 ? `<button onclick="nextQ()" style="padding:8px 16px; background:#e8590c; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Save & Next ➡️</button>` : ''}
+          <button onclick="finishTest()" style="padding:8px 16px; background:#2b8a3e; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; margin-left:4px;">✅ Submit</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function selectOpt(idx) { userSelections[currentQIdx] = idx; renderQuestion(); }
+  function clearOpt() { delete userSelections[currentQIdx]; renderQuestion(); }
+  function nextQ() { if (currentQIdx < currentActiveQuiz.length - 1) { currentQIdx++; renderQuestion(); } }
+  function prevQ() { if (currentQIdx > 0) { currentQIdx--; renderQuestion(); } }
+  function jumpTo(idx) { currentQIdx = idx; renderQuestion(); }
+
+  function finishTest() {
+    clearInterval(qTimer);
+    let score = 0;
+    currentActiveQuiz.forEach((q, i) => {
+      if (userSelections[i] === q.answer) score++;
+    });
+    const total = currentActiveQuiz.length;
+    const pct = Math.round((score / total) * 100);
+
+    const box = document.getElementById("quizBox");
+    box.innerHTML = `
+      <div style="text-align:center; padding:25px;">
+        <div style="font-size:3rem;">🎉</div>
+        <h2>Test Completed!</h2>
+        <div style="font-size:2.2rem; font-weight:bold; color:#e8590c; margin:10px 0;">${score} / ${total}</div>
+        <p style="color:#2b8a3e; font-weight:bold;">Percentage: ${pct}%</p>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+          <a href="tests.html?cat=${curCat}" style="padding:10px 18px; background:#1971c2; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold;">📋 More Tests</a>
+          <a href="index.html" style="padding:10px 18px; background:#f1f3f5; color:#333; text-decoration:none; border-radius:8px; font-weight:bold;">🏠 Home</a>
+        </div>
+      </div>
+    `;
+  }
+
+  loadCategoryTests();
+</script>
+
+</body>
+</html>

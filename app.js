@@ -77,7 +77,7 @@ async function logout() {
   setTimeout(() => location.href = "index.html", 600);
 }
 
-/* 1. Dark Mode System */
+/* 1. Theme */
 function initTheme() {
   const isDark = localStorage.getItem("asp_theme") === "dark";
   if (isDark) {
@@ -94,13 +94,13 @@ function toggleDarkMode() {
   if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
 }
 
-/* 3. Referral WhatsApp Share */
+/* 2. Referral WhatsApp Share */
 function shareReferralWhatsApp() {
   const text = encodeURIComponent(`🔥 ਹੈਲੋ! ਮੈਂ Aman Study Point ਵੈੱਬਸਾਈਟ 'ਤੇ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari) ਦੀ ਤਿਆਰੀ ਕਰ ਰਹਿਆ ਹਾਂ। ਇੱਥੇ ਰੋਜ਼ਾਨਾ ਮੁਫ਼ਤ ਟੈਸਟ ਆਉਂਦੇ ਹਨ। ਹੁਣੇ ਚੈੱਕ ਕਰੋ: https://amanstudypoint.vercel.app`);
   window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
-/* 4. Realtime Books & Config Listener */
+/* 3. Realtime Books & Config Listener */
 function updateComboUI(cfg) {
   if (!cfg) return;
   const comboCfg = cfg.combo || { price: 499, status: 'available' };
@@ -249,7 +249,6 @@ function drawBooks() {
     }).join("");
   }
 
-  // 🎒 ਮਾਡਲ ਅੰਦਰ My Books ਦਿਖਾਓ
   const myG = document.getElementById("myBooksGrid");
   if (myG) {
     if (userUnlockedBookIds.length === 0) {
@@ -264,7 +263,7 @@ function drawBooks() {
   }
 }
 
-/* 5. Checkout Modal with Coupon Discount & Razorpay Gateway */
+/* 4. Checkout Modal with Coupon Discount & Razorpay Gateway */
 const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ";
 function openBuy(id) {
   const u = currentUser();
@@ -425,7 +424,7 @@ function closeModal() {
   if (m) { m.hidden = true; m.style.display = "none"; }
 }
 
-/* 6. Free PYQ Loader */
+/* 5. Free PYQ Loader */
 function loadPublicPYQs() {
   const container = document.getElementById("pyqListContainer") || document.getElementById("pyqList");
   if (!container) return;
@@ -484,7 +483,7 @@ function openSecurePYQ(key) {
   }, 200);
 }
 
-/* 7. Student Analytics Progress */
+/* 6. Student Analytics Progress */
 function loadUserAnalytics() {
   const u = currentUser();
   const box = document.getElementById("userAnalyticsBox");
@@ -527,8 +526,16 @@ function loadUserAnalytics() {
   });
 }
 
-/* 8. Quiz Engine */
-let activeQuiz = [], userAns = [], quizVersion = "v1", qIdx = 0, qScore = 0, qAnswered = false, qTimer = null, qSecs = 1200, isTimerStarted = false, quizTotalMins = 20;
+/* 7. 🚀 TESTBOOK CBT QUIZ ENGINE (Question Palette, Navigation, Auto-Submit) */
+let activeQuiz = [];
+let userSelections = {};     // qIdx -> selectedOptionIndex (e.g. 0, 1, 2, 3)
+let visitedQuestions = {};   // qIdx -> true (visited tracking for Red/Gray)
+let quizVersion = "v1";
+let currentQIdx = 0;
+let qTimer = null;
+let qSecs = 1200;
+let isTimerStarted = false;
+let quizTotalMins = 20;
 
 function getProgressKey() {
   const u = currentUser();
@@ -537,14 +544,14 @@ function getProgressKey() {
 
 function saveQuizState() {
   const key = getProgressKey();
-  if (!key || isNaN(qIdx)) return;
+  if (!key) return;
   const state = {
-    qIdx: qIdx,
-    qScore: qScore,
-    userAns: userAns,
-    qSecs: qSecs,
-    isTimerStarted: isTimerStarted,
-    quizVersion: quizVersion
+    currentQIdx,
+    userSelections,
+    visitedQuestions,
+    qSecs,
+    isTimerStarted,
+    quizVersion
   };
   localStorage.setItem(key, JSON.stringify(state));
 }
@@ -555,10 +562,10 @@ function clearQuizState() {
 }
 
 window.addEventListener('beforeunload', (e) => {
-  if (isTimerStarted && qIdx < activeQuiz.length) {
+  if (isTimerStarted) {
     saveQuizState();
     e.preventDefault();
-    e.returnValue = "ਤੁਹਾਡਾ ਟੈਸਟ ਚੱਲ ਰਿਹਾ ਹੈ!";
+    e.returnValue = "ਤੁਹਾਡਾ ਲਾਈਵ ਟੈਸਟ ਚੱਲ ਰਿਹਾ ਹੈ!";
   }
 });
 
@@ -567,7 +574,14 @@ function initQuiz() {
   if (!box) return;
   const u = currentUser();
   if (!u) {
-    box.innerHTML = `<div style="text-align:center;padding:25px 15px;"><div style="font-size:3rem;margin-bottom:10px;">🔐</div><h3>Login Required for Daily Test</h3><p style="color:#666;margin:8px 0 16px;">ਟੈਸਟ ਦੇਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ।</p><a class="btn btn-primary" href="login.html" style="background:#e8590c; color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none;">🔐 Login / Register</a></div>`;
+    box.innerHTML = `
+      <div style="text-align:center;padding:25px 15px;">
+        <div style="font-size:3rem;margin-bottom:10px;">🔐</div>
+        <h3>Login Required for Daily Test</h3>
+        <p style="color:#666;margin:8px 0 16px;">ਟੈਸਟ ਦੇਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ।</p>
+        <a class="btn btn-primary" href="login.html" style="background:#e8590c; color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none;">🔐 Login / Register</a>
+      </div>
+    `;
     return;
   }
 
@@ -589,13 +603,13 @@ function initQuiz() {
           <div class="quiz-score-card" style="text-align:center; padding:25px;">
             <div style="font-size:3rem;">✅</div>
             <h3>ਤੁਸੀਂ ਅੱਜ ਦਾ ਟੈਸਟ ਦੇ ਚੁੱਕੇ ਹੋ!</h3>
-            <p style="color:#666; margin:6px 0;">Student: <b>${u.name}</b> <span id="userStreakBadge"></span></p>
+            <p style="color:#666; margin:6px 0;">Student: <b>${escapeHtml(u.name)}</b> <span id="userStreakBadge"></span></p>
             <div class="quiz-score-num" style="font-size:2rem; font-weight:800; color:#e8590c; margin:10px 0;">${prev.score} / ${prev.total}</div>
             <p style="color:#2b8a3e;font-weight:700;margin-bottom:15px;">Marks: ${pct}%</p>
-            <button class="btn btn-primary btn-block" onclick="generateCertificate('${u.name}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${escapeHtml(u.name)}', ${prev.score}, ${prev.total})" style="background:#1971c2; color:#fff; max-width:280px; margin:0 auto 8px; padding:10px; border-radius:6px; border:none; cursor:pointer; width:100%;">
               🎖️ Download Official Certificate
             </button>
-            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${u.name}', ${prev.score}, ${prev.total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${escapeHtml(u.name)}', ${prev.score}, ${prev.total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; max-width:280px; margin:0 auto 10px; padding:10px; border-radius:6px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
               <span>📲</span> Share Result on WhatsApp
             </button>
           </div>
@@ -608,31 +622,31 @@ function initQuiz() {
         db.ref("dailyQuiz").once("value", qSnap => {
           activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
           
-          const savedStateStr = localStorage.getItem(getProgressKey());
-          if (savedStateStr) {
+          const savedStr = localStorage.getItem(getProgressKey());
+          if (savedStr) {
             try {
-              const saved = JSON.parse(savedStateStr);
-              if (saved.quizVersion === quizVersion && saved.qIdx < activeQuiz.length) {
-                qIdx = saved.qIdx || 0;
-                qScore = saved.qScore || 0;
-                userAns = saved.userAns || [];
+              const saved = JSON.parse(savedStr);
+              if (saved.quizVersion === quizVersion && saved.isTimerStarted) {
+                currentQIdx = saved.currentQIdx || 0;
+                userSelections = saved.userSelections || {};
+                visitedQuestions = saved.visitedQuestions || {};
                 qSecs = saved.qSecs || qSecs;
-                isTimerStarted = saved.isTimerStarted || false;
+                isTimerStarted = true;
               } else {
                 clearQuizState();
-                qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
+                resetQuizVars();
               }
             } catch(e) {
               clearQuizState();
-              qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
+              resetQuizVars();
             }
           } else {
-            qIdx = 0; qScore = 0; userAns = []; isTimerStarted = false;
+            resetQuizVars();
           }
 
           if (isTimerStarted) {
             startTimer();
-            renderQ();
+            renderCBTInterface();
           } else {
             showQuizStartScreen();
           }
@@ -644,6 +658,14 @@ function initQuiz() {
   });
 }
 
+function resetQuizVars() {
+  currentQIdx = 0;
+  userSelections = {};
+  visitedQuestions = {};
+  isTimerStarted = false;
+  qSecs = quizTotalMins * 60;
+}
+
 function showQuizStartScreen() {
   const box = document.getElementById("quizBox");
   if (!box) return;
@@ -652,24 +674,23 @@ function showQuizStartScreen() {
   box.innerHTML = `
     <div style="padding:20px 15px; text-align:center;">
       <div style="font-size:2.8rem; margin-bottom:8px;">📝</div>
-      <h3 style="color:#e8590c; margin-bottom:6px;">Daily Punjab Exam Mock Test</h3>
-      <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">ਵਿਦਿਆਰਥੀ: <b>${u.name}</b></p>
+      <h3 style="color:#e8590c; margin-bottom:6px;">Daily Punjab Exam Mock Test (CBT Online)</h3>
+      <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">ਵਿਦਿਆਰਥੀ: <b>${escapeHtml(u.name)}</b></p>
       
       <div style="background:#fff4e6; border:1.5px dashed #ffa94d; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
         <h4 style="color:#d9480f; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-          ⚠️ ਜ਼ਰੂਰੀ ਹਦਾਇਤ (Important Rule):
+          🎯 Testbook CBT Mode ਨਿਯਮ:
         </h4>
         <ul style="font-size:0.88rem; color:#444; line-height:1.5; padding-left:18px; margin:0;">
           <li>ਕੁੱਲ ਸਵਾਲ: <b>${activeQuiz.length}</b> | ਕੁੱਲ ਸਮਾਂ: <b>${quizTotalMins} ਮਿੰਟ</b></li>
-          <li style="color:#c92a2a; font-weight:700; margin-top:6px;">
-            ਜੇਕਰ ਤੁਸੀਂ ਟੈਸਟ ਵਿਚਕਾਰੋਂ ਕੱਟ ਦਿੱਤਾ, ਤਾਂ ਟਾਈਮਰ ਚੱਲਦਾ ਰਹੇਗਾ ਅਤੇ ਸਮਾਂ ਖ਼ਤਮ ਹੋਣ 'ਤੇ ਜਿੰਨੇ ਸਵਾਲ ਤੁਸੀਂ ਅਟੈਮਪਟ ਕੀਤੇ ਹੋਣਗੇ, ਉਹ ਆਪਣੇ ਆਪ (Auto-Submit) ਹੋ ਜਾਣਗੇ!
-          </li>
-          <li style="margin-top:4px;">ਟੈਸਟ ਪੂਰਾ ਹੋਣ 'ਤੇ ਸਰਟੀਫਿਕੇਟ ਮਿਲੇਗਾ।</li>
+          <li><b>Question Palette:</b> ਤੁਸੀਂ ਕਿਸੇ ਵੀ ਸਵਾਲ ਨੰਬਰ 'ਤੇ ਸਿੱਧਾ ਕਲਿੱਕ ਕਰਕੇ ਉੱਥੇ ਜਾ ਸਕਦੇ ਹੋ।</li>
+          <li>🟢 ਹਰਾ = Answered | 🔴 ਲਾਲ = Skipped | ⚪ ਸਲੇਟੀ = Not Visited</li>
+          <li style="color:#c92a2a; font-weight:700; margin-top:4px;">ਸਮਾਂ ਪੂਰਾ ਹੋਣ 'ਤੇ ਟੈਸਟ ਆਪਣੇ ਆਪ Submit ਹੋ ਜਾਵੇਗਾ।</li>
         </ul>
       </div>
 
       <button class="btn btn-primary" onclick="startQuizNow()" style="background:#e8590c; color:#fff; font-size:1.05rem; font-weight:bold; padding:12px 30px; border-radius:8px; border:none; cursor:pointer; width:100%; max-width:280px; box-shadow:0 4px 12px rgba(232,89,12,0.25);">
-        🚀 Start Test Now
+        🚀 Start CBT Test Now
       </button>
     </div>
   `;
@@ -677,11 +698,12 @@ function showQuizStartScreen() {
 
 function startQuizNow() {
   isTimerStarted = true;
-  qIdx = 0;
-  qScore = 0;
-  userAns = [];
+  currentQIdx = 0;
+  userSelections = {};
+  visitedQuestions = { 0: true };
+  qSecs = quizTotalMins * 60;
   startTimer();
-  renderQ();
+  renderCBTInterface();
 }
 
 function startTimer() {
@@ -689,86 +711,175 @@ function startTimer() {
   qTimer = setInterval(() => {
     qSecs--;
     saveQuizState();
-    const d = document.getElementById("quizTimerDisplay");
+    const d = document.getElementById("cbtTimerDisplay");
     if (d) {
       const m = Math.floor(qSecs / 60), s = qSecs % 60;
       d.textContent = `⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
     if (qSecs <= 0) { 
       clearInterval(qTimer); 
-      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਅਟੈਮਪਟ ਕੀਤੇ ਸਵਾਲਾਂ ਮੁਤਾਬਕ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
-      finishTest(); 
+      alert("⏱️ ਸਮਾਂ ਸਮਾਪਤ! ਤੁਹਾਡਾ ਟੈਸਟ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।"); 
+      finishCBTTest(); 
     }
   }, 1000);
 }
 
-function renderQ() {
+/* Main CBT Render Engine */
+function renderCBTInterface() {
   const box = document.getElementById("quizBox");
-  if (!box) return;
-  if (qIdx >= activeQuiz.length) { finishTest(); return; }
-  
-  qAnswered = false;
-  const cur = activeQuiz[qIdx];
+  if (!box || activeQuiz.length === 0) return;
+
+  visitedQuestions[currentQIdx] = true;
+  saveQuizState();
+
+  const cur = activeQuiz[currentQIdx];
   const m = Math.floor(qSecs / 60), s = qSecs % 60;
-  
+  const curSelected = userSelections[currentQIdx];
+
+  // Count answered questions
+  const answeredCount = Object.keys(userSelections).length;
+
   box.innerHTML = `
-    <div style="background:#fff9db; border:1px solid #fab005; padding:6px 10px; border-radius:6px; font-size:0.78rem; color:#f08c00; margin-bottom:10px; font-weight:600; text-align:center;">
-      ⚠️ ਜੇਕਰ ਟੈਸਟ ਕੱਟਿਆ ਗਿਆ, ਤਾਂ ਸਮਾਂ ਪੂਰਾ ਹੋਣ 'ਤੇ ਅਟੈਮਪਟ ਸਵਾਲ ਆਟੋ-ਸਬਮਿਟ ਹੋ ਜਾਣਗੇ।
+    <!-- Top CBT Status Bar -->
+    <div style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:10px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div>
+        <span style="font-weight:800; font-size:1rem; color:#212529;">Question ${currentQIdx + 1}</span>
+        <span style="color:#868e96; font-size:0.85rem;"> / ${activeQuiz.length}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:0.8rem; background:#e7f5ff; color:#1971c2; font-weight:700; padding:4px 8px; border-radius:6px;">
+          Solved: ${answeredCount}/${activeQuiz.length}
+        </span>
+        <span id="cbtTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.95rem;">
+          ⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}
+        </span>
+      </div>
     </div>
 
-    <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <span style="font-weight:700;">Question ${qIdx + 1} of ${activeQuiz.length}</span>
-      <span class="quiz-timer-badge" id="quizTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:12px; font-weight:bold;">⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}</span>
+    <!-- Question Palette (1 to N circle buttons) -->
+    <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:12px; margin-bottom:14px;">
+      <div style="font-size:0.8rem; font-weight:700; color:#6c757d; margin-bottom:8px; display:flex; justify-content:space-between;">
+        <span>🎯 QUESTION PALETTE (ਸਿੱਧਾ ਸਵਾਲ 'ਤੇ ਜਾਓ)</span>
+        <span style="font-size:0.75rem;">🟢 Done | 🔴 Skipped</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:100px; overflow-y:auto; padding:2px;">
+        ${activeQuiz.map((_, i) => {
+          const isAnswered = userSelections[i] !== undefined;
+          const isVisited = visitedQuestions[i] === true;
+          const isCurrent = i === currentQIdx;
+
+          let bg = "#e9ecef";
+          let color = "#495057";
+
+          if (isAnswered) {
+            bg = "#2b8a3e"; color = "#fff"; // Green
+          } else if (isVisited) {
+            bg = "#e03131"; color = "#fff"; // Red (Skipped)
+          }
+
+          const currentBorder = isCurrent ? "border: 2.5px solid #1971c2; transform: scale(1.1); font-weight:900;" : "border: 1px solid #ced4da;";
+
+          return `
+            <button onclick="cbtJumpTo(${i})" style="width:32px; height:32px; border-radius:6px; background:${bg}; color:${color}; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; ${currentBorder}">
+              ${i + 1}
+            </button>
+          `;
+        }).join("")}
+      </div>
     </div>
-    <div class="quiz-q" style="font-size:1.1rem; font-weight:700; margin-bottom:16px;">${cur.q}</div>
-    <div class="quiz-opts" id="quizOpts" style="display:flex; flex-direction:column; gap:10px;">
-      ${cur.options.map((opt, i) => `
-        <button class="quiz-opt-btn" onclick="checkAns(${i})" style="text-align:left; padding:12px; border:1.5px solid #dee2e6; border-radius:8px; background:#fff; font-size:0.95rem; cursor:pointer;">
-          <b>${String.fromCharCode(65 + i)})</b> ${opt}
+
+    <!-- Question Text -->
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:16px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+      <div style="font-size:1.05rem; font-weight:700; color:#212529; line-height:1.5; margin-bottom:16px;">
+        ${cur.q}
+      </div>
+
+      <!-- Options -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${cur.options.map((opt, optIdx) => {
+          const isSelected = (curSelected === optIdx);
+          const activeOptStyle = isSelected 
+            ? "background:#e7f5ff; border:2px solid #1971c2; color:#1971c2; font-weight:700;" 
+            : "background:#fff; border:1.5px solid #dee2e6; color:#333;";
+
+          return `
+            <button onclick="cbtSelectOption(${optIdx})" style="text-align:left; padding:12px 14px; border-radius:8px; font-size:0.95rem; cursor:pointer; transition:all 0.15s; ${activeOptStyle}">
+              <span style="display:inline-block; width:22px; font-weight:bold;">${String.fromCharCode(65 + optIdx)})</span> ${opt}
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+
+    <!-- CBT Action Controls -->
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+      <div style="display:flex; gap:6px;">
+        <button onclick="cbtPrev()" ${currentQIdx === 0 ? 'disabled' : ''} class="btn btn-ghost" style="padding:10px 14px; font-weight:bold; font-size:0.88rem; border:1px solid #ced4da;">
+          ⬅️ Prev
         </button>
-      `).join("")}
+        <button onclick="cbtClearResponse()" class="btn btn-ghost" style="padding:10px 12px; font-size:0.85rem; color:#e03131; border:1px solid #ffc9c9;">
+          🗑️ Clear
+        </button>
+      </div>
+
+      <div style="display:flex; gap:6px;">
+        ${currentQIdx < activeQuiz.length - 1 ? `
+          <button onclick="cbtNext()" class="btn btn-primary" style="background:#e8590c; color:#fff; font-weight:bold; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+            Save & Next ➡️
+          </button>
+        ` : ''}
+
+        <button onclick="confirmCBTSubmit()" class="btn btn-primary" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+          ✅ Submit Test
+        </button>
+      </div>
     </div>
   `;
 }
 
-function checkAns(selectedIdx) {
-  if (qAnswered) return;
-  qAnswered = true;
-
-  const cur = activeQuiz[qIdx];
-  const isCorrect = (selectedIdx === cur.answer);
-  
-  if (isCorrect) qScore++;
-  userAns.push({ q: cur.q, selected: selectedIdx, correct: cur.answer });
-
-  const btns = document.querySelectorAll(".quiz-opt-btn");
-  btns.forEach((b, i) => {
-    b.disabled = true;
-    if (i === cur.answer) {
-      b.style.background = "#d3f9d8";
-      b.style.borderColor = "#2b8a3e";
-      b.style.color = "#2b8a3e";
-      b.style.fontWeight = "bold";
-    } else if (i === selectedIdx) {
-      b.style.background = "#ffe3e3";
-      b.style.borderColor = "#c92a2a";
-      b.style.color = "#c92a2a";
-    }
-  });
-
-  qIdx++;
+function cbtSelectOption(optIdx) {
+  userSelections[currentQIdx] = optIdx;
   saveQuizState();
-
-  setTimeout(() => {
-    if (qIdx < activeQuiz.length) {
-      renderQ();
-    } else {
-      finishTest();
-    }
-  }, 1000);
+  renderCBTInterface();
 }
 
-function finishTest() {
+function cbtClearResponse() {
+  delete userSelections[currentQIdx];
+  saveQuizState();
+  renderCBTInterface();
+}
+
+function cbtNext() {
+  if (currentQIdx < activeQuiz.length - 1) {
+    currentQIdx++;
+    renderCBTInterface();
+  }
+}
+
+function cbtPrev() {
+  if (currentQIdx > 0) {
+    currentQIdx--;
+    renderCBTInterface();
+  }
+}
+
+function cbtJumpTo(targetIdx) {
+  if (targetIdx >= 0 && targetIdx < activeQuiz.length) {
+    currentQIdx = targetIdx;
+    renderCBTInterface();
+  }
+}
+
+function confirmCBTSubmit() {
+  const answered = Object.keys(userSelections).length;
+  const left = activeQuiz.length - answered;
+  const ok = confirm(`ਤੁਸੀਂ ${answered} ਸਵਾਲ ਹੱਲ ਕੀਤੇ ਹਨ ਅਤੇ ${left} ਬਾਕੀ ਹਨ। ਕੀ ਤੁਸੀਂ ਟੈਸਟ Submit ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`);
+  if (ok) {
+    finishCBTTest();
+  }
+}
+
+function finishCBTTest() {
   clearInterval(qTimer);
   qTimer = null;
   isTimerStarted = false;
@@ -780,7 +891,10 @@ function finishTest() {
 
   box.innerHTML = `<div style="text-align:center; padding:30px;"><div style="font-size:2.5rem;">⏳</div><h3>ਟੈਸਟ ਦਾ ਨਤੀਜਾ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ...</h3></div>`;
 
-  const selectedIndexes = userAns.map(a => a.selected);
+  // Build sequential array of answers matching API expectations (-1 if skipped)
+  const finalAnswersArray = activeQuiz.map((_, i) => {
+    return userSelections[i] !== undefined ? userSelections[i] : -1;
+  });
 
   fetch("/api/submit-quiz", {
     method: "POST",
@@ -788,30 +902,30 @@ function finishTest() {
     body: JSON.stringify({
       phone: u.phone,
       name: u.name,
-      userAnswers: selectedIndexes,
+      userAnswers: finalAnswersArray,
       version: quizVersion
     })
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      qScore = data.score;
+      const score = data.score;
       const total = data.total;
       const pct = data.percentage;
 
       box.innerHTML = `
         <div class="quiz-score-card" style="text-align:center; padding:25px;">
           <div style="font-size:3rem;">🎉</div>
-          <h3>Test Completed!</h3>
+          <h3>CBT Test Completed!</h3>
           <p style="color:#666; margin:6px 0;">Student: <b>${escapeHtml(u.name)}</b> <span id="userStreakBadge"></span></p>
-          <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${qScore} / ${total}</div>
+          <div class="quiz-score-num" style="font-size:2.2rem; font-weight:800; color:#e8590c; margin:10px 0;">${score} / ${total}</div>
           <p style="color:#2b8a3e; font-weight:700; margin-bottom:16px;">Marks: ${pct}%</p>
           
           <div style="display:flex; flex-direction:column; gap:10px; max-width:280px; margin:0 auto;">
-            <button class="btn btn-primary btn-block" onclick="generateCertificate('${escapeHtml(u.name)}', ${qScore}, ${total})" style="background:#1971c2; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:bold; width:100%;">
+            <button class="btn btn-primary btn-block" onclick="generateCertificate('${escapeHtml(u.name)}', ${score}, ${total})" style="background:#1971c2; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:bold; width:100%;">
               🎖️ Download Official Certificate
             </button>
-            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${escapeHtml(u.name)}', ${qScore}, ${total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <button class="btn btn-block" onclick="shareCertificateWhatsApp('${escapeHtml(u.name)}', ${score}, ${total}, 'Daily Mock Test')" style="background:#25D366; color:#fff; padding:11px; border-radius:8px; border:none; cursor:pointer; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
               <span>📲</span> Share Result on WhatsApp
             </button>
           </div>
@@ -831,6 +945,7 @@ function finishTest() {
   });
 }
 
+/* Certificate Generator */
 function generateCertificate(name, score, total) {
   const percentage = Math.round((score / total) * 100);
   const canvas = document.createElement("canvas");
@@ -885,19 +1000,7 @@ function generateCertificate(name, score, total) {
   link.click();
 }
 
-function showReview() {
-  const rb = document.getElementById("revBox");
-  if (!rb) return;
-  rb.style.display = (rb.style.display === "block") ? "none" : "block";
-  rb.innerHTML = userAns.map((a, i) => `
-    <div class="review-item ${a.sel === a.cor ? 'is-correct' : 'is-wrong'}">
-      <div style="font-weight:700;">${i + 1}. ${a.q}</div>
-      <div style="font-size:0.88rem;color:${a.sel === a.cor ? '#2b8a3e' : '#c92a2a'};">Your Answer: ${a.opts[a.sel] || 'Skipped'} ${a.sel === a.cor ? '✅' : '❌'}</div>
-      ${a.sel !== a.cor ? `<div style="font-size:0.88rem;color:#2b8a3e;">Correct Answer: ${a.opts[a.cor]}</div>` : ''}
-    </div>
-  `).join("");
-}
-
+/* Leaderboard */
 function loadBoard() {
   const list = document.getElementById("leaderboardList");
   if (!list) return;
@@ -926,7 +1029,7 @@ function loadBoard() {
       list.innerHTML = items.map((r, i) => `
         <div class="rank-row">
           <span class="rank-badge">${medals[i] || (i + 1)}</span>
-          <span class="rank-name">${r.name}</span>
+          <span class="rank-name">${escapeHtml(r.name)}</span>
           <span class="rank-score">${r.score} / ${r.total}</span>
         </div>
       `).join("");
@@ -960,19 +1063,19 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPublicPYQs();
   initLogin();
   initQuiz();
+
   const m = document.getElementById("modal");
   if (m) m.onclick = e => { if (e.target === m) closeModal(); };
   const mc = document.getElementById("modalClose");
   if (mc) mc.onclick = closeModal;
 
-  // Student Dashboard Modal ਬਾਹਰ ਕਲਿੱਕ ਕਰਨ 'ਤੇ ਬੰਦ ਹੋਵੇ
   const sModal = document.getElementById("studentDashboardModal");
   if (sModal) {
     sModal.onclick = e => { if (e.target === sModal) closeStudentDashboard(); };
   }
 });
 
-/* 👤 Student Personal Dashboard Modal Functions */
+/* Student Dashboard */
 function openStudentTab(tab) {
   const u = currentUser();
   if (!u) {
@@ -1024,7 +1127,7 @@ function editStudentName() {
   }
 }
 
-// --- GOOGLE SIGN IN FUNCTION (With Telegram Alert) ---
+/* Google Sign-in */
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
@@ -1033,7 +1136,6 @@ function loginWithGoogle() {
       const name = user.displayName || "Student";
       const identifier = user.phoneNumber || user.email.split('@')[0];
 
-      // ਚੈੱਕ ਕਰੋ ਕਿ ਇਹ ਨਵਾਂ ਯੂਜ਼ਰ ਹੈ ਜਾਂ ਪੁਰਾਣਾ
       db.ref("accounts/" + identifier).once("value", (snap) => {
         const isNewUser = !snap.exists();
 
@@ -1046,7 +1148,6 @@ function loginWithGoogle() {
           setSession(identifier);
           localStorage.setItem("pp_name", name);
 
-          // ਜੇਕਰ ਪਹਿਲੀ ਵਾਰ ਲੌਗਇਨ ਕੀਤਾ ਹੈ ਤਾਂ ਸਰਵਰ ਰਾਹੀਂ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਤੁਰੰਤ ਅਲਰਟ ਭੇਜੋ
           if (isNewUser) {
             fetch("/api/notify-login", {
               method: "POST",
@@ -1076,7 +1177,6 @@ function closePosterModal() {
   sessionStorage.setItem("asp_poster_closed", "true");
 }
 
-// 🚀 Fast Image Preloader for Poster Modal
 if (typeof db !== 'undefined') {
   db.ref('siteSettings/popupPoster').on('value', snap => {
     const data = snap.val();
@@ -1329,6 +1429,7 @@ function renderStreakBadge(streak) {
   return `<span style="background:#fff3bf; color:#d9480f; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:20px; border:1px solid #ffd43b; display:inline-flex; align-items:center; gap:3px; margin-left:6px;">🔥 ${streak} Day${streak > 1 ? 's' : ''} Streak</span>`;
 }
 
+/* 🔒 STRICT SECURITY: Single Device Login & Anti-Inspection */
 function enforceSingleDeviceLogin() {
   const u = currentUser();
   if (!u) return;
@@ -1362,8 +1463,10 @@ document.addEventListener("DOMContentLoaded", () => {
   enforceSingleDeviceLogin();
 });
 
+// Disable Right Click
 document.addEventListener('contextmenu', e => e.preventDefault());
 
+// Block F12, Inspect Element, Ctrl+U, Ctrl+S
 document.addEventListener('keydown', e => {
   if (
     e.keyCode === 123 ||
@@ -1393,43 +1496,3 @@ function syncPurchasedBooks() {
 document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });
-
-// 🔍 Smart AI Study Doubt Solver Function
-async function askDoubtAI() {
-  const inp = document.getElementById("aiDoubtInput");
-  const resBox = document.getElementById("aiDoubtResult");
-  const btn = document.getElementById("aiSearchBtn");
-
-  if (!inp || !resBox || !btn) return;
-  const q = inp.value.trim();
-
-  if (q.length < 3) {
-    alert("ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਸਵਾਲ ਲਿਖੋ!");
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerText = "⏳ ਲੱਭ ਰਿਹਾ ਹੈ...";
-  resBox.style.display = "block";
-  resBox.innerHTML = "<span style='color:#777;'>AI ਅਧਿਆਪਕ ਸਹੀ ਉੱਤਰ ਤਿਆਰ ਕਰ ਰਿਹਾ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇੰਤਜ਼ਾਰ ਕਰੋ...</span>";
-
-  try {
-    const res = await fetch("/api/ask-doubt", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: q })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      resBox.innerHTML = `<b>ਉੱਤਰ:</b><br>${data.answer.replace(/\n/g, '<br>')}`;
-    } else {
-      resBox.innerHTML = `<span style="color:#c92a2a;">${data.message || 'ਕੋਈ ਸਮੱਸਿਆ ਆਈ ਹੈ।'}</span>`;
-    }
-  } catch (err) {
-    resBox.innerHTML = `<span style="color:#c92a2a;">ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</span>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "🔍 ਲੱਭੋ";
-  }
-}

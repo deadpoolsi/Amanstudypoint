@@ -735,6 +735,7 @@ function renderCBTInterface() {
   const cur = activeQuiz[currentQIdx];
   const m = Math.floor(qSecs / 60), s = qSecs % 60;
   const curSelected = userSelections[currentQIdx];
+  const isLast = (currentQIdx === activeQuiz.length - 1);
 
   // Count answered questions
   const answeredCount = Object.keys(userSelections).length;
@@ -811,28 +812,35 @@ function renderCBTInterface() {
       </div>
     </div>
 
-    <!-- CBT Action Controls -->
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+    <!-- CBT Action Controls (Prev, Clear, Save & Next) -->
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px;">
       <div style="display:flex; gap:6px;">
-        <button onclick="cbtPrev()" ${currentQIdx === 0 ? 'disabled' : ''} class="btn btn-ghost" style="padding:10px 14px; font-weight:bold; font-size:0.88rem; border:1px solid #ced4da;">
+        <button onclick="cbtPrev()" ${currentQIdx === 0 ? 'disabled' : ''} class="btn btn-ghost" style="padding:10px 14px; font-weight:bold; font-size:0.88rem; border:1px solid #ced4da; background:#fff; border-radius:8px; cursor:pointer;">
           ⬅️ Prev
         </button>
-        <button onclick="cbtClearResponse()" class="btn btn-ghost" style="padding:10px 12px; font-size:0.85rem; color:#e03131; border:1px solid #ffc9c9;">
+        <button onclick="cbtClearResponse()" class="btn btn-ghost" style="padding:10px 12px; font-size:0.85rem; color:#e03131; border:1px solid #ffc9c9; background:#fff; border-radius:8px; cursor:pointer;">
           🗑️ Clear
         </button>
       </div>
 
-      <div style="display:flex; gap:6px;">
-        ${currentQIdx < activeQuiz.length - 1 ? `
-          <button onclick="cbtNext()" class="btn btn-primary" style="background:#e8590c; color:#fff; font-weight:bold; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+      <div>
+        ${!isLast ? `
+          <button onclick="cbtNext()" class="btn btn-primary" style="background:#e8590c; color:#fff; font-weight:bold; padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-size:0.95rem; box-shadow:0 2px 6px rgba(232,89,12,0.3);">
             Save & Next ➡️
           </button>
-        ` : ''}
-
-        <button onclick="confirmCBTSubmit()" class="btn btn-primary" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
-          ✅ Submit Test
-        </button>
+        ` : `
+          <button onclick="confirmCBTSubmit()" class="btn btn-primary" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-size:0.95rem;">
+            ✅ Final Submit
+          </button>
+        `}
       </div>
+    </div>
+
+    <!-- Separated Safe Submit Zone -->
+    <div style="border-top:1.5px dashed #e9ecef; padding-top:12px; text-align:center;">
+      <button onclick="confirmCBTSubmit()" style="background:none; border:1px solid #adb5bd; color:#495057; padding:7px 16px; border-radius:6px; font-size:0.82rem; cursor:pointer;">
+        🏁 Submit Test Paper
+      </button>
     </div>
   `;
 }
@@ -873,8 +881,15 @@ function cbtJumpTo(targetIdx) {
 function confirmCBTSubmit() {
   const answered = Object.keys(userSelections).length;
   const left = activeQuiz.length - answered;
-  const ok = confirm(`ਤੁਸੀਂ ${answered} ਸਵਾਲ ਹੱਲ ਕੀਤੇ ਹਨ ਅਤੇ ${left} ਬਾਕੀ ਹਨ। ਕੀ ਤੁਸੀਂ ਟੈਸਟ Submit ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`);
-  if (ok) {
+
+  let msg = `ਕੁੱਲ ਸਵਾਲ: ${activeQuiz.length}\nਹੱਲ ਕੀਤੇ: ${answered}\nਬਾਕੀ ਬਚੇ (Left): ${left}\n\n`;
+  if (left > 0) {
+    msg += `⚠️ ਚੇਤਾਵਨੀ: ਤੁਹਾਡੇ ਅਜੇ ${left} ਸਵਾਲ ਬਾਕੀ ਹਨ!\n\nਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਅਧੂਰਾ ਟੈਸਟ Submit ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`;
+  } else {
+    msg += `ਕੀ ਤੁਸੀਂ ਟੈਸਟ Submit ਕਰਕੇ ਆਪਣਾ ਸਕੋਰ ਅਤੇ ਰੈਂਕ ਦੇਖਣਾ ਚਾਹੁੰਦੇ ਹੋ?`;
+  }
+
+  if (confirm(msg)) {
     finishCBTTest();
   }
 }

@@ -46,7 +46,7 @@
     background: #525659;
   }
   
-  /* 🛡️ 1. Pop-out Blocker (Google Drive ਨਵੀਂ ਟੈਬ 'ਚ ਖੁੱਲ੍ਹਣ ਤੋਂ ਰੋਕਣ ਲਈ) */
+  /* 🛡️ 1. Pop-out Blocker */
   .popout-blocker {
     position: absolute;
     top: 0;
@@ -231,7 +231,8 @@
     currentZoom = 1;
     const rHead = document.getElementById("readerHead");
     const rBody = document.getElementById("readerBody");
-    const u = (typeof currentUser === 'function') ? currentUser() : null;
+    const sessionPhone = localStorage.getItem("pp_session");
+    const sessionName = localStorage.getItem("pp_name") || "Student";
 
     let headerTitle = '📖 Full Book Reader';
     let backUrl = 'index.html#books';
@@ -258,7 +259,7 @@
       `;
     }
 
-    const studentTag = u ? `${u.name} (${u.phone})` : "Aman Study Point Mansa";
+    const studentTag = sessionPhone ? `${sessionName} (${sessionPhone})` : "Aman Study Point Mansa";
 
     if (rBody) {
       rBody.innerHTML = `
@@ -328,31 +329,16 @@
       return;
     }
 
-    // 🔒 3. Full Book ਮੋਡ (Firebase Auth ID Token ਵੈਰੀਫਿਕੇਸ਼ਨ)
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
-        rBody.innerHTML = `
-          <div class="error-box">
-            <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
-            <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
-            <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
-            <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
-          </div>
-        `;
-        return;
-      }
-
+    // 🔒 3. Full Book ਮੋਡ (ਸਮਾਰਟ ਡਿਊਲ ਵੈਰੀਫਿਕੇਸ਼ਨ)
+    async function loadFullBook(userPhone, idToken = null) {
       try {
-        // ਅਸਲ Firebase ID Token ਪ੍ਰਾਪਤ ਕਰੋ
-        const token = await user.getIdToken();
+        const headers = { "Content-Type": "application/json" };
+        if (idToken) headers["Authorization"] = "Bearer " + idToken;
 
         const res = await fetch("/api/get-book", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({ bookId: bookId })
+          headers: headers,
+          body: JSON.stringify({ bookId: bookId, phone: userPhone })
         });
 
         const data = await res.json();
@@ -372,6 +358,38 @@
       } catch (err) {
         console.error("Fetch book error:", err);
         rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।</h3></div>`;
+      }
+    }
+
+    const localPhone = localStorage.getItem("pp_session");
+    let isHandled = false;
+
+    // ਜੇਕਰ ਲੋਕਲ ਸਟੋਰੇਜ ਵਿੱਚ ਸੈਸ਼ਨ ਮੌਜੂਦ ਹੈ ਤਾਂ ਬਿਨਾਂ ਉਡੀਕ ਕੀਤੇ ਤੁਰੰਤ ਕੋਸ਼ਿਸ਼ ਕਰੋ
+    if (localPhone) {
+      isHandled = true;
+      loadFullBook(localPhone);
+    }
+
+    // Firebase Auth ਲਿਸਨਰ
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          const p = user.phoneNumber || user.email?.split('@')[0] || localPhone;
+          loadFullBook(p, token);
+        } catch (e) {
+          if (!isHandled && localPhone) loadFullBook(localPhone);
+        }
+      } else if (!localPhone) {
+        // ਜੇਕਰ ਦੋਵਾਂ ਵਿੱਚੋਂ ਕਿਤੇ ਵੀ ਲੌਗਇਨ ਨਹੀਂ ਹੈ ਤਾਂ ਹੀ ਲੌਗਇਨ ਕਾਰਡ ਦਿਖਾਓ
+        rBody.innerHTML = `
+          <div class="error-box">
+            <div style="font-size:2.5rem; margin-bottom:10px;">🔐</div>
+            <h3>ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</h3>
+            <p style="color:#666; margin:8px 0 16px;">ਪੂਰੀ ਕਿਤਾਬ ਪੜ੍ਹਨ ਲਈ ਪਹਿਲਾਂ Login ਕਰੋ।</p>
+            <a href="login.html" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">🔐 Login / Register</a>
+          </div>
+        `;
       }
     });
   });

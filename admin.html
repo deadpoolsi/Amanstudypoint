@@ -15,20 +15,55 @@
   }
   .admin-wrap {
     width: 100%;
-    max-width: 850px;
+    max-width: 900px;
     margin: 10px auto;
     padding: 16px;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 14px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.06);
   }
   .card-admin {
     background: #fff;
-    border: 1px solid #e9ecef;
+    border: 1.5px solid #e9ecef;
     border-radius: 10px;
-    padding: 14px;
+    padding: 16px;
     margin-bottom: 16px;
   }
+  
+  /* 🗂️ Clean Navigation Tabs */
+  .admin-tabs-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #eee;
+  }
+  .tab-btn {
+    background: #f1f3f5;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #495057;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: #e8590c;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(232,89,12,0.3);
+  }
+
+  .tab-content-panel {
+    display: none;
+  }
+  .tab-content-panel.active {
+    display: block;
+  }
+
   .req-card, .user-card, .result-card, .pyq-item-admin, .test-item-admin {
     background: #fdfdfd;
     padding: 12px;
@@ -45,10 +80,10 @@
   .btn-reject { background: #e03131; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; margin-left: 4px; font-weight: 600; font-size: 0.85rem; }
   .btn-del-icon { background: none; border: none; color: #fa5252; cursor: pointer; font-size: 1.15rem; padding: 4px 8px; }
   .sec-title {
-    margin-top: 22px;
+    margin-top: 18px;
     margin-bottom: 10px;
     color: #e8590c;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 700;
     border-bottom: 2px solid #ffe8cc;
     padding-bottom: 5px;
@@ -81,13 +116,10 @@
   @media (max-width: 600px) {
     .admin-wrap { padding: 12px; }
     .card-admin { padding: 12px; }
-    div[style*="grid-template-columns"] {
-      grid-template-columns: 1fr !important;
-    }
   }
 </style>
 </head>
-<body style="background:#f4f5f7;">
+<body>
 
 <!-- Admin Login Box -->
 <div id="adminAuthBox">
@@ -101,282 +133,311 @@
 
 <!-- Admin Dashboard -->
 <div class="admin-wrap" id="adminDashboard" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h2>🔐 Admin Panel — Aman Study Point</h2>
-    <button class="btn btn-ghost btn-small" onclick="adminLogout()" style="background:#ffe3e3; color:#c92a2a;">🚪 Lock</button>
-  </div>
-  <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
-
-  <!-- 1. ਲਾਈਵ ਨੋਟਿਸ ਬਾਰ -->
-  <div class="card-admin">
-    <h3>📢 Top Notification Bar</h3>
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-      <input type="text" id="announcementInput" placeholder="ਜਿਵੇਂ: 🔥 ਅੱਜ ਸ਼ਾਮ ਦਾ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ..." style="flex: 1; padding: 10px; border: 1.5px solid #dee2e6; border-radius: 8px;">
-      <button class="btn btn-primary" onclick="updateAnnouncement()">💾 Update Note</button>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <div>
+      <h2 style="margin:0; font-size:1.3rem;">🔐 Admin Workspace</h2>
+      <small style="color:#777;">Aman Study Point Administration Hub</small>
     </div>
+    <button class="btn btn-ghost btn-small" onclick="adminLogout()" style="background:#ffe3e3; color:#c92a2a; font-weight:bold;">🚪 Lock</button>
   </div>
 
-  <!-- 💎 2. ਵੱਖੋ-ਵੱਖਰੇ ਐਗਜ਼ਾਮ ਪਾਸ ਅਤੇ ਰੇਟ ਮੈਨੇਜਰ (Pass Pricing + Coupon with Student Limit) -->
-  <div class="card-admin" style="border: 2px solid #2b8a3e; background: #fbfdfb;">
-    <h3 style="color:#2b8a3e;">💎 Exam Pass Pricing & Coupon Manager</h3>
-    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ ਦੇ 4 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ ਸੈੱਟ ਕਰੋ:</p>
+  <!-- 🗂️ Main Category Tabs -->
+  <div class="admin-tabs-nav">
+    <button class="tab-btn active" onclick="switchAdminTab('tab_tests', this)">🎯 Mock Tests</button>
+    <button class="tab-btn" onclick="switchAdminTab('tab_passes', this)">💎 Passes & Pricing</button>
+    <button class="tab-btn" onclick="switchAdminTab('tab_books', this)">📚 Books & PDFs</button>
+    <button class="tab-btn" onclick="switchAdminTab('tab_results', this)">📊 Results & Students</button>
+    <button class="tab-btn" onclick="switchAdminTab('tab_settings', this)">⚙️ Settings & PYQ</button>
+  </div>
 
-    <div style="margin-bottom:12px;">
-      <label style="font-size:0.85rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
-      <select id="pricingCatSelect" onchange="loadCategoryPassPricing()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #2b8a3e; font-weight:bold; margin-top:4px;">
-        <option value="police">👮‍♂️ Punjab Police</option>
-        <option value="patwari">🌾 PSSSB Patwari</option>
-        <option value="clerk">📑 PSSSB Clerk</option>
-        <option value="ssc">🏛️ SSC & Railway</option>
-      </select>
-    </div>
-
-    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
-      <div>
-        <label style="font-size:0.8rem; font-weight:600;">1 Week Pass (₹):</label>
-        <input type="number" id="passPrice_week" placeholder="e.g. 49" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-      <div>
-        <label style="font-size:0.8rem; font-weight:600;">1 Month Pass (₹):</label>
-        <input type="number" id="passPrice_month" placeholder="e.g. 99" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-      <div>
-        <label style="font-size:0.8rem; font-weight:600;">6 Months Pass (₹):</label>
-        <input type="number" id="passPrice_6months" placeholder="e.g. 199" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-      <div>
-        <label style="font-size:0.8rem; font-weight:600;">1 Year Pass (₹):</label>
-        <input type="number" id="passPrice_year" placeholder="e.g. 299" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-    </div>
-
-    <!-- Promo Code for this Category with Usage Limit -->
-    <div style="background:#fff; border:1px dashed #2b8a3e; padding:12px; border-radius:8px; margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div style="font-size:0.85rem; font-weight:700; color:#2b8a3e;">🏷️ ਇਸ ਕੈਟਾਗਰੀ ਲਈ ਡਿਸਕਾਊਂਟ ਕੂਪਨ:</div>
-        <span id="catCouponUsageBadge" style="font-size:0.75rem; background:#ebfbee; color:#2b8a3e; padding:3px 8px; border-radius:12px; font-weight:bold;">Used: 0</span>
-      </div>
+  <!-- TAB 1: 🎯 MOCK TESTS (Daily + Exam Series) -->
+  <div id="tab_tests" class="tab-content-panel active">
+    <!-- Category Tests Uploader -->
+    <div class="card-admin" style="border: 2px solid #ffa94d; background: #fffcf9;">
+      <h3 style="color:#e8590c; margin-top:0;">🎯 Upload Exam Mock Tests</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Police, Patwari, Clerk ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ:</p>
       
-      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:12px;">
         <div>
-          <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
-          <input type="text" id="catCouponCode" placeholder="e.g. POLICE50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
-        </div>
-        <div>
-          <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
-          <input type="number" id="catCouponDiscount" placeholder="e.g. 50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
-        <div>
-          <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ (ਖਾਲੀ = ਅਣਗਿਣਤ):</label>
-          <input type="number" id="catCouponLimit" placeholder="ਜਿਵੇਂ: 50 ਵਿਦਿਆਰਥੀ" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-        </div>
-        <div>
-          <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
-          <select id="catCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
-            <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
-            <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Inactive)</option>
+          <label style="font-size:0.8rem; font-weight:bold;">1. ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
+          <select id="catTestSelect" onchange="loadCategoryTestsAdmin()" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; font-weight:bold;">
+            <option value="police">👮‍♂️ Punjab Police</option>
+            <option value="patwari">🌾 PSSSB Patwari</option>
+            <option value="clerk">📑 PSSSB Clerk</option>
+            <option value="ssc">🏛️ SSC & Railway</option>
           </select>
         </div>
+        <div>
+          <label style="font-size:0.8rem; font-weight:bold;">2. ਟੈਸਟ ਦਾ ਨਾਮ:</label>
+          <input type="text" id="catTestTitle" placeholder="ਜਿਵੇਂ: Mock Test 02" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem; font-weight:bold;">3. ਸਮਾਂ (ਮਿੰਟ):</label>
+          <input type="number" id="catTestTime" value="20" min="5" max="180" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
+        </div>
       </div>
-    </div>
 
-    <button class="btn btn-primary btn-block" onclick="saveCategoryPassPricing()" style="background:#2b8a3e; width:100%; padding:12px; font-weight:bold; border-radius:6px;">
-      💾 Save Exam Pass Prices & Coupon
-    </button>
-  </div>
-
-  <!-- 3. ਕਿਤਾਬਾਂ ਲਈ ਗਲੋਬਲ ਕੂਪਨ ਮੈਨੇਜਰ (Books Coupon with Student Limit) -->
-  <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
-    <h3 style="color:#1971c2;">🏷️ Books Coupon Manager (ਕਿਤਾਬਾਂ ਲਈ ਕੂਪਨ)</h3>
-    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ ਕਿਤਾਬਾਂ 'ਤੇ ਵੱਡੀ ਛੋਟ ਦੇਣ ਲਈ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ:</p>
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <span id="bookCouponUsageBadge" style="font-size:0.78rem; background:#e7f5ff; color:#1971c2; padding:3px 10px; border-radius:12px; font-weight:bold;">Used: 0</span>
-    </div>
-
-    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
-      <div>
-        <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
-        <input type="text" id="bookCouponCode" placeholder="ਜਿਵੇਂ: BIG50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
-      </div>
-      <div>
-        <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
-        <input type="number" id="bookCouponDiscount" placeholder="ਜਿਵੇਂ: 40" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:12px;">
-      <div>
-        <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ (ਖਾਲੀ = ਅਣਗਿਣਤ):</label>
-        <input type="number" id="bookCouponLimit" placeholder="ਜਿਵੇਂ: 30" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      </div>
-      <div>
-        <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
-        <select id="bookCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
-          <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
-          <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Inactive)</option>
-        </select>
-      </div>
-    </div>
-
-    <button class="btn btn-primary btn-block" onclick="saveBooksCouponConfig()" style="background:#1971c2; width:100%; padding:11px; font-weight:bold; border-radius:6px;">
-      💾 Save Books Coupon
-    </button>
-  </div>
-
-  <!-- 4. ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਨਵੇਂ ਮੌਕ ਟੈਸਟ ਅੱਪਲੋਡਰ -->
-  <div class="card-admin" style="border: 2px solid #ffa94d; background: #fffcf9;">
-    <h3 style="color:#e8590c;">🎯 Upload Exam Mock Tests</h3>
-    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Police, Patwari, Clerk ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ:</p>
-    
-    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
-      <div>
-        <label style="font-size:0.8rem; font-weight:bold;">1. ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
-        <select id="catTestSelect" onchange="loadCategoryTestsAdmin()" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; font-weight:bold;">
-          <option value="police">👮‍♂️ Punjab Police</option>
-          <option value="patwari">🌾 PSSSB Patwari</option>
-          <option value="clerk">📑 PSSSB Clerk</option>
-          <option value="ssc">🏛️ SSC & Railway</option>
-        </select>
-      </div>
-      <div>
-        <label style="font-size:0.8rem; font-weight:bold;">2. ਟੈਸਟ ਦਾ ਨਾਮ:</label>
-        <input type="text" id="catTestTitle" placeholder="ਜਿਵੇਂ: Mock Test 02" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
-      </div>
-      <div>
-        <label style="font-size:0.8rem; font-weight:bold;">3. ਸਮਾਂ (ਮਿੰਟ):</label>
-        <input type="number" id="catTestTime" value="20" min="5" max="180" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
-      </div>
-    </div>
-
-    <label style="font-size:0.8rem; font-weight:bold;">4. ਸਵਾਲ ਪੇਸਟ ਕਰੋ (Auto Format):</label>
-    <textarea id="catTestQuestionsInput" class="bulk-textarea" style="height:140px; margin-top:4px;" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
+      <label style="font-size:0.8rem; font-weight:bold;">4. ਸਵਾਲ ਪੇਸਟ ਕਰੋ (Auto Format):</label>
+      <textarea id="catTestQuestionsInput" class="bulk-textarea" style="height:140px; margin-top:4px;" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
 A) ਮੋਰ
 B) ਬਾਜ਼
 C) ਤੋਤਾ
 D) ਕਬੂਤਰ
 Ans: B"></textarea>
 
-    <div style="display:flex; gap:10px; margin-top:10px;">
-      <button class="btn btn-primary" onclick="publishCategoryTest()" style="flex:1; padding:12px; background:#e8590c; font-weight:bold;">
+      <button class="btn btn-primary" onclick="publishCategoryTest()" style="margin-top:10px; width:100%; padding:12px; background:#e8590c; font-weight:bold;">
         🚀 Publish to Selected Exam Category
       </button>
+
+      <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ:</div>
+      <div id="adminCategoryTestsList">Loading category tests...</div>
     </div>
 
-    <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ:</div>
-    <div id="adminCategoryTestsList">Loading category tests...</div>
-  </div>
-
-  <!-- 5. ਹੋਮਪੇਜ ਡੇਲੀ ਕੁਇਜ਼ (Free Daily Test) -->
-  <div class="card-admin">
-    <div class="sec-title" style="margin-top:0;">⚡ Homepage Free Daily Mock Test</div>
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-      <label style="font-weight:600; font-size:0.9rem;">Default Timer (Minutes):</label>
-      <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:80px; padding:6px; border:1px solid #ccc; border-radius:6px; text-align:center; font-weight:bold;">
-      <button class="btn btn-primary btn-small" onclick="saveTimerSetting()">💾 Save Timer</button>
-    </div>
-    <textarea id="bulkTextInput" class="bulk-textarea" placeholder="ਹੋਮਪੇਜ ਦੇ ਡੇਲੀ ਟੈਸਟ ਲਈ ਸਵਾਲ ਪੇਸਟ ਕਰੋ..."></textarea>
-    <button class="btn btn-primary" onclick="processBulkUpload()" style="margin-top:8px; width:100%; padding:10px;">
-      🚀 Publish to Homepage Daily Test
-    </button>
-  </div>
-
-  <!-- 6. ਕਿਤਾਬਾਂ, PDF ਅਤੇ ਕੀਮਤਾਂ -->
-  <div class="card-admin">
-    <h3 style="color:#e8590c; margin-bottom:8px;">📚 Manage Books & PDFs</h3>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <select id="adminBookSelect" onchange="loadSelectedBookData()" style="padding:10px; border-radius:6px; border:1px solid #ccc; font-weight:bold;">
-        <option value="punjabi">📖 Punjabi Grammar</option>
-        <option value="gk">🌏 General Knowledge (GK)</option>
-        <option value="maths">🔢 Mathematics</option>
-        <option value="reasoning">🧩 Reasoning Ability</option>
-        <option value="history">🏛️ History of Punjab</option>
-        <option value="science">📗 English</option>
-        <option value="constitution">⚖️ Indian Constitution</option>
-        <option value="computer">💻 Computer Awareness</option>
-        <option value="combo">🎁 All 8 Books Combo Pack</option>
-      </select>
-      <input type="url" id="adminBookPdfUrl" placeholder="Full PDF Secure Link (Google Drive / Vault Link)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
-      <input type="url" id="adminBookDemoPdfUrl" placeholder="Demo Free PDF Link (Optional)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
-      <div style="display:flex; gap:10px;">
-        <input type="number" id="adminBookPrice" placeholder="Price in ₹" style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;">
-        <select id="adminBookStatus" style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;">
-          <option value="available">🟢 Available (ਚਾਲੂ)</option>
-          <option value="unavailable">⏳ Coming Soon (ਬੰਦ)</option>
-        </select>
+    <!-- Homepage Daily Mock Test -->
+    <div class="card-admin">
+      <h3 style="margin-top:0; color:#212529;">⚡ Homepage Free Daily Mock Test</h3>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+        <label style="font-weight:600; font-size:0.9rem;">Default Timer (Minutes):</label>
+        <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:80px; padding:6px; border:1px solid #ccc; border-radius:6px; text-align:center; font-weight:bold;">
+        <button class="btn btn-primary btn-small" onclick="saveTimerSetting()">💾 Save Timer</button>
       </div>
-      <button class="btn btn-primary" onclick="saveAdminBookData()" style="background:#e8590c; padding:12px; font-weight:bold;">
-        💾 Save Book & PDF Settings
+      <textarea id="bulkTextInput" class="bulk-textarea" placeholder="ਹੋਮਪੇਜ ਦੇ ਡੇਲੀ ਟੈਸਟ ਲਈ ਸਵਾਲ ਪੇਸਟ ਕਰੋ..."></textarea>
+      <button class="btn btn-primary" onclick="processBulkUpload()" style="margin-top:8px; width:100%; padding:10px;">
+        🚀 Publish to Homepage Daily Test
       </button>
     </div>
   </div>
 
-  <!-- 7. ਹੋਮਪੇਜ ਪੌਪਅੱਪ ਪੋਸਟਰ -->
-  <div class="card-admin">
-    <h3 style="color:#e8590c; margin-bottom:8px;">🖼️ Homepage Popup Poster</h3>
-    <div style="display:flex; flex-direction:column; gap:8px;">
-      <input type="url" id="posterImgUrl" placeholder="Poster Image URL" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-      <input type="url" id="posterClickUrl" placeholder="Redirect Link (Optional)" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-      <select id="posterStatusSelect" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-        <option value="true">🟢 ਪੋਸਟਰ ਚਾਲੂ (Show Popup)</option>
-        <option value="false">🔴 ਪੋਸਟਰ ਬੰਦ (Disable Popup)</option>
-      </select>
-      <button class="btn btn-primary" onclick="savePopupPosterConfig()">💾 Save Poster</button>
+  <!-- TAB 2: 💎 PASSES & PRICING (Pass Rates + Category Coupon) -->
+  <div id="tab_passes" class="tab-content-panel">
+    <div class="card-admin" style="border: 2px solid #2b8a3e; background: #fbfdfb;">
+      <h3 style="color:#2b8a3e; margin-top:0;">💎 Exam Pass Pricing & Category Coupon</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ ਦੇ 4 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ ਸੈੱਟ ਕਰੋ:</p>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
+        <select id="pricingCatSelect" onchange="loadCategoryPassPricing()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #2b8a3e; font-weight:bold; margin-top:4px;">
+          <option value="police">👮‍♂️ Punjab Police</option>
+          <option value="patwari">🌾 PSSSB Patwari</option>
+          <option value="clerk">📑 PSSSB Clerk</option>
+          <option value="ssc">🏛️ SSC & Railway</option>
+        </select>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.8rem; font-weight:600;">1 Week Pass (₹):</label>
+          <input type="number" id="passPrice_week" placeholder="49" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem; font-weight:600;">1 Month Pass (₹):</label>
+          <input type="number" id="passPrice_month" placeholder="99" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem; font-weight:600;">6 Months Pass (₹):</label>
+          <input type="number" id="passPrice_6months" placeholder="199" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem; font-weight:600;">1 Year Pass (₹):</label>
+          <input type="number" id="passPrice_year" placeholder="299" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+      </div>
+
+      <!-- Promo Code with Limit -->
+      <div style="background:#fff; border:1px dashed #2b8a3e; padding:12px; border-radius:8px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="font-size:0.85rem; font-weight:700; color:#2b8a3e;">🏷️ ਇਸ ਕੈਟਾਗਰੀ ਲਈ ਡਿਸਕਾਊਂਟ ਕੂਪਨ:</div>
+          <span id="catCouponUsageBadge" style="font-size:0.75rem; background:#ebfbee; color:#2b8a3e; padding:3px 8px; border-radius:12px; font-weight:bold;">Used: 0</span>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+          <div>
+            <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
+            <input type="text" id="catCouponCode" placeholder="POLICE50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
+            <input type="number" id="catCouponDiscount" placeholder="50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+          <div>
+            <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ (ਖਾਲੀ = ਅਣਗਿਣਤ):</label>
+            <input type="number" id="catCouponLimit" placeholder="ਜਿਵੇਂ: 50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
+            <select id="catCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
+              <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
+              <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Inactive)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="saveCategoryPassPricing()" style="background:#2b8a3e; width:100%; padding:12px; font-weight:bold; border-radius:6px;">
+        💾 Save Exam Pass Prices & Coupon
+      </button>
     </div>
   </div>
 
-  <!-- 8. ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ (Today's Day) -->
-  <div class="card-admin">
-    <h3 style="color:#2b8a3e; margin-bottom:8px;">📅 Today's Special Day</h3>
-    <div style="display:flex; flex-direction:column; gap:8px;">
-      <input type="text" id="dayTitleInput" placeholder="ਦਿਨ ਦਾ ਨਾਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-      <textarea id="dayWhyInput" rows="2" placeholder="ਵੇਰਵਾ / ਇਤਿਹਾਸ..." style="padding:9px; border-radius:6px; border:1px solid #ccc; font-family:inherit;"></textarea>
-      <input type="text" id="dayThemeInput" placeholder="ਥੀਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-      <select id="dayStatusSelect" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
-        <option value="true">🟢 Active (ਦਿਖਾਓ)</option>
-        <option value="false">🔴 Hide (ਬੰਦ)</option>
-      </select>
-      <button class="btn btn-primary" onclick="saveTodayDayConfig()" style="background:#2b8a3e;">💾 Update Day</button>
+  <!-- TAB 3: 📚 BOOKS & PDFS (Books, Prices & Book Coupons) -->
+  <div id="tab_books" class="tab-content-panel">
+    <!-- Books Coupon Manager -->
+    <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
+      <h3 style="color:#1971c2; margin-top:0;">🏷️ Books Coupon Manager</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:0.85rem; color:#666;">ਕਿਤਾਬਾਂ ਲਈ ਸਪੈਸ਼ਲ ਕੂਪਨ:</span>
+        <span id="bookCouponUsageBadge" style="font-size:0.78rem; background:#e7f5ff; color:#1971c2; padding:3px 10px; border-radius:12px; font-weight:bold;">Used: 0</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
+          <input type="text" id="bookCouponCode" placeholder="BIG50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
+          <input type="number" id="bookCouponDiscount" placeholder="40" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ:</label>
+          <input type="number" id="bookCouponLimit" placeholder="30" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
+          <select id="bookCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
+            <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ</option>
+            <option value="false">🔴 ਕੂਪਨ ਬੰਦ</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="saveBooksCouponConfig()" style="background:#1971c2; width:100%; padding:11px; font-weight:bold; border-radius:6px;">
+        💾 Save Books Coupon
+      </button>
+    </div>
+
+    <!-- Books and PDF Vault -->
+    <div class="card-admin">
+      <h3 style="color:#e8590c; margin-top:0;">📚 Manage Books & PDFs</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <select id="adminBookSelect" onchange="loadSelectedBookData()" style="padding:10px; border-radius:6px; border:1px solid #ccc; font-weight:bold;">
+          <option value="punjabi">📖 Punjabi Grammar</option>
+          <option value="gk">🌏 General Knowledge (GK)</option>
+          <option value="maths">🔢 Mathematics</option>
+          <option value="reasoning">🧩 Reasoning Ability</option>
+          <option value="history">🏛️ History of Punjab</option>
+          <option value="science">📗 English</option>
+          <option value="constitution">⚖️ Indian Constitution</option>
+          <option value="computer">💻 Computer Awareness</option>
+          <option value="combo">🎁 All 8 Books Combo Pack</option>
+        </select>
+        <input type="url" id="adminBookPdfUrl" placeholder="Full PDF Secure Link (Google Drive / Vault Link)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+        <input type="url" id="adminBookDemoPdfUrl" placeholder="Demo Free PDF Link (Optional)" style="padding:10px; border-radius:6px; border:1px solid #ccc;">
+        <div style="display:flex; gap:10px;">
+          <input type="number" id="adminBookPrice" placeholder="Price in ₹" style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;">
+          <select id="adminBookStatus" style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;">
+            <option value="available">🟢 Available (ਚਾਲੂ)</option>
+            <option value="unavailable">⏳ Coming Soon (ਬੰਦ)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveAdminBookData()" style="background:#e8590c; padding:12px; font-weight:bold;">
+          💾 Save Book & PDF Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Manual Book Requests -->
+    <div class="card-admin">
+      <h3 style="margin-top:0;">📥 Pending Manual Book Requests</h3>
+      <div id="requestsList">Loading requests...</div>
     </div>
   </div>
 
-  <!-- 9. PYQ ਪੇਪਰ ਮੈਨੇਜਰ -->
-  <div class="card-admin">
-    <h3>📑 Free PYQ Papers</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-      <input type="text" id="pyqTitle" placeholder="Paper Name (e.g. Punjab Police 2023)" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
-      <input type="text" id="pyqExam" placeholder="Exam Category" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+  <!-- TAB 4: 📊 RESULTS & STUDENTS -->
+  <div id="tab_results" class="tab-content-panel">
+    <!-- Results -->
+    <div class="card-admin">
+      <div class="sec-title" style="margin-top:0;">
+        <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-small" onclick="exportResultsToCSV()" style="background:#2b8a3e;">📥 Export CSV</button>
+          <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="color:#e03131;">🗑️ Clear All</button>
+        </div>
+      </div>
+      <div id="quizResultsList">Loading results...</div>
     </div>
-    <div style="display:flex; gap:8px;">
-      <input type="url" id="pyqUrl" placeholder="Direct PDF Link" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
-      <button class="btn btn-primary" onclick="addPYQPaper()">➕ Add</button>
-    </div>
-    <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">ਅੱਪਲੋਡ ਕੀਤੇ ਪੇਪਰ:</div>
-    <div id="adminPyqList">Loading papers...</div>
-  </div>
 
-  <!-- 10. ਪੈਂਡਿੰਗ ਬੁੱਕ ਰਿਕਵੈਸਟਾਂ -->
-  <div class="sec-title">📥 Pending Manual Book Requests</div>
-  <div id="requestsList">Loading requests...</div>
-
-  <!-- 11. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ -->
-  <div class="sec-title">
-    <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
-    <div style="display:flex; gap:8px;">
-      <button class="btn btn-primary btn-small" onclick="exportResultsToCSV()" style="background:#2b8a3e;">📥 Export CSV</button>
-      <button class="btn btn-ghost btn-small" onclick="clearAllResults()" style="color:#e03131;">🗑️ Clear All</button>
+    <!-- Users -->
+    <div class="card-admin">
+      <div class="sec-title" style="margin-top:0;">
+        <span>👥 Registered Students (<span id="userCount">0</span>)</span>
+      </div>
+      <div id="usersList">Loading users...</div>
     </div>
   </div>
-  <div id="quizResultsList">Loading results...</div>
 
-  <!-- 12. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
-  <div class="sec-title">
-    <span>👥 Registered Students (<span id="userCount">0</span>)</span>
+  <!-- TAB 5: ⚙️ SETTINGS & PYQ (Notice, Poster, Today's Day, PYQ) -->
+  <div id="tab_settings" class="tab-content-panel">
+    <!-- Notice Bar -->
+    <div class="card-admin">
+      <h3 style="margin-top:0;">📢 Top Announcement Bar</h3>
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <input type="text" id="announcementInput" placeholder="ਜਿਵੇਂ: 🔥 ਅੱਜ ਦਾ ਨਵਾਂ ਟੈਸਟ ਲਾਈਵ ਹੋ ਚੁੱਕਾ ਹੈ..." style="flex: 1; padding: 10px; border: 1.5px solid #dee2e6; border-radius: 8px;">
+        <button class="btn btn-primary" onclick="updateAnnouncement()">💾 Update</button>
+      </div>
+    </div>
+
+    <!-- Popup Poster -->
+    <div class="card-admin">
+      <h3 style="color:#e8590c; margin-top:0;">🖼️ Homepage Popup Poster</h3>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <input type="url" id="posterImgUrl" placeholder="Poster Image URL" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+        <input type="url" id="posterClickUrl" placeholder="Redirect Link (Optional)" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+        <select id="posterStatusSelect" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+          <option value="true">🟢 ਪੋਸਟਰ ਚਾਲੂ (Show Popup)</option>
+          <option value="false">🔴 ਪੋਸਟਰ ਬੰਦ (Disable Popup)</option>
+        </select>
+        <button class="btn btn-primary" onclick="savePopupPosterConfig()">💾 Save Poster</button>
+      </div>
+    </div>
+
+    <!-- Today's Special Day -->
+    <div class="card-admin">
+      <h3 style="color:#2b8a3e; margin-top:0;">📅 Today's Special Day</h3>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <input type="text" id="dayTitleInput" placeholder="ਦਿਨ ਦਾ ਨਾਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+        <textarea id="dayWhyInput" rows="2" placeholder="ਵੇਰਵਾ / ਇਤਿਹਾਸ..." style="padding:9px; border-radius:6px; border:1px solid #ccc; font-family:inherit;"></textarea>
+        <input type="text" id="dayThemeInput" placeholder="ਥੀਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+        <select id="dayStatusSelect" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+          <option value="true">🟢 Active (ਦਿਖਾਓ)</option>
+          <option value="false">🔴 Hide (ਬੰਦ)</option>
+        </select>
+        <button class="btn btn-primary" onclick="saveTodayDayConfig()" style="background:#2b8a3e;">💾 Update Day</button>
+      </div>
+    </div>
+
+    <!-- PYQ Papers -->
+    <div class="card-admin">
+      <h3 style="margin-top:0;">📑 Free PYQ Papers</h3>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+        <input type="text" id="pyqTitle" placeholder="Paper Name" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+        <input type="text" id="pyqExam" placeholder="Exam Category" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="url" id="pyqUrl" placeholder="Direct PDF Link" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        <button class="btn btn-primary" onclick="addPYQPaper()">➕ Add</button>
+      </div>
+      <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">ਅੱਪਲੋਡ ਕੀਤੇ ਪੇਪਰ:</div>
+      <div id="adminPyqList">Loading papers...</div>
+    </div>
   </div>
-  <div id="usersList">Loading users...</div>
+
 </div>
 
 <!-- Firebase SDKs -->
@@ -452,6 +513,16 @@ async function handleAdminLogin() {
 
 function adminLogout() {
   auth.signOut().then(() => location.reload());
+}
+
+/* 🗂️ Clean Tab Switching Logic */
+function switchAdminTab(panelId, btnEl) {
+  document.querySelectorAll(".tab-content-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  
+  const target = document.getElementById(panelId);
+  if (target) target.classList.add("active");
+  if (btnEl) btnEl.classList.add("active");
 }
 
 function loadAllAdminModules() {

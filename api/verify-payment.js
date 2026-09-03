@@ -31,7 +31,10 @@ export default async function handler(req, res) {
     phone,
     bookId,
     name,
-    amount
+    amount,
+    couponCode,
+    couponType,
+    category
   } = req.body;
 
   // 1. ਸਾਰੇ ਪੈਰਾਮੀਟਰ ਲਾਜ਼ਮੀ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ
@@ -63,14 +66,14 @@ export default async function handler(req, res) {
     if (bookId.startsWith("pass_")) {
       // ਫਾਰਮੈਟ: pass_{category}_{duration} (ਉਦਾਹਰਣ: pass_police_month)
       const parts = bookId.split("_");
-      const category = parts[1] || "police";
+      const cat = parts[1] || "police";
       const planType = parts[2] || "month";
       const days = DURATION_DAYS[planType] || 30;
 
       const expiryTimestamp = Date.now() + (days * 24 * 60 * 60 * 1000);
 
       // ਯੂਜ਼ਰ ਦੇ ਖਾਤੇ ਵਿੱਚ ਪਾਸ ਦੀ ਐਕਸਪਾਇਰੀ ਡੇਟ ਸੇਵ ਕਰੋ
-      await fetch(`${FIREBASE_DB_URL}/users/${phone}/passes/${category}.json${DB_SECRET}`, {
+      await fetch(`${FIREBASE_DB_URL}/users/${phone}/passes/${cat}.json${DB_SECRET}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(expiryTimestamp)
@@ -97,7 +100,32 @@ export default async function handler(req, res) {
       });
     }
 
-    // 4. ਪੇਮੈਂਟ ਆਡਿਟ ਲੌਗ ਦਰਜ ਕਰੋ
+    // 4. ਕੂਪਨ ਵਰਤੋਂ ਕਾਊਂਟਰ ਅੱਪਡੇਟ ਕਰੋ (usedCount + 1)
+    if (couponCode && couponCode.trim() !== "") {
+      try {
+        let couponPath = "";
+        if (couponType === "category" && category) {
+          couponPath = `siteSettings/passPricing/${category}/coupon/usedCount`;
+        } else if (bookId.startsWith("pass_")) {
+          const cat = bookId.split("_")[1] || "police";
+          couponPath = `siteSettings/passPricing/${cat}/coupon/usedCount`;
+        } else {
+          couponPath = `siteSettings/coupon/usedCount`;
+        }
+
+        const getRes = await fetch(`${FIREBASE_DB_URL}/${couponPath}.json${DB_SECRET}`);
+        const curCount = (await getRes.json()) || 0;
+        await fetch(`${FIREBASE_DB_URL}/${couponPath}.json${DB_SECRET}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(curCount + 1)
+        });
+      } catch (cErr) {
+        console.warn("Coupon usage increment warning:", cErr);
+      }
+    }
+
+    // 5. ਪੇਮੈਂਟ ਆਡਿਟ ਲੌਗ ਦਰਜ ਕਰੋ
     await fetch(`${FIREBASE_DB_URL}/payments/${razorpay_payment_id}.json${DB_SECRET}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -106,6 +134,7 @@ export default async function handler(req, res) {
         name: name || "Student",
         itemPurchased: bookId,
         amount: amount || 0,
+        couponUsed: couponCode || "None",
         orderId: razorpay_order_id,
         paymentId: razorpay_payment_id,
         timestamp: new Date().toISOString()

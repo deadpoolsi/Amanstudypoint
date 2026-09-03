@@ -338,14 +338,20 @@
         return;
       }
 
-      const keys = Object.keys(data);
-      listEl.innerHTML = keys.reverse().map((k, index) => {
+      // 1. ਸਭ ਤੋਂ ਪਹਿਲਾਂ ਬਣਿਆ ਟੈਸਟ ਸਥਾਈ ਤੌਰ 'ਤੇ FREE DEMO ਰਹੇਗਾ
+      const originalKeys = Object.keys(data);
+      const freeDemoKey = originalKeys[0];
+
+      // 2. ਨਵੇਂ ਟੈਸਟ ਉੱਪਰ ਰੱਖਣ ਲਈ ਲਿਸਟ ਉਲਟਾਓ
+      const displayKeys = [...originalKeys].reverse();
+
+      listEl.innerHTML = displayKeys.map((k, index) => {
         const item = data[k];
         const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 30);
         const mins = item.timeMinutes || 20;
 
-        // ਪਹਿਲਾ ਟੈਸਟ ਮੁਫ਼ਤ ਡੈਮੋ, ਬਾਕੀ ਲਾਕ
-        const isFreeDemo = (index === 0);
+        // ਸਿਰਫ਼ ਪਹਿਲਾ ਅਸਲ ਟੈਸਟ ਫ੍ਰੀ ਰਹੇਗਾ, ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਰਹਿਣਗੇ
+        const isFreeDemo = (k === freeDemoKey);
         const canOpen = isFreeDemo || hasValidPass;
 
         return `
@@ -354,7 +360,7 @@
               <span style="background:${isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
                 ${isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
               </span>
-              <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (keys.length - index))}</h3>
+              <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (displayKeys.length - index))}</h3>
               <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
             </div>
             <button onclick="${canOpen ? `startSpecificTest('${k}', ${isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">

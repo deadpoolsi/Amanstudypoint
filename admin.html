@@ -189,8 +189,16 @@ Ans: B"></textarea>
         🚀 Publish to Selected Exam Category
       </button>
 
-      <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ:</div>
-      <div id="adminCategoryTestsList">Loading category tests...</div>
+      <!-- Search & Dynamic Scroll List -->
+      <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">
+        <span>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ (<span id="adminTestCount">0</span>):</span>
+      </div>
+
+      <input type="text" id="adminTestSearchInput" oninput="filterAdminTestsList()" placeholder="🔍 ਟੈਸਟ ਲੱਭੋ (ਜਿਵੇਂ: Paid - 1)..." style="width:100%; padding:8px 10px; margin-bottom:8px; border:1px solid #ced4da; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+
+      <div id="adminCategoryTestsList" style="max-height:360px; overflow-y:auto; padding-right:4px; border:1px solid #edf2f7; border-radius:8px; background:#fafafa; padding:6px;">
+        Loading category tests...
+      </div>
     </div>
 
     <!-- Homepage Daily Mock Test -->
@@ -465,6 +473,7 @@ const ADMIN_EMAIL = "deadpool73503@gmail.com";
 let currentResultsData = [];
 let cachedCatCouponUsed = 0;
 let cachedBookCouponUsed = 0;
+let currentCategoryTestsRaw = [];
 
 function isAdminUser(user) {
   return !!(user && user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase());
@@ -689,19 +698,49 @@ function publishCategoryTest() {
 function loadCategoryTestsAdmin() {
   const cat = document.getElementById("catTestSelect").value;
   const listEl = document.getElementById("adminCategoryTestsList");
+  const countEl = document.getElementById("adminTestCount");
+  const searchEl = document.getElementById("adminTestSearchInput");
+  if (searchEl) searchEl.value = "";
+
   db.ref(`categoryTests/${cat}`).on("value", snap => {
     const data = snap.val();
-    if (!data) { listEl.innerHTML = "<small style='color:#777;'>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੈ।</small>"; return; }
-    listEl.innerHTML = Object.entries(data).reverse().map(([key, t]) => `
-      <div class="test-item-admin">
-        <div>
-          <b>${t.title}</b> <small style="background:#e7f5ff; color:#1971c2; padding:2px 6px; border-radius:4px;">${t.questions ? t.questions.length : t.qCount} Questions • ${t.timeMinutes} Mins</small>
-          <div style="font-size:0.8rem; color:#777;">📅 ${t.createdAt || 'Recently'}</div>
-        </div>
-        <button class="btn-del-icon" onclick="deleteCategoryTest('${cat}', '${key}')">🗑️</button>
-      </div>
-    `).join("");
+    if (!data) {
+      if (countEl) countEl.innerText = "0";
+      listEl.innerHTML = "<small style='color:#777; display:block; padding:10px;'>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੈ।</small>";
+      currentCategoryTestsRaw = [];
+      return;
+    }
+
+    currentCategoryTestsRaw = Object.entries(data).map(([key, t]) => ({ key, ...t })).reverse();
+    if (countEl) countEl.innerText = currentCategoryTestsRaw.length;
+    renderAdminTestsList(currentCategoryTestsRaw, cat);
   });
+}
+
+function renderAdminTestsList(list, cat) {
+  const listEl = document.getElementById("adminCategoryTestsList");
+  if (list.length === 0) {
+    listEl.innerHTML = "<small style='color:#777; display:block; padding:10px;'>ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਟੈਸਟ ਨਹੀਂ ਮਿਲਿਆ।</small>";
+    return;
+  }
+
+  listEl.innerHTML = list.map(t => `
+    <div class="test-item-admin" style="background:#fff; margin-bottom:6px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <div>
+        <b style="font-size:0.9rem;">${t.title}</b> 
+        <small style="background:#e7f5ff; color:#1971c2; padding:2px 6px; border-radius:4px; font-weight:600;">${t.questions ? t.questions.length : t.qCount} Qs • ${t.timeMinutes}m</small>
+        <div style="font-size:0.75rem; color:#888; margin-top:2px;">📅 ${t.createdAt || 'Recently'}</div>
+      </div>
+      <button class="btn-del-icon" onclick="deleteCategoryTest('${cat}', '${t.key}')" title="Delete Test">🗑️</button>
+    </div>
+  `).join("");
+}
+
+function filterAdminTestsList() {
+  const query = (document.getElementById("adminTestSearchInput")?.value || "").trim().toLowerCase();
+  const cat = document.getElementById("catTestSelect").value;
+  const filtered = currentCategoryTestsRaw.filter(t => (t.title || "").toLowerCase().includes(query));
+  renderAdminTestsList(filtered, cat);
 }
 
 function deleteCategoryTest(cat, key) {

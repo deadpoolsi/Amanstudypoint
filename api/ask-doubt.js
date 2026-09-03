@@ -8,58 +8,48 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਸਵਾਲ ਲਿਖੋ।" });
   }
 
-  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  const apiKey = (process.env.GROQ_API_KEY || "").trim();
   if (!apiKey) {
-    return res.status(500).json({ success: false, message: "⚠️ GEMINI_API_KEY ਮੌਜੂਦ ਨਹੀਂ ਹੈ।" });
+    return res.status(500).json({ success: false, message: "⚠️ GROQ_API_KEY Vercel ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।" });
   }
 
   const systemPrompt = 
 `ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ ਅਧਿਕਾਰਤ Study AI Expert ਹੋ।
-ਸਿਰਫ਼ ਮੁਕਾਬਲੇ ਦੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, GK, Reasoning, Punjabi, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਓ।
-ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
+ਤੁਹਾਡਾ ਕੰਮ:
+1. ਸਿਰਫ਼ ਮੁਕਾਬਲੇ ਦੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ (Punjab Police Constable/SI, PSSSB Patwari, Clerk, SSC, Railway, TET) ਅਤੇ ਸਿਲੇਬਸ (Maths, Reasoning, Punjab GK, History, Geography, Punjabi Grammar, English, Computer Awareness) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ।
+2. ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਸਿਰਫ਼ ਇਹ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
+3. ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
 
-  const fullPrompt = `${systemPrompt}\n\nਵਿਦਿਆਰਥੀ ਦਾ ਸਵਾਲ: ${query}`;
-
-  // 1. Google ਦਾ ਨਵਾਂ Interactions API (gemini-2.5-flash ਮਾਡਲ ਨਾਲ)
   try {
-    const interRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions?key=${apiKey}`, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        input: fullPrompt
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: query }
+        ],
+        temperature: 0.2,
+        max_tokens: 600
       })
     });
 
-    const interData = await interRes.json();
-    const outText = interData.output || interData.text || interData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (interRes.ok && outText) {
-      return res.status(200).json({ success: true, answer: outText });
-    }
-  } catch (e) {}
+    const data = await response.json();
 
-  // 2. generateContent Fallback (gemini-2.5-pro ਅਤੇ gemini-2.5-flash)
-  const fallbackModels = ["gemini-2.5-pro", "gemini-2.5-flash"];
-  for (const m of fallbackModels) {
-    try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }]
-        })
+    if (!response.ok || data.error) {
+      return res.status(400).json({
+        success: false,
+        message: "Groq Error: " + (data.error?.message || "ਕਨੈਕਸ਼ਨ ਸਮੱਸਿਆ")
       });
+    }
 
-      const data = await resp.json();
-      const ans = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (resp.ok && ans) {
-        return res.status(200).json({ success: true, answer: ans });
-      }
-    } catch (err) {}
+    const answer = data.choices?.[0]?.message?.content;
+    return res.status(200).json({ success: true, answer: answer });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ: " + error.message });
   }
-
-  return res.status(500).json({
-    success: false,
-    message: "ਸਰਵਰ ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਕਰ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
-  });
 }

@@ -20,36 +20,43 @@ export default async function handler(req, res) {
 2. ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਸਿਰਫ਼ ਇਹ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
 3. ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
 
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: query }
-        ],
-        temperature: 0.2,
-        max_tokens: 600
-      })
-    });
+  // ਤੁਹਾਡੇ ਡੈਸ਼ਬੋਰਡ ਵਿੱਚ ਦਿਖ ਰਹੇ ਐਕਟਿਵ ਮਾਡਲ
+  const activeModels = ["qwen-2.5-32b", "gpt-oss-120b", "llama3-8b-8192"];
 
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      return res.status(400).json({
-        success: false,
-        message: "Groq Error: " + (data.error?.message || "ਕਨੈਕਸ਼ਨ ਸਮੱਸਿਆ")
+  for (const modelName of activeModels) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: query }
+          ],
+          temperature: 0.2,
+          max_tokens: 600
+        })
       });
-    }
 
-    const answer = data.choices?.[0]?.message?.content;
-    return res.status(200).json({ success: true, answer: answer });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ: " + error.message });
+      const data = await response.json();
+
+      if (response.ok && data.choices?.[0]?.message?.content) {
+        return res.status(200).json({
+          success: true,
+          answer: data.choices[0].message.content
+        });
+      }
+    } catch (err) {
+      continue;
+    }
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "ਸਰਵਰ ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਕਰ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  });
 }

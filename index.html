@@ -61,7 +61,6 @@
 
     <nav id="navLinks">
       <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
-      <a href="#doubt-search" onclick="toggleNavMenu()">💡 AI Doubt Search</a>
       <a href="#quiz" onclick="toggleNavMenu()">🎯 Daily Test</a>
       <a href="#books" onclick="toggleNavMenu()">📚 All Books</a>
       <a href="javascript:void(0)" onclick="openStudentTab('books'); toggleNavMenu();">🎒 My Books</a>
@@ -105,28 +104,6 @@
     <div id="dailyDayThemeBox" style="display:none; font-size:0.85rem; color:#1b5e20; background:rgba(255,255,255,0.85); padding:6px 10px; border-radius:6px; border-left:4px solid #2e7d32; margin-top:6px;">
       🎯 <b>ਥੀਮ / ਮੁੱਖ ਤੱਥ:</b> <span id="dailyDayTheme"></span>
     </div>
-  </div>
-</section>
-
-<!-- 💡 AI Study Doubt Search Box -->
-<section id="doubt-search" class="container" style="margin-top:15px; margin-bottom:20px;">
-  <div style="background:#fff; border: 2px solid #ffa94d; border-radius: 14px; padding: 18px; box-shadow: 0 4px 15px rgba(232,89,12,0.08);">
-    <h3 style="color:#e8590c; margin-top:0; margin-bottom:6px; font-size:1.15rem; display:flex; align-items:center; gap:6px;">
-      💡 Ask Any Study Question (ਕੋਈ ਵੀ ਸਵਾਲ ਪੁੱਛੋ)
-    </h3>
-    <p style="color:#666; font-size:0.88rem; margin:0 0 12px;">
-      ਮੈਥ, ਪੰਜਾਬ ਜੀਕੇ, ਰੀਜ਼ਨਿੰਗ, ਕੰਪਿਊਟਰ ਜਾਂ ਵਿਆਕਰਨ ਦਾ ਸਵਾਲ ਲਿਖੋ ਤੇ ਤੁਰੰਤ ਹੱਲ ਲਵੋ:
-    </p>
-
-    <div style="display:flex; gap:8px;">
-      <input type="text" id="aiDoubtInput" placeholder="ਜਿਵੇਂ: ਪੰਜਾਬ ਵਿੱਚ ਕਿੰਨੇ ਜ਼ਿਲ੍ਹੇ ਹਨ?" style="flex:1; padding:12px 14px; border:1.5px solid #ced4da; border-radius:8px; font-size:0.95rem; outline:none;" onkeypress="if(event.key==='Enter') askAiDoubt()">
-      <button onclick="askAiDoubt()" id="aiDoubtBtn" style="background:#e8590c; color:#fff; border:none; padding:0 18px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; gap:4px;">
-        🔍 ਲੱਭੋ
-      </button>
-    </div>
-
-    <!-- AI Output Box -->
-    <div id="aiDoubtResult" style="display:none; margin-top:14px; padding:14px; background:#f8f9fa; border-radius:8px; border-left:4px solid #e8590c; font-size:0.92rem; line-height:1.6; color:#333; white-space:pre-wrap;"></div>
   </div>
 </section>
 
@@ -313,45 +290,6 @@
         localStorage.setItem('asp_announcement', '📢 ' + val);
       }
     });
-  }
-
-  // 3. AI Study Doubt Search Handler
-  async function askAiDoubt() {
-    const input = document.getElementById("aiDoubtInput");
-    const btn = document.getElementById("aiDoubtBtn");
-    const resBox = document.getElementById("aiDoubtResult");
-    
-    const query = input.value.trim();
-    if (!query) {
-      alert("ਕਿਰਪਾ ਕਰਕੇ ਕੋਈ ਸਵਾਲ ਲਿਖੋ।");
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = "⏳ ਲੱਭ ਰਿਹਾ ਹੈ...";
-    resBox.style.display = "block";
-    resBox.innerHTML = "<p style='color:#666; margin:0;'>AI ਅਧਿਆਪਕ ਸਹੀ ਉੱਤਰ ਤਿਆਰ ਕਰ ਰਿਹਾ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇੰਤਜ਼ਾਰ ਕਰੋ...</p>";
-
-    try {
-      const response = await fetch("/api/ask-doubt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        resBox.innerHTML = `<strong>ਉੱਤਰ:</strong><br>${data.answer}`;
-      } else {
-        resBox.innerHTML = `<span style="color:#d9480f;">${data.message || "ਜਵਾਬ ਤਿਆਰ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"}</span>`;
-      }
-    } catch (err) {
-      resBox.innerHTML = `<span style="color:#d9480f;">ਕਨੈਕਸ਼ਨ ਸਮੱਸਿਆ: ${err.message}</span>`;
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = "🔍 ਲੱਭੋ";
-    }
   }
 </script>
 

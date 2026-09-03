@@ -342,10 +342,14 @@
       const allKeys = Object.keys(data);
       const freeDemoKey = allKeys[0]; // ਸਭ ਤੋਂ ਪਹਿਲਾ ਟੈਸਟ ਹਮੇਸ਼ਾ Free Demo ਰਹੇਗਾ
 
-      // ਬਾਕੀ ਸਾਰੇ ਨਵੇਂ ਪੇਡ ਟੈਸਟ (ਨਵੇਂ ਟੈਸਟ ਉੱਪਰ)
-      const paidKeys = allKeys.slice(1).reverse();
+      // ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ (1, 2, 3...) ਸੌਰਟ ਕਰੋ ਤਾਂ ਜੋ 1 ਉੱਪਰ ਰਹੇ ਤੇ ਬਾਕੀ ਹੇਠਾਂ ਆਉਣ
+      const paidKeys = allKeys.slice(1).sort((a, b) => {
+        const titleA = (data[a]?.title || a).toLowerCase();
+        const titleB = (data[b]?.title || b).toLowerCase();
+        return titleA.localeCompare(titleB, undefined, { numeric: true, sensitivity: 'base' });
+      });
 
-      // Free Demo ਹਮੇਸ਼ਾ ਸਭ ਤੋਂ ਉੱਪਰ, ਬਾਕੀ ਸਾਰੇ ਨਵੇਂ ਟੈਸਟ ਉਸਦੇ ਹੇਠਾਂ
+      // Free Demo ਸਭ ਤੋਂ ਉੱਪਰ, ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟ ਲੜੀਵਾਰ ਹੇਠਾਂ
       const sortedKeys = [freeDemoKey, ...paidKeys];
 
       listEl.innerHTML = sortedKeys.map((k, index) => {

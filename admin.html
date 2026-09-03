@@ -116,10 +116,10 @@
     </div>
   </div>
 
-  <!-- 💎 2. ਵੱਖੋ-ਵੱਖਰੇ ਐਗਜ਼ਾਮ ਪਾਸ ਅਤੇ ਰੇਟ ਮੈਨੇਜਰ (Category-wise Pass Pricing) -->
+  <!-- 💎 2. ਵੱਖੋ-ਵੱਖਰੇ ਐਗਜ਼ਾਮ ਪਾਸ ਅਤੇ ਰੇਟ ਮੈਨੇਜਰ (Pass Pricing + Coupon with Student Limit) -->
   <div class="card-admin" style="border: 2px solid #2b8a3e; background: #fbfdfb;">
     <h3 style="color:#2b8a3e;">💎 Exam Pass Pricing & Coupon Manager</h3>
-    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ (Police, Patwari, Clerk, SSC) ਦੇ 4 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਕੂਪਨ ਵੱਖਰੇ ਸੈੱਟ ਕਰੋ:</p>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ ਦੇ 4 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ ਸੈੱਟ ਕਰੋ:</p>
 
     <div style="margin-bottom:12px;">
       <label style="font-size:0.85rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
@@ -150,16 +150,36 @@
       </div>
     </div>
 
-    <!-- Promo Code for this Category -->
-    <div style="background:#fff; border:1px dashed #2b8a3e; padding:10px; border-radius:8px; margin-bottom:12px;">
-      <div style="font-size:0.85rem; font-weight:700; color:#2b8a3e; margin-bottom:6px;">🏷️ ਇਸ ਕੈਟਾਗਰੀ ਲਈ ਡਿਸਕਾਊਂਟ ਕੂਪਨ:</div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-        <input type="text" id="catCouponCode" placeholder="Code (e.g. POLICE30)" style="padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
-        <input type="number" id="catCouponDiscount" placeholder="Discount %" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
-        <select id="catCouponActive" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
-          <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ</option>
-          <option value="false">🔴 ਕੂਪਨ ਬੰਦ</option>
-        </select>
+    <!-- Promo Code for this Category with Usage Limit -->
+    <div style="background:#fff; border:1px dashed #2b8a3e; padding:12px; border-radius:8px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="font-size:0.85rem; font-weight:700; color:#2b8a3e;">🏷️ ਇਸ ਕੈਟਾਗਰੀ ਲਈ ਡਿਸਕਾਊਂਟ ਕੂਪਨ:</div>
+        <span id="catCouponUsageBadge" style="font-size:0.75rem; background:#ebfbee; color:#2b8a3e; padding:3px 8px; border-radius:12px; font-weight:bold;">Used: 0</span>
+      </div>
+      
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
+          <input type="text" id="catCouponCode" placeholder="e.g. POLICE50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
+          <input type="number" id="catCouponDiscount" placeholder="e.g. 50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ (ਖਾਲੀ = ਅਣਗਿਣਤ):</label>
+          <input type="number" id="catCouponLimit" placeholder="ਜਿਵੇਂ: 50 ਵਿਦਿਆਰਥੀ" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
+          <select id="catCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
+            <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
+            <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Inactive)</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -168,7 +188,46 @@
     </button>
   </div>
 
-  <!-- 3. ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਨਵੇਂ ਮੌਕ ਟੈਸਟ ਅੱਪਲੋਡਰ -->
+  <!-- 3. ਕਿਤਾਬਾਂ ਲਈ ਗਲੋਬਲ ਕੂਪਨ ਮੈਨੇਜਰ (Books Coupon with Student Limit) -->
+  <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
+    <h3 style="color:#1971c2;">🏷️ Books Coupon Manager (ਕਿਤਾਬਾਂ ਲਈ ਕੂਪਨ)</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ ਕਿਤਾਬਾਂ 'ਤੇ ਵੱਡੀ ਛੋਟ ਦੇਣ ਲਈ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ:</p>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span id="bookCouponUsageBadge" style="font-size:0.78rem; background:#e7f5ff; color:#1971c2; padding:3px 10px; border-radius:12px; font-weight:bold;">Used: 0</span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+      <div>
+        <label style="font-size:0.75rem; font-weight:600;">ਕੂਪਨ ਕੋਡ:</label>
+        <input type="text" id="bookCouponCode" placeholder="ਜਿਵੇਂ: BIG50" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+      </div>
+      <div>
+        <label style="font-size:0.75rem; font-weight:600;">ਛੋਟ (Discount %):</label>
+        <input type="number" id="bookCouponDiscount" placeholder="ਜਿਵੇਂ: 40" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:0.75rem; font-weight:600;">ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਲਿਮਿਟ (ਖਾਲੀ = ਅਣਗਿਣਤ):</label>
+        <input type="number" id="bookCouponLimit" placeholder="ਜਿਵੇਂ: 30" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+      <div>
+        <label style="font-size:0.75rem; font-weight:600;">ਸਟੇਟਸ:</label>
+        <select id="bookCouponActive" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:600;">
+          <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ (Active)</option>
+          <option value="false">🔴 ਕੂਪਨ ਬੰਦ (Inactive)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="saveBooksCouponConfig()" style="background:#1971c2; width:100%; padding:11px; font-weight:bold; border-radius:6px;">
+      💾 Save Books Coupon
+    </button>
+  </div>
+
+  <!-- 4. ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਨਵੇਂ ਮੌਕ ਟੈਸਟ ਅੱਪਲੋਡਰ -->
   <div class="card-admin" style="border: 2px solid #ffa94d; background: #fffcf9;">
     <h3 style="color:#e8590c;">🎯 Upload Exam Mock Tests</h3>
     <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Police, Patwari, Clerk ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ:</p>
@@ -211,7 +270,7 @@ Ans: B"></textarea>
     <div id="adminCategoryTestsList">Loading category tests...</div>
   </div>
 
-  <!-- 4. ਹੋਮਪੇਜ ਡੇਲੀ ਕੁਇਜ਼ (Free Daily Test) -->
+  <!-- 5. ਹੋਮਪੇਜ ਡੇਲੀ ਕੁਇਜ਼ (Free Daily Test) -->
   <div class="card-admin">
     <div class="sec-title" style="margin-top:0;">⚡ Homepage Free Daily Mock Test</div>
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
@@ -225,7 +284,7 @@ Ans: B"></textarea>
     </button>
   </div>
 
-  <!-- 5. ਕਿਤਾਬਾਂ, PDF ਅਤੇ ਕੀਮਤਾਂ -->
+  <!-- 6. ਕਿਤਾਬਾਂ, PDF ਅਤੇ ਕੀਮਤਾਂ -->
   <div class="card-admin">
     <h3 style="color:#e8590c; margin-bottom:8px;">📚 Manage Books & PDFs</h3>
     <div style="display:flex; flex-direction:column; gap:10px;">
@@ -255,7 +314,7 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- 6. ਹੋਮਪੇਜ ਪੌਪਅੱਪ ਪੋਸਟਰ -->
+  <!-- 7. ਹੋਮਪੇਜ ਪੌਪਅੱਪ ਪੋਸਟਰ -->
   <div class="card-admin">
     <h3 style="color:#e8590c; margin-bottom:8px;">🖼️ Homepage Popup Poster</h3>
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -269,7 +328,7 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- 7. ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ (Today's Day) -->
+  <!-- 8. ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ (Today's Day) -->
   <div class="card-admin">
     <h3 style="color:#2b8a3e; margin-bottom:8px;">📅 Today's Special Day</h3>
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -284,7 +343,7 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- 8. PYQ ਪੇਪਰ ਮੈਨੇਜਰ -->
+  <!-- 9. PYQ ਪੇਪਰ ਮੈਨੇਜਰ -->
   <div class="card-admin">
     <h3>📑 Free PYQ Papers</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
@@ -299,11 +358,11 @@ Ans: B"></textarea>
     <div id="adminPyqList">Loading papers...</div>
   </div>
 
-  <!-- 9. ਪੈਂਡਿੰਗ ਬੁੱਕ ਰਿਕਵੈਸਟਾਂ -->
+  <!-- 10. ਪੈਂਡਿੰਗ ਬੁੱਕ ਰਿਕਵੈਸਟਾਂ -->
   <div class="sec-title">📥 Pending Manual Book Requests</div>
   <div id="requestsList">Loading requests...</div>
 
-  <!-- 10. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ -->
+  <!-- 11. ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਨਤੀਜੇ -->
   <div class="sec-title">
     <span>📊 Student Quiz Results (<span id="resultsCount">0</span>)</span>
     <div style="display:flex; gap:8px;">
@@ -313,7 +372,7 @@ Ans: B"></textarea>
   </div>
   <div id="quizResultsList">Loading results...</div>
 
-  <!-- 11. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
+  <!-- 12. ਰਜਿਸਟਰਡ ਵਿਦਿਆਰਥੀ -->
   <div class="sec-title">
     <span>👥 Registered Students (<span id="userCount">0</span>)</span>
   </div>
@@ -343,6 +402,8 @@ const auth = firebase.auth();
 
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
 let currentResultsData = [];
+let cachedCatCouponUsed = 0;
+let cachedBookCouponUsed = 0;
 
 function isAdminUser(user) {
   return !!(user && user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase());
@@ -395,6 +456,7 @@ function adminLogout() {
 
 function loadAllAdminModules() {
   loadCategoryPassPricing();
+  loadBooksCouponConfig();
   loadCategoryTestsAdmin();
   loadTimerSetting();
   loadAdminPYQs();
@@ -404,7 +466,7 @@ function loadAllAdminModules() {
   loadFirebaseData();
 }
 
-/* 💎 Exam Pass Pricing & Coupon Handlers */
+/* 💎 Exam Pass Pricing & Coupon Handlers (With Student Limit) */
 function loadCategoryPassPricing() {
   const cat = document.getElementById("pricingCatSelect").value;
   db.ref(`siteSettings/passPricing/${cat}`).once("value", snap => {
@@ -413,7 +475,7 @@ function loadCategoryPassPricing() {
       month: 99,
       sixMonths: 199,
       year: 299,
-      coupon: { code: "", discount: 0, active: false }
+      coupon: { code: "", discount: 0, active: false, limit: 0, usedCount: 0 }
     };
 
     document.getElementById("passPrice_week").value = p.week || 49;
@@ -422,9 +484,14 @@ function loadCategoryPassPricing() {
     document.getElementById("passPrice_year").value = p.year || 299;
 
     const c = p.coupon || {};
+    cachedCatCouponUsed = c.usedCount || 0;
     document.getElementById("catCouponCode").value = c.code || "";
     document.getElementById("catCouponDiscount").value = c.discount || 0;
+    document.getElementById("catCouponLimit").value = c.limit || "";
     document.getElementById("catCouponActive").value = String(c.active !== false && !!c.code);
+
+    const limitStr = c.limit ? ` / ${c.limit}` : " (No Limit)";
+    document.getElementById("catCouponUsageBadge").innerText = `Used: ${cachedCatCouponUsed}${limitStr}`;
   });
 }
 
@@ -437,6 +504,7 @@ function saveCategoryPassPricing() {
 
   const code = document.getElementById("catCouponCode").value.trim().toUpperCase();
   const discount = parseInt(document.getElementById("catCouponDiscount").value) || 0;
+  const limitVal = parseInt(document.getElementById("catCouponLimit").value) || 0;
   const active = document.getElementById("catCouponActive").value === "true";
 
   db.ref(`siteSettings/passPricing/${cat}`).set({
@@ -444,9 +512,49 @@ function saveCategoryPassPricing() {
     month,
     sixMonths,
     year,
-    coupon: { code, discount, active }
+    coupon: {
+      code,
+      discount,
+      active,
+      limit: limitVal,
+      usedCount: cachedCatCouponUsed
+    }
   }).then(() => {
     alert(`✅ ${cat.toUpperCase()} Pass Pricing and Coupon Saved!`);
+    loadCategoryPassPricing();
+  });
+}
+
+/* 🏷️ Books Coupon Handler (With Student Limit) */
+function loadBooksCouponConfig() {
+  db.ref("siteSettings/coupon").once("value", snap => {
+    const c = snap.val() || { code: "", discount: 0, active: false, limit: 0, usedCount: 0 };
+    cachedBookCouponUsed = c.usedCount || 0;
+    document.getElementById("bookCouponCode").value = c.code || "";
+    document.getElementById("bookCouponDiscount").value = c.discount || 0;
+    document.getElementById("bookCouponLimit").value = c.limit || "";
+    document.getElementById("bookCouponActive").value = String(c.active !== false && !!c.code);
+
+    const limitStr = c.limit ? ` / ${c.limit}` : " (No Limit)";
+    document.getElementById("bookCouponUsageBadge").innerText = `Used: ${cachedBookCouponUsed}${limitStr}`;
+  });
+}
+
+function saveBooksCouponConfig() {
+  const code = document.getElementById("bookCouponCode").value.trim().toUpperCase();
+  const discount = parseInt(document.getElementById("bookCouponDiscount").value) || 0;
+  const limitVal = parseInt(document.getElementById("bookCouponLimit").value) || 0;
+  const active = document.getElementById("bookCouponActive").value === "true";
+
+  db.ref("siteSettings/coupon").set({
+    code,
+    discount,
+    active,
+    limit: limitVal,
+    usedCount: cachedBookCouponUsed
+  }).then(() => {
+    alert("✅ Books Discount Coupon Saved!");
+    loadBooksCouponConfig();
   });
 }
 

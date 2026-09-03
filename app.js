@@ -263,7 +263,7 @@ function drawBooks() {
   }
 }
 
-/* 4. Checkout Modal with Coupon Discount & Razorpay Gateway */
+/* 4. Checkout Modal with Coupon Discount (With Usage Limit) & Razorpay Gateway */
 const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ";
 function openBuy(id) {
   const u = currentUser();
@@ -321,8 +321,16 @@ function applyCoupon(originalPrice, id, name) {
     return;
   }
 
+  // 🔒 Student Usage Limit Check
+  const limit = parseInt(activeCoupon.limit) || 0;
+  const used = parseInt(activeCoupon.usedCount) || 0;
+  if (limit > 0 && used >= limit) {
+    msg.innerHTML = `<span style="color:#e03131;">⚠️ ਇਸ ਕੂਪਨ ਦੀ ਵਿਦਿਆਰਥੀ ਲਿਮਿਟ ਖ਼ਤਮ ਹੋ ਚੁੱਕੀ ਹੈ!</span>`;
+    return;
+  }
+
   const discountAmount = Math.round((originalPrice * activeCoupon.discount) / 100);
-  const finalPrice = originalPrice - discountAmount;
+  const finalPrice = Math.max(1, originalPrice - discountAmount);
   currentAppliedCoupon = { code: inp, discount: activeCoupon.discount, finalPrice };
 
   msg.innerHTML = `<span style="color:#2b8a3e; font-weight:700;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${discountAmount} ਦੀ ਛੋਟ ਮਿਲੀ (${activeCoupon.discount}% Off)</span>`;
@@ -383,10 +391,12 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
             body: JSON.stringify({
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
               bookId: bookId,
               phone: u.phone,
               name: u.name,
-              amount: numPrice
+              amount: numPrice,
+              couponCode: couponCode || (currentAppliedCoupon ? currentAppliedCoupon.code : "")
             })
           });
 

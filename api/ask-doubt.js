@@ -8,55 +8,44 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਸਵਾਲ ਲਿਖੋ।" });
   }
 
-  const apiKey = (process.env.GROQ_API_KEY || "").trim();
-  if (!apiKey) {
-    return res.status(500).json({ success: false, message: "⚠️ GROQ_API_KEY Vercel ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।" });
-  }
-
   const systemPrompt = 
 `ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ ਅਧਿਕਾਰਤ Study AI Expert ਹੋ।
-ਤੁਹਾਡਾ ਕੰਮ:
-1. ਸਿਰਫ਼ ਮੁਕਾਬਲੇ ਦੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ।
-2. ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
+ਤੁਹਾਡੇ ਨਿਯਮ:
+1. ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, Reasoning, Punjab GK, History, Geography, Punjabi Grammar, English, Computer Awareness) ਦੇ ਸਵਾਲਾਂ ਦਾ ਹੀ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ ਹੈ।
+2. ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਸਿਰਫ਼ ਇਹ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਬਾਰ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
 3. ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
 
-  // ਤੁਹਾਡੇ ਡੈਸ਼ਬੋਰਡ ਦੇ ਐਕਟਿਵ Text-to-Text ਮਾਡਲ
-  const targetModels = ["gpt-oss-120b", "gpt-oss-20b"];
+  try {
+    const response = await fetch("https://text.pollinations.ai/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: query }
+        ],
+        model: "openai",
+        seed: 42
+      })
+    });
 
-  for (const model of targetModels) {
-    try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: query }
-          ],
-          temperature: 0.2,
-          max_tokens: 600
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.choices?.[0]?.message?.content) {
-        return res.status(200).json({
-          success: true,
-          answer: data.choices[0].message.content
-        });
-      }
-    } catch (e) {
-      continue;
+    if (!response.ok) {
+      throw new Error(`Status ${response.status}`);
     }
-  }
 
-  return res.status(500).json({
-    success: false,
-    message: "ਸਰਵਰ ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਕਰ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
-  });
+    const answer = await response.text();
+
+    if (!answer || answer.trim().length === 0) {
+      return res.status(500).json({ success: false, message: "ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਹੋ ਸਕਿਆ।" });
+    }
+
+    return res.status(200).json({ success: true, answer: answer.trim() });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "ਸਰਵਰ ਸਮੱਸਿਆ: " + error.message
+    });
+  }
 }

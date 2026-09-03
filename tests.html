@@ -51,6 +51,41 @@
       align-items: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      z-index: 9999;
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .pass-plan-card {
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pass-plan-card.active {
+      border-color: #e8590c;
+      background: #fff9f5;
+    }
   </style>
 </head>
 <body>
@@ -62,11 +97,21 @@
 
 <div class="container" style="max-width: 800px; margin: 20px auto; padding: 0 14px;">
 
-  <!-- View 1: Tests List View -->
   <div id="testsListView">
-    <div id="categoryBanner" style="background: linear-gradient(135deg, #fff4e6, #ffe8cc); border: 1.5px solid #ffa94d; border-radius: 12px; padding: 16px; margin-bottom: 18px;">
-      <h2 id="bannerTitle" style="margin: 0 0 4px 0; color: #d9480f; font-size: 1.3rem;">Test Series</h2>
-      <p id="bannerSub" style="margin: 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
+    <div id="categoryBanner" style="background: linear-gradient(135deg, #fff4e6, #ffe8cc); border: 1.5px solid #ffa94d; border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="bannerTitle" style="margin: 0; color: #d9480f; font-size: 1.25rem;">Test Series</h2>
+        <span id="passStatusBadge" style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;">Checking Pass...</span>
+      </div>
+      <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
+    </div>
+
+    <div id="buyPassBanner" style="display:none; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
+      <div style="font-size:1.1rem; font-weight:800; color:#e8590c;">💎 Unlock Full Test Series Pass</div>
+      <p style="font-size:0.85rem; color:#555; margin:4px 0 10px;">ਰੋਜ਼ਾਨਾ ਨਵੇਂ ਪ੍ਰੀਖਿਆ ਪੱਧਰ ਦੇ ਟੈਸਟਾਂ ਲਈ ਆਪਣਾ ਮੈਂਬਰਸ਼ਿਪ ਪਾਸ ਚੁਣੋ</p>
+      <button onclick="openPassPurchaseModal()" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:9px 22px; font-weight:bold; border-radius:8px; cursor:pointer;">
+        ⚡ Get Pass Now
+      </button>
     </div>
 
     <div id="testItemsContainer">
@@ -74,17 +119,74 @@
     </div>
   </div>
 
-  <!-- View 2: Active CBT Test Interface -->
   <div id="cbtTestView" style="display: none;">
     <div id="quizBox" class="quiz-box" style="background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.06); padding: 16px;"></div>
   </div>
 
 </div>
 
-<!-- Firebase SDKs -->
+<div id="passModal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px;">
+      <h3 style="margin:0; color:#e8590c;" id="passModalTitle">💎 Select Membership Pass</h3>
+      <button onclick="closePassModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; font-weight:bold;">✕</button>
+    </div>
+    
+    <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਆਪਣੀ ਮਿਆਦ ਚੁਣੋ ਅਤੇ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟ ਅਨਲੌਕ ਕਰੋ:</p>
+
+    <div id="plansList">
+      <div class="pass-plan-card active" onclick="selectPlan('week', this)">
+        <div>
+          <b style="font-size:0.95rem;">1 Week Pass (7 ਦਿਨ)</b>
+          <div style="font-size:0.75rem; color:#777;">ਛੋਟੀ ਤਿਆਰੀ ਜਾਂ ਟ੍ਰਾਇਲ ਲਈ</div>
+        </div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_week">₹49</div>
+      </div>
+
+      <div class="pass-plan-card" onclick="selectPlan('month', this)">
+        <div>
+          <b style="font-size:0.95rem;">1 Month Pass (30 ਦਿਨ)</b>
+          <div style="font-size:0.75rem; color:#777;">ਆਉਣ ਵਾਲੇ ਪੇਪਰ ਦੀ ਤਿਆਰੀ</div>
+        </div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_month">₹99</div>
+      </div>
+
+      <div class="pass-plan-card" onclick="selectPlan('sixMonths', this)">
+        <div>
+          <b style="font-size:0.95rem;">6 Months Pass (180 ਦਿਨ)</b>
+          <div style="font-size:0.75rem; color:#2b8a3e;">🔥 Most Popular (ਵਧੀਆ ਬੱਚਤ)</div>
+        </div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_sixMonths">₹199</div>
+      </div>
+
+      <div class="pass-plan-card" onclick="selectPlan('year', this)">
+        <div>
+          <b style="font-size:0.95rem;">1 Year Full Pass (365 ਦਿਨ)</b>
+          <div style="font-size:0.75rem; color:#777;">ਪੂਰੇ ਸਾਲ ਦੇ ਸਾਰੇ ਨਵੇਂ-ਪੁਰਾਣੇ ਟੈਸਟ</div>
+        </div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_year">₹299</div>
+      </div>
+    </div>
+
+    <div style="background:#f8f9fa; border:1px dashed #ffa94d; border-radius:8px; padding:10px; margin:14px 0;">
+      <div style="font-size:0.8rem; font-weight:700; color:#444; margin-bottom:6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਲਗਾਓ):</div>
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="catCouponInput" placeholder="ENTER CODE" style="flex:1; padding:7px 10px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+        <button onclick="applyCategoryCoupon()" class="btn btn-primary" style="background:#e8590c; border:none; padding:7px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Apply</button>
+      </div>
+      <div id="couponStatusMsg" style="font-size:0.75rem; margin-top:4px;"></div>
+    </div>
+
+    <button id="payPassBtn" onclick="checkoutSelectedPass()" style="width:100%; padding:12px; background:#1971c2; color:#fff; font-size:1rem; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">
+      ⚡ Pay ₹49 via Razorpay
+    </button>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
   // 🔒 ਸੁਰੱਖਿਆ: ਕਾਪੀ ਅਤੇ F12/Ctrl+U ਬਲਾਕ
@@ -105,7 +207,7 @@
     messagingSenderId: "1059866846804",
     appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
   };
-  firebase.initializeApp(firebaseConfig);
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   const session = () => localStorage.getItem("pp_session");
@@ -124,38 +226,102 @@
     ssc: { title: "🏛️ SSC & Railway Exams", sub: "ਸੈਂਟਰਲ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੇ ਪੰਜਾਬੀ ਮਾਧਿਅਮ ਟੈਸਟ" }
   };
 
-  // Header & Banner Setup
   const meta = catMeta[curCat] || catMeta.police;
   document.getElementById("categoryHeading").innerText = meta.title;
   document.getElementById("bannerTitle").innerText = meta.title;
   document.getElementById("bannerSub").innerText = meta.sub;
 
-  let categoryTests = [];
+  let hasValidPass = false;
+  let passExpiryTime = 0;
+  let categoryPassPricing = { week: 49, month: 99, sixMonths: 199, year: 299 };
+  let categoryCouponData = null;
+  let selectedPlanType = 'week';
+  let appliedDiscount = 0;
+
   let currentActiveQuiz = [];
-  let activeTestId = "";
   let userSelections = {};
   let visitedQuestions = {};
   let currentQIdx = 0;
   let qSecs = 1200;
   let qTimer = null;
 
+  /* 1. ਪਾਸ ਵੈਰੀਫਿਕੇਸ਼ਨ ਚੈੱਕ ਕਰੋ */
+  async function checkUserPassStatus() {
+    const u = currentUser();
+    const badge = document.getElementById("passStatusBadge");
+    const buyBanner = document.getElementById("buyPassBanner");
+
+    if (!u) {
+      badge.innerText = "🔒 Login to Unlock";
+      badge.style.background = "#fff3bf";
+      badge.style.color = "#d9480f";
+      buyBanner.style.display = "block";
+      hasValidPass = false;
+      loadCategoryTests();
+      return;
+    }
+
+    try {
+      const snap = await db.ref(`users/${u.phone}/passes/${curCat}`).once("value");
+      const expiry = snap.val();
+      const now = Date.now();
+
+      if (expiry && expiry > now) {
+        hasValidPass = true;
+        passExpiryTime = expiry;
+        const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        badge.innerText = `✅ Pass Active (${daysLeft} Days)`;
+        badge.style.background = "#ebfbee";
+        badge.style.color = "#2b8a3e";
+        buyBanner.style.display = "none";
+      } else {
+        hasValidPass = false;
+        badge.innerText = "🔒 Pass Expired / Locked";
+        badge.style.background = "#ffe3e3";
+        badge.style.color = "#c92a2a";
+        buyBanner.style.display = "block";
+      }
+    } catch(e) {
+      hasValidPass = false;
+    }
+
+    loadCategoryTests();
+  }
+
+  /* 2. ਰੇਟ ਅਤੇ ਟੈਸਟ ਲੋਡ ਕਰੋ */
+  function loadCategoryPassPricingData() {
+    db.ref(`siteSettings/passPricing/${curCat}`).on("value", snap => {
+      const p = snap.val();
+      if (p) {
+        categoryPassPricing.week = p.week || 49;
+        categoryPassPricing.month = p.month || 99;
+        categoryPassPricing.sixMonths = p.sixMonths || 199;
+        categoryPassPricing.year = p.year || 299;
+        categoryCouponData = p.coupon || null;
+
+        document.getElementById("planPrice_week").innerText = `₹${categoryPassPricing.week}`;
+        document.getElementById("planPrice_month").innerText = `₹${categoryPassPricing.month}`;
+        document.getElementById("planPrice_sixMonths").innerText = `₹${categoryPassPricing.sixMonths}`;
+        document.getElementById("planPrice_year").innerText = `₹${categoryPassPricing.year}`;
+        updatePayBtnText();
+      }
+    });
+  }
+
   function loadCategoryTests() {
     const listEl = document.getElementById("testItemsContainer");
-    const u = currentUser();
 
-    // Firebase ਤੋਂ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਪੜ੍ਹੋ (Path: categoryTests/police ਆਦਿ)
     db.ref("categoryTests/" + curCat).on("value", snap => {
       const data = snap.val();
       if (!data) {
-        // ਡਿਫਾਲਟ ਡੈਮੋ ਟੈਸਟ ਜੇਕਰ ਡਾਟਾਬੇਸ ਵਿੱਚ ਅਜੇ ਤੱਕ ਕੁਝ ਨਹੀਂ ਪਾਇਆ
         listEl.innerHTML = `
           <div class="test-card">
             <div>
-              <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">LIVE NOW</span>
+              <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">FREE DEMO</span>
               <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
               <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
             </div>
-            <button onclick="startSpecificTest('default_test_01')" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+            <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
               Start Test 🚀
             </button>
           </div>
@@ -169,17 +335,21 @@
         const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 30);
         const mins = item.timeMinutes || 20;
 
+        // ਪਹਿਲਾ ਟੈਸਟ ਸਾਰਿਆਂ ਲਈ ਮੁਫ਼ਤ ਡੈਮੋ (Free Demo), ਬਾਕੀ ਟੈਸਟ ਪਾਸ ਹੋਣ 'ਤੇ ਹੀ ਖੁੱਲ੍ਹਣਗੇ
+        const isFreeDemo = (index === 0);
+        const canOpen = isFreeDemo || hasValidPass;
+
         return `
           <div class="test-card">
             <div>
-              <span style="background:${index === 0 ? '#ffe8cc' : '#f1f3f5'}; color:${index === 0 ? '#d9480f' : '#495057'}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
-                ${index === 0 ? '🔴 LIVE NEW' : '📁 ARCHIVE'}
+              <span style="background:${isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
+                ${isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
               </span>
               <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (keys.length - index))}</h3>
               <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
             </div>
-            <button onclick="startSpecificTest('${k}')" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-              Start Test 🚀
+            <button onclick="${canOpen ? `startSpecificTest('${k}', ${isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+              ${canOpen ? 'Start Test 🚀' : 'Unlock 🔒'}
             </button>
           </div>
         `;
@@ -187,7 +357,8 @@
     });
   }
 
-  function startSpecificTest(testId) {
+  /* 3. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */
+  function startSpecificTest(testId, isFreeDemo = false) {
     const u = currentUser();
     if (!u) {
       alert("ਟੈਸਟ ਦੇਣ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
@@ -195,18 +366,20 @@
       return;
     }
 
-    activeTestId = testId;
+    if (!isFreeDemo && !hasValidPass) {
+      openPassPurchaseModal();
+      return;
+    }
 
     if (testId === "default_test_01") {
-      // Main Daily Test ਚੁੱਕੋ
-      db.ref("dailyQuiz").once("value", s => {
+      db.ref("dailyQuiz").once("value").then(s => {
         currentActiveQuiz = (s.exists() && Array.isArray(s.val())) ? s.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
         launchCBT();
       });
     } else {
-      db.ref("categoryTests/" + curCat + "/" + testId).once("value", s => {
+      db.ref("categoryTests/" + curCat + "/" + testId).once("value").then(s => {
         const t = s.val();
-        currentActiveQuiz = t ? t.questions : [];
+        currentActiveQuiz = (t && t.questions) ? t.questions : [];
         launchCBT();
       });
     }
@@ -230,7 +403,7 @@
       }
       if (qSecs <= 0) {
         clearInterval(qTimer);
-        alert("ਸਮਾਂ ਪੂਰਾ ਹੋ ਗਿਆ! ਟੈਸਟ ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।");
+        alert("ਸਮਾਂ ਸਮਾਪਤ! ਟੈਸਟ ਸਬਮਿਟ ਹੋ ਰਿਹਾ ਹੈ।");
         finishTest();
       }
     }, 1000);
@@ -254,7 +427,6 @@
         </div>
       </div>
 
-      <!-- Question Palette -->
       <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:85px; overflow-y:auto;">
           ${currentActiveQuiz.map((_, i) => {
@@ -268,10 +440,8 @@
         </div>
       </div>
 
-      <!-- Question Text -->
       <div style="font-size:1.05rem; font-weight:700; margin-bottom:14px; line-height:1.4;">${cur.q}</div>
 
-      <!-- Options -->
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
         ${cur.options.map((opt, idx) => {
           const sel = userSelections[currentQIdx] === idx;
@@ -280,7 +450,6 @@
         }).join("")}
       </div>
 
-      <!-- Controls -->
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div>
           <button onclick="prevQ()" ${currentQIdx === 0 ? 'disabled' : ''} style="padding:8px 14px; border:1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer;">⬅️ Prev</button>
@@ -324,7 +493,122 @@
     `;
   }
 
-  loadCategoryTests();
+  /* 4. Pass Modal & Razorpay Checkout */
+  function openPassPurchaseModal() {
+    const u = currentUser();
+    if (!u) {
+      alert("ਪਾਸ ਖਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
+      window.location.href = "login.html";
+      return;
+    }
+    appliedDiscount = 0;
+    document.getElementById("catCouponInput").value = "";
+    document.getElementById("couponStatusMsg").innerText = "";
+    updatePayBtnText();
+    document.getElementById("passModal").style.display = "flex";
+  }
+
+  function closePassModal() {
+    document.getElementById("passModal").style.display = "none";
+  }
+
+  function selectPlan(type, el) {
+    selectedPlanType = type;
+    document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    appliedDiscount = 0;
+    document.getElementById("couponStatusMsg").innerText = "";
+    updatePayBtnText();
+  }
+
+  function getSelectedBasePrice() {
+    return categoryPassPricing[selectedPlanType] || 49;
+  }
+
+  function updatePayBtnText() {
+    const base = getSelectedBasePrice();
+    const finalPrice = Math.max(1, base - appliedDiscount);
+    const btn = document.getElementById("payPassBtn");
+    btn.innerText = `⚡ Pay ₹${finalPrice} via Razorpay`;
+  }
+
+  function applyCategoryCoupon() {
+    const inp = document.getElementById("catCouponInput").value.trim().toUpperCase();
+    const msg = document.getElementById("couponStatusMsg");
+    const base = getSelectedBasePrice();
+
+    if (!categoryCouponData || !categoryCouponData.active || categoryCouponData.code !== inp) {
+      msg.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
+      appliedDiscount = 0;
+      updatePayBtnText();
+      return;
+    }
+
+    const discPct = parseInt(categoryCouponData.discount) || 0;
+    appliedDiscount = Math.round((base * discPct) / 100);
+    msg.innerHTML = `<span style="color:#2b8a3e; font-weight:bold;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${appliedDiscount} ਦੀ ਛੋਟ ਮਿਲੀ (${discPct}% Off)</span>`;
+    updatePayBtnText();
+  }
+
+  async function checkoutSelectedPass() {
+    const u = currentUser();
+    if (!u) return;
+
+    const base = getSelectedBasePrice();
+    const finalPrice = Math.max(1, base - appliedDiscount);
+
+    // Plan Duration to Days
+    const durationDaysMap = { week: 7, month: 30, sixMonths: 180, year: 365 };
+    const days = durationDaysMap[selectedPlanType] || 30;
+
+    try {
+      const orderRes = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: finalPrice, bookId: `pass_${curCat}_${selectedPlanType}` })
+      });
+      const orderData = await orderRes.json();
+
+      if (!orderData.success) {
+        alert("⚠️ Order Error: " + (orderData.message || "Razorpay Order ਨਹੀਂ ਬਣ ਸਕਿਆ"));
+        return;
+      }
+
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Aman Study Point",
+        description: `${meta.title} (${days} Days Pass)`,
+        order_id: orderData.orderId,
+        prefill: { name: u.name, contact: u.phone },
+        theme: { color: "#e8590c" },
+        handler: async function (response) {
+          // Calculate Expiry Date
+          const newExpiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+
+          try {
+            await db.ref(`users/${u.phone}/passes/${curCat}`).set(newExpiry);
+            alert(`🎉 ਵਧਾਈਆਂ! ${meta.title} ਦਾ ${days} ਦਿਨਾਂ ਦਾ ਪਾਸ ਅਨਲੌਕ ਹੋ ਗਿਆ ਹੈ।`);
+            closePassModal();
+            checkUserPassStatus();
+          } catch (err) {
+            alert("ਪਾਸ ਅੱਪਡੇਟ ਕਰਨ ਵਿੱਚ ਦਿੱਕਤ ਆਈ। ਕਿਰਪਾ ਕਰਕੇ ਸੰਪਰਕ ਕਰੋ।");
+          }
+        }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    } catch(err) {
+      alert("ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਦਿੱਕਤ ਆਈ।");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadCategoryPassPricingData();
+    checkUserPassStatus();
+  });
 </script>
 
 </body>

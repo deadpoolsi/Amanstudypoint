@@ -78,8 +78,6 @@
     text-align: center;
     border: 1px solid #eee;
   }
-
-  /* Responsive Grid Adjustments for Mobile */
   @media (max-width: 600px) {
     .admin-wrap { padding: 12px; }
     .card-admin { padding: 12px; }
@@ -118,10 +116,62 @@
     </div>
   </div>
 
-  <!-- 2. ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਨਵੇਂ ਮੌਕ ਟੈਸਟ ਅੱਪਲੋਡਰ (NEW) -->
+  <!-- 💎 2. ਵੱਖੋ-ਵੱਖਰੇ ਐਗਜ਼ਾਮ ਪਾਸ ਅਤੇ ਰੇਟ ਮੈਨੇਜਰ (Category-wise Pass Pricing) -->
+  <div class="card-admin" style="border: 2px solid #2b8a3e; background: #fbfdfb;">
+    <h3 style="color:#2b8a3e;">💎 Exam Pass Pricing & Coupon Manager</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ (Police, Patwari, Clerk, SSC) ਦੇ 4 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਕੂਪਨ ਵੱਖਰੇ ਸੈੱਟ ਕਰੋ:</p>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
+      <select id="pricingCatSelect" onchange="loadCategoryPassPricing()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #2b8a3e; font-weight:bold; margin-top:4px;">
+        <option value="police">👮‍♂️ Punjab Police</option>
+        <option value="patwari">🌾 PSSSB Patwari</option>
+        <option value="clerk">📑 PSSSB Clerk</option>
+        <option value="ssc">🏛️ SSC & Railway</option>
+      </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:0.8rem; font-weight:600;">1 Week Pass (₹):</label>
+        <input type="number" id="passPrice_week" placeholder="e.g. 49" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+      <div>
+        <label style="font-size:0.8rem; font-weight:600;">1 Month Pass (₹):</label>
+        <input type="number" id="passPrice_month" placeholder="e.g. 99" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+      <div>
+        <label style="font-size:0.8rem; font-weight:600;">6 Months Pass (₹):</label>
+        <input type="number" id="passPrice_6months" placeholder="e.g. 199" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+      <div>
+        <label style="font-size:0.8rem; font-weight:600;">1 Year Pass (₹):</label>
+        <input type="number" id="passPrice_year" placeholder="e.g. 299" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+      </div>
+    </div>
+
+    <!-- Promo Code for this Category -->
+    <div style="background:#fff; border:1px dashed #2b8a3e; padding:10px; border-radius:8px; margin-bottom:12px;">
+      <div style="font-size:0.85rem; font-weight:700; color:#2b8a3e; margin-bottom:6px;">🏷️ ਇਸ ਕੈਟਾਗਰੀ ਲਈ ਡਿਸਕਾਊਂਟ ਕੂਪਨ:</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+        <input type="text" id="catCouponCode" placeholder="Code (e.g. POLICE30)" style="padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
+        <input type="number" id="catCouponDiscount" placeholder="Discount %" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+        <select id="catCouponActive" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+          <option value="true">🟢 ਕੂਪਨ ਚਾਲੂ</option>
+          <option value="false">🔴 ਕੂਪਨ ਬੰਦ</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="saveCategoryPassPricing()" style="background:#2b8a3e; width:100%; padding:12px; font-weight:bold; border-radius:6px;">
+      💾 Save Exam Pass Prices & Coupon
+    </button>
+  </div>
+
+  <!-- 3. ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਨਵੇਂ ਮੌਕ ਟੈਸਟ ਅੱਪਲੋਡਰ -->
   <div class="card-admin" style="border: 2px solid #ffa94d; background: #fffcf9;">
-    <h3 style="color:#e8590c;">🎯 Upload Exam Mock Tests (ਕੈਟਾਗਰੀ ਵਾਈਜ਼ ਟੈਸਟ)</h3>
-    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Police, Patwari, Clerk ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ (ਪੁਰਾਣੇ ਆਪਣੇ ਆਪ Archive 'ਚ ਰਹਿਣਗੇ):</p>
+    <h3 style="color:#e8590c;">🎯 Upload Exam Mock Tests</h3>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Police, Patwari, Clerk ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ:</p>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
       <div>
@@ -161,9 +211,9 @@ Ans: B"></textarea>
     <div id="adminCategoryTestsList">Loading category tests...</div>
   </div>
 
-  <!-- 3. ਹੋਮਪੇਜ ਡੇਲੀ ਕੁਇਜ਼ (Bulk Upload) -->
+  <!-- 4. ਹੋਮਪੇਜ ਡੇਲੀ ਕੁਇਜ਼ (Free Daily Test) -->
   <div class="card-admin">
-    <div class="sec-title" style="margin-top:0;">⚡ Homepage Daily Mock Test</div>
+    <div class="sec-title" style="margin-top:0;">⚡ Homepage Free Daily Mock Test</div>
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
       <label style="font-weight:600; font-size:0.9rem;">Default Timer (Minutes):</label>
       <input type="number" id="timerMinutesInput" value="20" min="1" max="180" style="width:80px; padding:6px; border:1px solid #ccc; border-radius:6px; text-align:center; font-weight:bold;">
@@ -175,7 +225,7 @@ Ans: B"></textarea>
     </button>
   </div>
 
-  <!-- 4. ਕਿਤਾਬਾਂ, PDF ਅਤੇ ਕੀਮਤਾਂ -->
+  <!-- 5. ਕਿਤਾਬਾਂ, PDF ਅਤੇ ਕੀਮਤਾਂ -->
   <div class="card-admin">
     <h3 style="color:#e8590c; margin-bottom:8px;">📚 Manage Books & PDFs</h3>
     <div style="display:flex; flex-direction:column; gap:10px;">
@@ -205,7 +255,7 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- 5. ਹੋਮਪੇਜ ਪੌਪਅੱਪ ਪੋਸਟਰ -->
+  <!-- 6. ਹੋਮਪੇਜ ਪੌਪਅੱਪ ਪੋਸਟਰ -->
   <div class="card-admin">
     <h3 style="color:#e8590c; margin-bottom:8px;">🖼️ Homepage Popup Poster</h3>
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -219,32 +269,18 @@ Ans: B"></textarea>
     </div>
   </div>
 
-  <!-- 6. ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ (Today's Day) -->
+  <!-- 7. ਅੱਜ ਦਾ ਖਾਸ ਦਿਨ (Today's Day) -->
   <div class="card-admin">
     <h3 style="color:#2b8a3e; margin-bottom:8px;">📅 Today's Special Day</h3>
     <div style="display:flex; flex-direction:column; gap:8px;">
-      <input type="text" id="dayTitleInput" placeholder="ਦਿਨ ਦਾ ਨਾਮ (ਜਿਵੇਂ: National Nutrition Week)" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+      <input type="text" id="dayTitleInput" placeholder="ਦਿਨ ਦਾ ਨਾਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
       <textarea id="dayWhyInput" rows="2" placeholder="ਵੇਰਵਾ / ਇਤਿਹਾਸ..." style="padding:9px; border-radius:6px; border:1px solid #ccc; font-family:inherit;"></textarea>
-      <input type="text" id="dayThemeInput" placeholder="ਥੀਮ ਜਾਂ ਮੁੱਖ ਤੱਥ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
+      <input type="text" id="dayThemeInput" placeholder="ਥੀਮ..." style="padding:9px; border-radius:6px; border:1px solid #ccc;">
       <select id="dayStatusSelect" style="padding:9px; border-radius:6px; border:1px solid #ccc;">
         <option value="true">🟢 Active (ਦਿਖਾਓ)</option>
         <option value="false">🔴 Hide (ਬੰਦ)</option>
       </select>
       <button class="btn btn-primary" onclick="saveTodayDayConfig()" style="background:#2b8a3e;">💾 Update Day</button>
-    </div>
-  </div>
-
-  <!-- 7. ਡਿਸਕਾਊਂਟ ਕੂਪਨ -->
-  <div class="card-admin">
-    <h3>🏷️ Promo / Discount Coupon</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px;">
-      <input type="text" id="couponCodeInput" placeholder="Code (e.g. AMAN20)" style="padding:8px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:700;">
-      <input type="number" id="couponDiscountInput" placeholder="Discount %" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
-      <select id="couponActiveSelect" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
-        <option value="true">🟢 Active</option>
-        <option value="false">🔴 Disabled</option>
-      </select>
-      <button class="btn btn-primary" onclick="saveCouponSetting()">💾 Save</button>
     </div>
   </div>
 
@@ -358,14 +394,60 @@ function adminLogout() {
 }
 
 function loadAllAdminModules() {
+  loadCategoryPassPricing();
   loadCategoryTestsAdmin();
   loadTimerSetting();
-  loadCouponConfig();
   loadAdminPYQs();
   loadPopupPosterConfig();
   loadTodayDayConfig();
   loadSelectedBookData();
   loadFirebaseData();
+}
+
+/* 💎 Exam Pass Pricing & Coupon Handlers */
+function loadCategoryPassPricing() {
+  const cat = document.getElementById("pricingCatSelect").value;
+  db.ref(`siteSettings/passPricing/${cat}`).once("value", snap => {
+    const p = snap.val() || {
+      week: 49,
+      month: 99,
+      sixMonths: 199,
+      year: 299,
+      coupon: { code: "", discount: 0, active: false }
+    };
+
+    document.getElementById("passPrice_week").value = p.week || 49;
+    document.getElementById("passPrice_month").value = p.month || 99;
+    document.getElementById("passPrice_6months").value = p.sixMonths || 199;
+    document.getElementById("passPrice_year").value = p.year || 299;
+
+    const c = p.coupon || {};
+    document.getElementById("catCouponCode").value = c.code || "";
+    document.getElementById("catCouponDiscount").value = c.discount || 0;
+    document.getElementById("catCouponActive").value = String(c.active !== false && !!c.code);
+  });
+}
+
+function saveCategoryPassPricing() {
+  const cat = document.getElementById("pricingCatSelect").value;
+  const week = parseInt(document.getElementById("passPrice_week").value) || 49;
+  const month = parseInt(document.getElementById("passPrice_month").value) || 99;
+  const sixMonths = parseInt(document.getElementById("passPrice_6months").value) || 199;
+  const year = parseInt(document.getElementById("passPrice_year").value) || 299;
+
+  const code = document.getElementById("catCouponCode").value.trim().toUpperCase();
+  const discount = parseInt(document.getElementById("catCouponDiscount").value) || 0;
+  const active = document.getElementById("catCouponActive").value === "true";
+
+  db.ref(`siteSettings/passPricing/${cat}`).set({
+    week,
+    month,
+    sixMonths,
+    year,
+    coupon: { code, discount, active }
+  }).then(() => {
+    alert(`✅ ${cat.toUpperCase()} Pass Pricing and Coupon Saved!`);
+  });
 }
 
 /* 🎯 Category Test Series Manager */
@@ -502,7 +584,7 @@ function saveAdminBookData() {
   });
 }
 
-/* Announcement, Poster, Special Day, Coupon & PYQ */
+/* Announcement, Poster, Today's Day & PYQ */
 function updateAnnouncement() {
   const text = document.getElementById('announcementInput').value.trim();
   if (!text) return alert('ਨੋਟਿਸ ਟਾਈਪ ਕਰੋ!');
@@ -543,23 +625,6 @@ function saveTodayDayConfig() {
   if (!title) return alert("ਦਿਨ ਦਾ ਨਾਮ ਲਿਖੋ!");
   db.ref("siteSettings/todayDay").set({ title, why, theme, active, updatedAt: new Date().toLocaleDateString('pa-IN') })
     .then(() => alert("✅ ਅੱਜ ਦਾ ਦਿਨ ਅੱਪਡੇਟ ਹੋ ਗਿਆ!"));
-}
-
-function loadCouponConfig() {
-  db.ref("siteSettings/coupon").on("value", snap => {
-    const c = snap.val() || { code: "AMAN20", discount: 20, active: true };
-    document.getElementById("couponCodeInput").value = c.code || "";
-    document.getElementById("couponDiscountInput").value = c.discount || 0;
-    document.getElementById("couponActiveSelect").value = String(c.active);
-  });
-}
-
-function saveCouponSetting() {
-  const code = document.getElementById("couponCodeInput").value.trim().toUpperCase();
-  const discount = parseInt(document.getElementById("couponDiscountInput").value) || 0;
-  const active = document.getElementById("couponActiveSelect").value === "true";
-  if (!code) return alert("ਕੂਪਨ ਕੋਡ ਲਿਖੋ!");
-  db.ref("siteSettings/coupon").set({ code, discount, active }).then(() => alert("✅ ਕੂਪਨ ਸੇਵ ਹੋ ਗਿਆ!"));
 }
 
 function loadAdminPYQs() {

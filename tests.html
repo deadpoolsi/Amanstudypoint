@@ -97,7 +97,9 @@
 
 <div class="container" style="max-width: 800px; margin: 20px auto; padding: 0 14px;">
 
+  <!-- View 1: Tests List View -->
   <div id="testsListView">
+    <!-- Category Banner -->
     <div id="categoryBanner" style="background: linear-gradient(135deg, #fff4e6, #ffe8cc); border: 1.5px solid #ffa94d; border-radius: 12px; padding: 16px; margin-bottom: 14px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 id="bannerTitle" style="margin: 0; color: #d9480f; font-size: 1.25rem;">Test Series</h2>
@@ -106,6 +108,7 @@
       <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
     </div>
 
+    <!-- Buy Pass Callout Banner -->
     <div id="buyPassBanner" style="display:none; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
       <div style="font-size:1.1rem; font-weight:800; color:#e8590c;">💎 Unlock Full Test Series Pass</div>
       <p style="font-size:0.85rem; color:#555; margin:4px 0 10px;">ਰੋਜ਼ਾਨਾ ਨਵੇਂ ਪ੍ਰੀਖਿਆ ਪੱਧਰ ਦੇ ਟੈਸਟਾਂ ਲਈ ਆਪਣਾ ਮੈਂਬਰਸ਼ਿਪ ਪਾਸ ਚੁਣੋ</p>
@@ -114,17 +117,20 @@
       </button>
     </div>
 
+    <!-- Test List Items -->
     <div id="testItemsContainer">
       <p style="text-align: center; color: #777; padding: 30px;">⏳ Loading tests...</p>
     </div>
   </div>
 
+  <!-- View 2: Active CBT Test Interface -->
   <div id="cbtTestView" style="display: none;">
     <div id="quizBox" class="quiz-box" style="background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.06); padding: 16px;"></div>
   </div>
 
 </div>
 
+<!-- 💎 Pass Purchase Modal -->
 <div id="passModal" class="modal-overlay">
   <div class="modal-box">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px;">
@@ -134,6 +140,7 @@
     
     <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਆਪਣੀ ਮਿਆਦ ਚੁਣੋ ਅਤੇ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟ ਅਨਲੌਕ ਕਰੋ:</p>
 
+    <!-- Plan Options -->
     <div id="plansList">
       <div class="pass-plan-card active" onclick="selectPlan('week', this)">
         <div>
@@ -168,6 +175,7 @@
       </div>
     </div>
 
+    <!-- Promo Coupon Box -->
     <div style="background:#f8f9fa; border:1px dashed #ffa94d; border-radius:8px; padding:10px; margin:14px 0;">
       <div style="font-size:0.8rem; font-weight:700; color:#444; margin-bottom:6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਲਗਾਓ):</div>
       <div style="display:flex; gap:6px;">
@@ -183,6 +191,7 @@
   </div>
 </div>
 
+<!-- Firebase & Razorpay SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -335,7 +344,7 @@
         const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 30);
         const mins = item.timeMinutes || 20;
 
-        // ਪਹਿਲਾ ਟੈਸਟ ਸਾਰਿਆਂ ਲਈ ਮੁਫ਼ਤ ਡੈਮੋ (Free Demo), ਬਾਕੀ ਟੈਸਟ ਪਾਸ ਹੋਣ 'ਤੇ ਹੀ ਖੁੱਲ੍ਹਣਗੇ
+        // ਪਹਿਲਾ ਟੈਸਟ ਮੁਫ਼ਤ ਡੈਮੋ, ਬਾਕੀ ਲਾਕ
         const isFreeDemo = (index === 0);
         const canOpen = isFreeDemo || hasValidPass;
 
@@ -584,14 +593,31 @@
         prefill: { name: u.name, contact: u.phone },
         theme: { color: "#e8590c" },
         handler: async function (response) {
-          // Calculate Expiry Date
-          const newExpiry = Date.now() + (days * 24 * 60 * 60 * 1000);
-
           try {
-            await db.ref(`users/${u.phone}/passes/${curCat}`).set(newExpiry);
-            alert(`🎉 ਵਧਾਈਆਂ! ${meta.title} ਦਾ ${days} ਦਿਨਾਂ ਦਾ ਪਾਸ ਅਨਲੌਕ ਹੋ ਗਿਆ ਹੈ।`);
-            closePassModal();
-            checkUserPassStatus();
+            // ਸਰਵਰ-ਸਾਈਡ ਵੈਰੀਫਿਕੇਸ਼ਨ ਕਾਲ
+            const vRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                phone: u.phone,
+                name: u.name,
+                bookId: `pass_${curCat}_${selectedPlanType}`,
+                amount: finalPrice
+              })
+            });
+
+            const vData = await vRes.json();
+
+            if (vData.success) {
+              alert(`🎉 ਵਧਾਈਆਂ! ${meta.title} ਦਾ ${days} ਦਿਨਾਂ ਦਾ ਪਾਸ ਅਨਲੌਕ ਹੋ ਗਿਆ ਹੈ।`);
+              closePassModal();
+              checkUserPassStatus();
+            } else {
+              alert("⚠️ ਵੈਰੀਫਿਕੇਸ਼ਨ ਵਿੱਚ ਦਿੱਕਤ: " + (vData.message || "ਸੰਪਰਕ ਕਰੋ"));
+            }
           } catch (err) {
             alert("ਪਾਸ ਅੱਪਡੇਟ ਕਰਨ ਵਿੱਚ ਦਿੱਕਤ ਆਈ। ਕਿਰਪਾ ਕਰਕੇ ਸੰਪਰਕ ਕਰੋ।");
           }

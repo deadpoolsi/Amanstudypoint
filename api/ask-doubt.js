@@ -15,65 +15,48 @@ export default async function handler(req, res) {
 
   const systemPrompt = 
 `ਤੁਸੀਂ "Aman Study Point Mansa" ਦੇ ਅਧਿਕਾਰਤ Study AI Expert ਹੋ।
-ਤੁਹਾਡਾ ਕੰਮ ਸਿਰਫ਼ ਮੁਕਾਬਲੇ ਦੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ ਹੈ।
-ਜੇਕਰ ਸਵਾਲ ਪੜ੍ਹਾਈ ਤੋਂ ਬਾਹਰ ਦਾ ਹੋਵੇ ਤਾਂ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
-ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
+ਤੁਹਾਡਾ ਕੰਮ:
+1. ਸਿਰਫ਼ ਮੁਕਾਬਲੇ ਦੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ (Punjab Police, Patwari, SSC, Railway) ਅਤੇ ਸਿਲੇਬਸ (Maths, GK, Reasoning, Punjabi Grammar, Computer) ਦੇ ਸਵਾਲਾਂ ਦਾ ਸਰਲ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦੇਣਾ।
+2. ਗੈਰ-ਪੜ੍ਹਾਈ ਸਵਾਲਾਂ 'ਤੇ ਕਹੋ: "⚠️ ਇਹ ਸਰਚ ਸਿਰਫ਼ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਅਤੇ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।"
+3. ਸਹੀ ਉੱਤਰ ਪਹਿਲੀ ਲਾਈਨ ਵਿੱਚ ਸਪਸ਼ਟ ਦਿਓ।`;
 
-  try {
-    // 1. Groq ਤੋਂ ਤੁਹਾਡੇ ਅਕਾਊਂਟ ਲਈ ਐਕਟਿਵ ਮਾਡਲਾਂ ਦੀ ਲਿਸਟ ਲਵੋ
-    const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
-      headers: { "Authorization": `Bearer ${apiKey}` }
-    });
-    const modelsData = await modelsRes.json();
+  // ਤੁਹਾਡੇ ਡੈਸ਼ਬੋਰਡ ਦੇ ਐਕਟਿਵ Text-to-Text ਮਾਡਲ
+  const targetModels = ["gpt-oss-120b", "gpt-oss-20b"];
 
-    if (!modelsRes.ok || !modelsData.data || modelsData.data.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Groq Auth Error: " + (modelsData.error?.message || "ਕੀਅ ਚੈੱਕ ਕਰੋ")
+  for (const model of targetModels) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: query }
+          ],
+          temperature: 0.2,
+          max_tokens: 600
+        })
       });
+
+      const data = await response.json();
+
+      if (response.ok && data.choices?.[0]?.message?.content) {
+        return res.status(200).json({
+          success: true,
+          answer: data.choices[0].message.content
+        });
+      }
+    } catch (e) {
+      continue;
     }
-
-    // ਟੈਕਸਟ ਚੈਟ ਵਾਲੇ ਮਾਡਲ ਚੁਣੋ (Whisper/Audio ਨੂੰ ਛੱਡ ਕੇ)
-    const chatModels = modelsData.data
-      .map(m => m.id)
-      .filter(id => !id.includes("whisper"));
-
-    const targetModel = chatModels[0];
-
-    // 2. ਚੁਣੇ ਹੋਏ ਐਕਟਿਵ ਮਾਡਲ ਨਾਲ ਜਵਾਬ ਲਵੋ
-    const chatRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: targetModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: query }
-        ],
-        temperature: 0.2
-      })
-    });
-
-    const chatData = await chatRes.json();
-
-    if (chatRes.ok && chatData.choices?.[0]?.message?.content) {
-      return res.status(200).json({
-        success: true,
-        answer: chatData.choices[0].message.content
-      });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: `Model (${targetModel}) Error: ` + (chatData.error?.message || "ਨਤੀਜਾ ਨਹੀਂ ਮਿਲਿਆ")
-      });
-    }
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Catch: " + err.message
-    });
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "ਸਰਵਰ ਜਵਾਬ ਤਿਆਰ ਨਹੀਂ ਕਰ ਸਕਿਆ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  });
 }

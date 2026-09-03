@@ -426,6 +426,7 @@
     const cur = currentActiveQuiz[currentQIdx];
     const m = Math.floor(qSecs / 60), s = qSecs % 60;
     const answeredCount = Object.keys(userSelections).length;
+    const isLastQuestion = (currentQIdx === currentActiveQuiz.length - 1);
 
     box.innerHTML = `
       <div style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
@@ -436,6 +437,7 @@
         </div>
       </div>
 
+      <!-- Question Palette -->
       <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:85px; overflow-y:auto;">
           ${currentActiveQuiz.map((_, i) => {
@@ -449,8 +451,10 @@
         </div>
       </div>
 
+      <!-- Question Text -->
       <div style="font-size:1.05rem; font-weight:700; margin-bottom:14px; line-height:1.4;">${cur.q}</div>
 
+      <!-- Options -->
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
         ${cur.options.map((opt, idx) => {
           const sel = userSelections[currentQIdx] === idx;
@@ -459,15 +463,30 @@
         }).join("")}
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <button onclick="prevQ()" ${currentQIdx === 0 ? 'disabled' : ''} style="padding:8px 14px; border:1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer;">⬅️ Prev</button>
-          <button onclick="clearOpt()" style="padding:8px 12px; border:1px solid #ffc9c9; color:#e03131; background:#fff; border-radius:6px; cursor:pointer; margin-left:4px;">🗑️ Clear</button>
+      <!-- Primary Action Buttons -->
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px;">
+        <div style="display:flex; gap:6px;">
+          <button onclick="prevQ()" ${currentQIdx === 0 ? 'disabled' : ''} style="padding:10px 14px; border:1px solid #ccc; background:#fff; border-radius:8px; cursor:pointer; font-weight:600;">⬅️ Prev</button>
+          <button onclick="clearOpt()" style="padding:10px 12px; border:1px solid #ffc9c9; color:#e03131; background:#fff; border-radius:8px; cursor:pointer;">🗑️ Clear</button>
         </div>
         <div>
-          ${currentQIdx < currentActiveQuiz.length - 1 ? `<button onclick="nextQ()" style="padding:8px 16px; background:#e8590c; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Save & Next ➡️</button>` : ''}
-          <button onclick="finishTest()" style="padding:8px 16px; background:#2b8a3e; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; margin-left:4px;">✅ Submit</button>
+          ${!isLastQuestion ? `
+            <button onclick="nextQ()" style="padding:10px 20px; background:#e8590c; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">
+              Save & Next ➡️
+            </button>
+          ` : `
+            <button onclick="confirmSubmitTest()" style="padding:10px 20px; background:#2b8a3e; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">
+              ✅ Final Submit
+            </button>
+          `}
         </div>
+      </div>
+
+      <!-- Safe Separated Submit Link -->
+      <div style="border-top:1.5px dashed #e9ecef; padding-top:12px; text-align:center;">
+        <button onclick="confirmSubmitTest()" style="background:none; border:1px solid #ced4da; color:#495057; padding:7px 16px; border-radius:6px; font-size:0.82rem; cursor:pointer;">
+          🏁 Submit Test Paper
+        </button>
       </div>
     `;
   }
@@ -477,6 +496,24 @@
   function nextQ() { if (currentQIdx < currentActiveQuiz.length - 1) { currentQIdx++; renderQuestion(); } }
   function prevQ() { if (currentQIdx > 0) { currentQIdx--; renderQuestion(); } }
   function jumpTo(idx) { currentQIdx = idx; renderQuestion(); }
+
+  /* ⚠️ ਦੋਹਰੀ ਪੁਸ਼ਟੀ ਨਾਲ ਸਬਮਿਟ ਕਰੋ */
+  function confirmSubmitTest() {
+    const answeredCount = Object.keys(userSelections).length;
+    const totalCount = currentActiveQuiz.length;
+    const unAnswered = totalCount - answeredCount;
+
+    let warningMsg = `ਕੁੱਲ ਸਵਾਲ: ${totalCount}\nਹੱਲ ਕੀਤੇ: ${answeredCount}\nਬਾਕੀ ਬਚੇ (Left): ${unAnswered}\n\n`;
+    if (unAnswered > 0) {
+      warningMsg += `⚠️ ਧਿਆਨ ਦਿਓ: ਤੁਹਾਡੇ ਅਜੇ ${unAnswered} ਸਵਾਲ ਬਾਕੀ ਹਨ!\n\nਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਅਧੂਰਾ ਟੈਸਟ ਸਬਮਿਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`;
+    } else {
+      warningMsg += `ਕੀ ਤੁਸੀਂ ਟੈਸਟ ਸਬਮਿਟ ਕਰਕੇ ਆਪਣਾ ਨਤੀਜਾ ਦੇਖਣਾ ਚਾਹੁੰਦੇ ਹੋ?`;
+    }
+
+    if (confirm(warningMsg)) {
+      finishTest();
+    }
+  }
 
   function finishTest() {
     clearInterval(qTimer);

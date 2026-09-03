@@ -244,6 +244,7 @@
   let passExpiryTime = 0;
   let categoryPassPricing = { week: 49, month: 99, sixMonths: 199, year: 299 };
   let categoryCouponData = null;
+  let appliedCouponCode = "";
   let selectedPlanType = 'week';
   let appliedDiscount = 0;
 
@@ -557,6 +558,7 @@
       return;
     }
     appliedDiscount = 0;
+    appliedCouponCode = "";
     document.getElementById("catCouponInput").value = "";
     document.getElementById("couponStatusMsg").innerText = "";
     updatePayBtnText();
@@ -572,6 +574,7 @@
     document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
     appliedDiscount = 0;
+    appliedCouponCode = "";
     document.getElementById("couponStatusMsg").innerText = "";
     updatePayBtnText();
   }
@@ -595,12 +598,25 @@
     if (!categoryCouponData || !categoryCouponData.active || categoryCouponData.code !== inp) {
       msg.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
       appliedDiscount = 0;
+      appliedCouponCode = "";
+      updatePayBtnText();
+      return;
+    }
+
+    // 🔒 Student Usage Limit Check
+    const limit = parseInt(categoryCouponData.limit) || 0;
+    const used = parseInt(categoryCouponData.usedCount) || 0;
+    if (limit > 0 && used >= limit) {
+      msg.innerHTML = `<span style="color:#e03131;">⚠️ ਇਸ ਕੂਪਨ ਦੀ ਵਿਦਿਆਰਥੀ ਲਿਮਿਟ ਖ਼ਤਮ ਹੋ ਚੁੱਕੀ ਹੈ!</span>`;
+      appliedDiscount = 0;
+      appliedCouponCode = "";
       updatePayBtnText();
       return;
     }
 
     const discPct = parseInt(categoryCouponData.discount) || 0;
     appliedDiscount = Math.round((base * discPct) / 100);
+    appliedCouponCode = inp;
     msg.innerHTML = `<span style="color:#2b8a3e; font-weight:bold;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${appliedDiscount} ਦੀ ਛੋਟ ਮਿਲੀ (${discPct}% Off)</span>`;
     updatePayBtnText();
   }
@@ -640,7 +656,7 @@
         theme: { color: "#e8590c" },
         handler: async function (response) {
           try {
-            // ਸਰਵਰ-ਸਾਈਡ ਵੈਰੀਫਿਕੇਸ਼ਨ ਕਾਲ
+            // ਸਰਵਰ-ਸਾਈਡ ਵੈਰੀਫਿਕੇਸ਼ਨ ਕਾਲ (ਕੂਪਨ ਕੋਡ ਸਮੇਤ)
             const vRes = await fetch("/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -651,7 +667,10 @@
                 phone: u.phone,
                 name: u.name,
                 bookId: `pass_${curCat}_${selectedPlanType}`,
-                amount: finalPrice
+                amount: finalPrice,
+                couponCode: appliedCouponCode,
+                couponType: "category",
+                category: curCat
               })
             });
 

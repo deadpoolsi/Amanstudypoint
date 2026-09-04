@@ -150,12 +150,46 @@
     <button class="tab-btn" onclick="switchAdminTab('tab_settings', this)">⚙️ Settings & PYQ</button>
   </div>
 
-  <!-- TAB 1: 🎯 MOCK TESTS (Daily + Exam Series) -->
+  <!-- TAB 1: 🎯 MOCK TESTS (Daily + Exam Series + Bulk JSON) -->
   <div id="tab_tests" class="tab-content-panel active">
-    <!-- Category Tests Uploader -->
+    
+    <!-- 📦 NEW: Bulk Multi-Test JSON Uploader (10-50 Tests at Once) -->
+    <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="color:#1971c2; margin:0;">📦 Bulk Multi-Test Uploader (JSON)</h3>
+        <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:12px;">Fastest Mode ⚡</span>
+      </div>
+      <p style="font-size:0.85rem; color:#666; margin:6px 0 12px;">ਇੱਕੋ ਵਾਰ ਵਿੱਚ 10, 20 ਜਾਂ 50 ਟੈਸਟ ਇਕੱਠੇ ਅੱਪਲੋਡ ਕਰੋ (AI ਤੋਂ ਤਿਆਰ ਕਰਵਾ ਕੇ):</p>
+      
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.8rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
+        <select id="bulkCatSelect" style="width:100%; padding:9px; border-radius:6px; border:1.5px solid #1971c2; font-weight:bold; margin-top:4px;">
+          <option value="police">👮‍♂️ Punjab Police</option>
+          <option value="patwari">🌾 PSSSB Board (All Exams)</option>
+          <option value="clerk">🎖️ Agniveer GD (Army)</option>
+          <option value="ssc">🏛️ SSC & Railway</option>
+        </select>
+      </div>
+
+      <textarea id="bulkJsonInput" class="bulk-textarea" style="height:120px; border-color:#a5d8ff;" placeholder='[
+  {
+    "title": "Paid - 8",
+    "timeMinutes": 100,
+    "questions": [
+      { "q": "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", "options": ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], "answer": 1 }
+    ]
+  }
+]'></textarea>
+
+      <button class="btn btn-primary" onclick="uploadBulkJsonTests()" style="margin-top:8px; width:100%; padding:11px; background:#1971c2; font-weight:bold;">
+        ⚡ Upload All Tests Together (1-Click)
+      </button>
+    </div>
+
+    <!-- Single Test Manual Uploader -->
     <div class="card-admin" style="border: 2px solid #ffa94d; background: #fffcf9;">
-      <h3 style="color:#e8590c; margin-top:0;">🎯 Upload Exam Mock Tests</h3>
-      <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Punjab Police, PSSSB, Agniveer ਜਾਂ SSC ਵਿੱਚ ਨਵਾਂ ਟੈਸਟ ਜੋੜੋ:</p>
+      <h3 style="color:#e8590c; margin-top:0;">🎯 Upload Single Mock Test</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਇੱਕ-ਇੱਕ ਟੈਸਟ ਮੈਨੂਅਲ ਫਾਰਮੈਟ ਰਾਹੀਂ ਜੋੜਨ ਲਈ:</p>
       
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:12px;">
         <div>
@@ -169,24 +203,24 @@
         </div>
         <div>
           <label style="font-size:0.8rem; font-weight:bold;">2. ਟੈਸਟ ਦਾ ਨਾਮ:</label>
-          <input type="text" id="catTestTitle" placeholder="ਜਿਵੇਂ: Mock Test 02" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
+          <input type="text" id="catTestTitle" placeholder="ਜਿਵੇਂ: Paid - 8" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
         </div>
         <div>
           <label style="font-size:0.8rem; font-weight:bold;">3. ਸਮਾਂ (ਮਿੰਟ):</label>
-          <input type="number" id="catTestTime" value="20" min="5" max="180" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
+          <input type="number" id="catTestTime" value="100" min="5" max="180" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc;">
         </div>
       </div>
 
       <label style="font-size:0.8rem; font-weight:bold;">4. ਸਵਾਲ ਪੇਸਟ ਕਰੋ (Auto Format):</label>
-      <textarea id="catTestQuestionsInput" class="bulk-textarea" style="height:140px; margin-top:4px;" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
+      <textarea id="catTestQuestionsInput" class="bulk-textarea" style="height:130px; margin-top:4px;" placeholder="1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?
 A) ਮੋਰ
 B) ਬਾਜ਼
 C) ਤੋਤਾ
 D) ਕਬੂਤਰ
 Ans: B"></textarea>
 
-      <button class="btn btn-primary" onclick="publishCategoryTest()" style="margin-top:10px; width:100%; padding:12px; background:#e8590c; font-weight:bold;">
-        🚀 Publish to Selected Exam Category
+      <button class="btn btn-primary" onclick="publishCategoryTest()" style="margin-top:10px; width:100%; padding:11px; background:#e8590c; font-weight:bold;">
+        🚀 Publish Single Test
       </button>
 
       <!-- Search & Dynamic Scroll List -->
@@ -638,7 +672,7 @@ function saveBooksCouponConfig() {
   });
 }
 
-/* 🎯 Category Test Series Manager */
+/* 🎯 Category Test Series Manager (Single & Bulk) */
 function parseQuestions(text) {
   const blocks = text.trim().split(/\n\s*\n+/);
   const quizArray = [];
@@ -692,6 +726,53 @@ function publishCategoryTest() {
       document.getElementById("catTestQuestionsInput").value = "";
       loadCategoryTestsAdmin();
     });
+  }
+}
+
+/* ⚡ 1-Click Multi-Test JSON Uploader */
+async function uploadBulkJsonTests() {
+  const cat = document.getElementById("bulkCatSelect").value;
+  const rawJson = document.getElementById("bulkJsonInput").value.trim();
+
+  if (!rawJson) return alert("⚠️ ਪਹਿਲਾਂ JSON ਡਾਟਾ ਪੇਸਟ ਕਰੋ!");
+
+  let testsArray = [];
+  try {
+    testsArray = JSON.parse(rawJson);
+    if (!Array.isArray(testsArray) || testsArray.length === 0) {
+      return alert("⚠️ JSON ਇੱਕ ਲਿਸਟ (Array [ ... ]) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!");
+    }
+  } catch (e) {
+    return alert("⚠️ JSON ਫਾਰਮੈਟ ਵਿੱਚ ਗਲਤੀ ਹੈ! ਚੈੱਕ ਕਰੋ ਕਿ ਸਾਰੇ ਬਰੈਕਟ { } ਅਤੇ [ ] ਸਹੀ ਬੰਦ ਹਨ।");
+  }
+
+  if (!confirm(`ਕੀ ਤੁਸੀਂ ${testsArray.length} ਟੈਸਟ ਇਕੱਠੇ ${cat.toUpperCase()} ਵਿੱਚ ਅੱਪਲੋਡ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) return;
+
+  const now = Date.now();
+  const todayStr = new Date().toLocaleDateString('pa-IN');
+  const updates = {};
+
+  testsArray.forEach((t, idx) => {
+    const testKey = "test_" + (now + idx * 10);
+    const qs = Array.isArray(t.questions) ? t.questions : [];
+    updates[`categoryTests/${cat}/${testKey}`] = {
+      title: t.title || `Mock Test ${idx + 1}`,
+      timeMinutes: parseInt(t.timeMinutes) || 100,
+      qCount: qs.length,
+      createdAt: todayStr,
+      questions: qs
+    };
+  });
+
+  try {
+    await db.ref().update(updates);
+    alert(`🎉 ਸ਼ਾਨਦਾਰ! ਸਾਰੇ ${testsArray.length} ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਲਾਈਵ ਹੋ ਗਏ ਹਨ!`);
+    document.getElementById("bulkJsonInput").value = "";
+    document.getElementById("catTestSelect").value = cat;
+    loadCategoryTestsAdmin();
+  } catch (err) {
+    console.error("Bulk Upload Error:", err);
+    alert("⚠️ ਅੱਪਲੋਡ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + err.message);
   }
 }
 

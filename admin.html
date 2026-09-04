@@ -243,6 +243,11 @@ Ans: B"></textarea>
         🚀 Publish Single Test
       </button>
 
+      <!-- 🗑️ Delete All Tests Button in Selected Category -->
+      <button class="btn btn-danger" onclick="deleteAllCategoryTests()" style="background:#e03131; color:#fff; border:none; padding:10px; width:100%; border-radius:6px; font-weight:bold; margin-top:10px; cursor:pointer;">
+        🗑️ Delete All Tests in Selected Category (1-Click)
+      </button>
+
       <!-- Search & Dynamic Scroll List -->
       <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">
         <span>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ (<span id="adminTestCount">0</span>):</span>
@@ -581,7 +586,7 @@ async function handleAdminLogin() {
 
   err.style.display = "none";
   if (!email || !pass) { err.textContent = "⚠️ ਈਮੇਲ ਅਤੇ ਪਾਸਵਰਡ ਭਰੋ!"; err.style.display = "block"; return; }
-  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) { err.textContent = "⛔ ਇਹ Admin Email ਨਹੀਂ ਹੈ።"; err.style.display = "block"; return; }
+  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) { err.textContent = "⛔ ਇਹ Admin Email ਨਹੀਂ ਹੈ।"; err.style.display = "block"; return; }
 
   try {
     await auth.signInWithEmailAndPassword(email, pass);
@@ -771,6 +776,19 @@ function publishCategoryTest() {
   }
 }
 
+/* 🗑️ Delete All Tests in Selected Category Function */
+function deleteAllCategoryTests() {
+  const cat = document.getElementById("catTestSelect").value;
+  if (confirm(`⚠️ ਕੀ ਤੁਸੀਂ "${cat.toUpperCase()}" ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਇਕੱਠੇ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) {
+    db.ref(`categoryTests/${cat}`).remove().then(() => {
+      alert("✅ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਏ ਹਨ!");
+      loadCategoryTestsAdmin();
+    }).catch(err => {
+      alert("⚠️ ਡਿਲੀਟ ਕਰਨ ਵਿੱਚ ਐਰਰ ਆਇਆ: " + err.message);
+    });
+  }
+}
+
 /* 📁 File Selector Handler */
 function handleFileSelect(event) {
   const file = event.target.files[0];
@@ -783,7 +801,7 @@ function handleFileSelect(event) {
       const parsed = JSON.parse(e.target.result);
       if (Array.isArray(parsed) && parsed.length > 0) {
         loadedFileJsonData = parsed;
-        info.innerText = `✅ ਫਾਈਲ ਸਿਲੈਕਟ ਹੋ ਗਈ: ${file.name} (ਕੁੱਲ ${parsed.length} ਟੈਸਟ ਮਿਲੇ)`;
+        info.innerText = `✅ ਫਾਈਲ ਸਿਲੈਕਟ ਹੋ ਗਈ: ${file.name} (ਕੁੱਲ ${parsed.length} ਟੈਸਟ ਮਿले)`;
         document.getElementById("bulkJsonInput").value = `[ ${parsed.length} Tests Loaded from ${file.name} ]`;
       } else {
         alert("⚠️ ਇਸ ਫਾਈਲ ਵਿੱਚ ਟੈਸਟਾਂ ਦੀ ਲਿਸਟ (Array) ਸਹੀ ਨਹੀਂ ਹੈ!");
@@ -1135,6 +1153,7 @@ function clearAllResults() { if (confirm("Delete ALL results?")) db.ref("quizRes
 function exportResultsToCSV() {
   if (!currentResultsData.length) return alert("No results.");
   let csv = "data:text/csv;charset=utf-8,Name,Phone,Score,Total,Percentage,Time\n";
+  currentResultsData.exports = true;
   currentResultsData.forEach(r => csv += `"${r.name}","${r.phone}",${r.score},${r.total},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
   const a = document.createElement("a");
   a.href = encodeURI(csv);

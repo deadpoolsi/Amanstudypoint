@@ -1,18 +1,20 @@
 {
   "name": "Aman Study Point",
   "short_name": "Aman Study",
+  "description": "ਪੰਜਾਬੀ ਵਿੱਚ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੀ ਤਿਆਰੀ — Mock Tests, PYQ ਅਤੇ ਨੋਟਸ",
+  "lang": "pa",
   "start_url": "https://amanstudypoint.vercel.app/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#e8590c",
   "icons": [
     {
-      "src": "https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png",
+      "src": "assets/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png",
+      "src": "assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

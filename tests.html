@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pa">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mock Tests — Aman Study Point</title>
-  <link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <link rel="stylesheet" href="style.css?v=2">
   <style>
     body, html {
@@ -347,61 +348,97 @@
   }
 
   /* ⚡ Razorpay Real Payment Integration & Fixed Pass Activation */
-  function checkoutSelectedPass() {
+  /* 🔒 SECURE FLOW: order + verify dono server te hunde ne.
+     Client koi vi pass/payment data Firebase vich nahi likhda. */
+  async function checkoutSelectedPass() {
     const u = currentUser();
     if (!u) {
       alert("ਪਾਸ ਖਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
       window.location.href = "login.html";
       return;
     }
-    
-    let basePrice = categoryPassPricing[selectedPlanType] || 39;
-    let finalPrice = Math.max(1, basePrice - appliedDiscount);
 
-    var options = {
-      "key": "rzp_live_TWdKzxxstllGLQ", 
-      "amount": finalPrice * 100, 
-      "currency": "INR",
-      "name": "Aman Study Point",
-      "description": `${selectedPlanType.toUpperCase()} Pass (${curCat})`,
-      "image": "https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png",
-      "handler": function (response){
-        const now = Date.now();
-        let durationMs = 7 * 24 * 60 * 60 * 1000; 
-        
-        if (selectedPlanType === 'day') durationMs = 24 * 60 * 60 * 1000;
-        else if (selectedPlanType === 'week') durationMs = 7 * 24 * 60 * 60 * 1000;
-        else if (selectedPlanType === 'month') durationMs = 30 * 24 * 60 * 60 * 1000;
-        else if (selectedPlanType === 'sixMonths') durationMs = 180 * 24 * 60 * 60 * 1000;
-        else if (selectedPlanType === 'year') durationMs = 365 * 24 * 60 * 60 * 1000;
+    const payBtn = document.getElementById("payPassBtn");
+    const originalBtnText = payBtn ? payBtn.innerText : "";
+    if (payBtn) { payBtn.disabled = true; payBtn.innerText = "⏳ ਆਰਡਰ ਬਣ ਰਿਹਾ ਹੈ..."; }
 
-        const expiryTime = now + durationMs;
-        const cleanPhone = String(u.phone).trim();
+    try {
+      // 1) Server ton order lao (server khud asli price + coupon check karda hai)
+      const orderRes = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "pass",
+          planId: selectedPlanType,
+          category: curCat,
+          couponCode: appliedCouponCode || ""
+        })
+      });
+      const orderData = await orderRes.json();
 
-        // 🔍 ਸਹੀ ਫੋਨ ਨੰਬਰ ਅਤੇ ਮੌਜੂਦਾ ਕੈਟਾਗਰੀ (curCat) ਤੇ ਪਾਸ ਸੇਵ ਕਰੋ
-        db.ref(`users/${cleanPhone}/passes/${curCat}`).set(expiryTime).then(() => {
-          if (appliedCouponCode && categoryCouponData) {
-            const currentUsed = parseInt(categoryCouponData.usedCount) || 0;
-            const newUsed = currentUsed + 1;
-            db.ref(`siteSettings/passPricing/${curCat}/coupon/usedCount`).set(newUsed);
-          }
-          alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
-          location.reload();
-        }).catch(err => {
-          alert("⚠️ ਪਾਸ ਐਕਟਿਵ ਕਰਨ ਵਿੱਚ ਡੇਟਾਬੇਸ ਐਰਰ ਆਇਆ: " + err.message);
-        });
-      },
-      "prefill": {
-        "name": u.name,
-        "contact": u.phone
-      },
-      "theme": {
-        "color": "#e8590c"
+      if (!orderData.success) {
+        alert("⚠️ " + (orderData.message || "ਆਰਡਰ ਨਹੀਂ ਬਣ ਸਕਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"));
+        return;
       }
-    };
-    
-    var rzp1 = new Razorpay(options);
-    rzp1.open();
+
+      // 2) Razorpay checkout (amount SERVER di hai — client badal nahi sakda)
+      var options = {
+        "key": orderData.keyId,
+        "amount": orderData.amount,
+        "currency": orderData.currency,
+        "order_id": orderData.orderId,
+        "name": "Aman Study Point",
+        "description": `${selectedPlanType.toUpperCase()} Pass (${curCat})`,
+        "image": "assets/icon-192.png",
+        "handler": async function (response) {
+          try {
+            // 3) Server ton verify + pass activate (server hi Firebase vich likhda hai)
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                type: "pass",
+                planId: selectedPlanType,
+                category: curCat,
+                phone: u.phone,
+                name: u.name,
+                couponCode: appliedCouponCode || ""
+              })
+            });
+            const data = await verifyRes.json();
+
+            if (data.success) {
+              alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
+              location.reload();
+            } else {
+              alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ! WhatsApp te contact karo: 90413-21843"));
+            }
+          } catch (err) {
+            alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਮਦਦ ਲਈ WhatsApp karo: 90413-21843");
+          }
+        },
+        "prefill": {
+          "name": u.name,
+          "contact": u.phone
+        },
+        "theme": {
+          "color": "#e8590c"
+        }
+      };
+
+      var rzp1 = new Razorpay(options);
+      rzp1.on("payment.failed", function (resp) {
+        alert("⚠️ ਪੇਮੈਂਟ ਫੇਲ੍ਹ ਹੋ ਗਈ: " + (resp.error && resp.error.description ? resp.error.description : "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ"));
+      });
+      rzp1.open();
+    } catch (err) {
+      alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ। ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ ਜਾਂ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    } finally {
+      if (payBtn) { payBtn.disabled = false; payBtn.innerText = originalBtnText; }
+    }
   }
 
   function initPassChecking() {

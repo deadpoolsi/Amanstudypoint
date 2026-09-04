@@ -356,13 +356,12 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
     return;
   }
 
-  const numPrice = Number(finalPrice) || 99;
-
+  // 🔒 SECURITY: amount nahi bhejda — server khud Firebase ton asli price labhda hai
   try {
     const orderRes = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: numPrice, bookId: bookId })
+      body: JSON.stringify({ type: "book", bookId: bookId, couponCode: couponCode || "" })
     });
 
     const orderData = await orderRes.json();
@@ -393,10 +392,10 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
+              type: "book",
               bookId: bookId,
               phone: u.phone,
               name: u.name,
-              amount: numPrice,
               couponCode: couponCode || (currentAppliedCoupon ? currentAppliedCoupon.code : "")
             })
           });
@@ -416,6 +415,9 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
     };
 
     const rzp = new Razorpay(options);
+    rzp.on("payment.failed", function (resp) {
+      alert("⚠️ ਪੇਮੈਂਟ ਫੇਲ੍ਹ ਹੋ ਗਈ: " + (resp.error && resp.error.description ? resp.error.description : "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ"));
+    });
     rzp.open();
   } catch (err) {
     alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ।");

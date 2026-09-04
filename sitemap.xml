@@ -5,7 +5,15 @@
     <priority>1.00</priority>
   </url>
   <url>
+    <loc>https://amanstudypoint.vercel.app/tests.html</loc>
+    <priority>0.90</priority>
+  </url>
+  <url>
     <loc>https://amanstudypoint.vercel.app/login.html</loc>
     <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://amanstudypoint.vercel.app/reader.html</loc>
+    <priority>0.60</priority>
   </url>
 </urlset>

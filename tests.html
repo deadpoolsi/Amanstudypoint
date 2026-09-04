@@ -411,8 +411,17 @@
             const data = await verifyRes.json();
 
             if (data.success) {
-              alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
-              location.reload();
+              // 🔧 FIX: Payment 100% server te ho chuki hai. Par jekar Firebase login
+              // session khatam ho chuki hai, ta reload de baad pass nahi dikhega —
+              // us surat vich login page te bhejo (pass safe hai, sirf login karlena):
+              const authUser = (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) || null;
+              if (!authUser) {
+                alert("🎉 ਪੇਮੈਂਟ ਸਫਲ! ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ।\n\n(ਤੁਹਾਡਾ ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ ਹੋ ਗਿਆ ਸੀ — ਹੁਣੇ ਦੁਬਾਰਾ ਲੌਗਇਨ ਕਰੋ, ਤੁਹਾਡਾ ਪਾਸ ਦਿਖ ਜਾਵੇਗਾ। ਪੈਸਾ ਬਿਲਕੁਲ ਸੁਰੱਖਿਅਤ ਹੈ! 💯)");
+                location.href = "login.html";
+              } else {
+                alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
+                location.reload();
+              }
             } else {
               alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ! WhatsApp te contact karo: 90413-21843"));
             }
@@ -458,6 +467,58 @@
       return;
     }
 
+    // 🔧 RACE FIX (asli "Locked" bug da kararn!):
+    // Page khulde hi pass parhan da try karan nal — mobile te Firebase login
+    // wapas milne vich 1-2 second lagde ne. Eh dauraan read "un-logged-in"
+    // dikkda → Permission Denied → listener hamesha lai bann janda → "🔒 Locked"!
+    // Hun: Firebase login 100% wapas milne ton BAAD hi check karan ge.
+    let passCheckStarted = false;
+    const beginPassCheck = () => {
+      if (passCheckStarted) return;
+      passCheckStarted = true;
+      attachPassListener();
+    };
+
+    const showLoginNeeded = () => {
+      hasValidPass = false;
+      if (badge) {
+        badge.innerText = "🔐 ਲੌਗਿਨ ਚਾਹੀਦਾ ਹੈ";
+        badge.style.background = "#fff3bf";
+        badge.style.color = "#d9480f";
+      }
+      if (buyBanner) buyBanner.style.display = "block";
+      renderTestCardsList(allParsedSortedTests, false);
+      // Stale session saaf karo ta ki agla login sahi ho
+      try {
+        localStorage.removeItem("pp_session");
+        localStorage.removeItem("pp_name");
+      } catch (e) {}
+      setTimeout(() => { window.location.href = "login.html"; }, 2500);
+    };
+
+    if (typeof firebase !== "undefined" && firebase.auth) {
+      // Firebase login restore hone tak wait karo — eh 100% pakka signal hai
+      firebase.auth().onAuthStateChanged((authUser) => {
+        if (authUser) {
+          beginPassCheck();
+        } else {
+          // Firebase ne paka dasseya: login session khatam hai
+          showLoginNeeded();
+        }
+      });
+      // Safety: 12 second vich auth state na mile (network waghera) ta phir vi try karo
+      setTimeout(() => { if (!passCheckStarted) beginPassCheck(); }, 12000);
+    } else {
+      beginPassCheck();
+    }
+  }
+
+  function attachPassListener() {
+    const u = currentUser();
+    const badge = document.getElementById("passStatusBadge");
+    const buyBanner = document.getElementById("buyPassBanner");
+    if (!u) return;
+
     db.ref(`users/${u.phone}/passes/${curCat}`).on("value", snap => {
       const expiry = snap.val();
       const now = Date.now();
@@ -481,10 +542,31 @@
         if (buyBanner) buyBanner.style.display = "block";
       }
       renderTestCardsList(allParsedSortedTests, false);
-    }, () => {
+    }, (err) => {
+      // 🔧 FIX: Eh error zyada tar PERMISSION_DENIED hunda hai.
+      // Kadi kadi token thoda der naal ready hunda — is layi ik vaar retry:
       hasValidPass = false;
-      if (badge) badge.innerText = "🔒 Locked";
+      const authUser = (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) || null;
+      if (authUser && !attachPassListener._retried) {
+        attachPassListener._retried = true;
+        try { db.ref(`users/${u.phone}/passes/${curCat}`).off(); } catch (e) {}
+        setTimeout(attachPassListener, 2500);
+        return;
+      }
+      // Ab vi nal — matlab eh session pass nahi parh sakda (galt account ya
+      // muri hui session). Self-heal: saaf karke login page te bhejo.
+      if (badge) {
+        badge.innerText = "🔐 ਲੌਗਿਨ ਚਾਹੀਦਾ ਹੈ";
+        badge.style.background = "#fff3bf";
+        badge.style.color = "#d9480f";
+      }
+      if (buyBanner) buyBanner.style.display = "block";
       renderTestCardsList(allParsedSortedTests, false);
+      try {
+        localStorage.removeItem("pp_session");
+        localStorage.removeItem("pp_name");
+      } catch (e) {}
+      setTimeout(() => { window.location.href = "login.html"; }, 2500);
     });
   }
 
@@ -813,5 +895,5 @@
   initPassChecking();
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a35efb0aaa76756a',t:'MTc4ODU0NTczNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

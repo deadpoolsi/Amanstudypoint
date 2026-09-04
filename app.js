@@ -199,13 +199,41 @@ function renderBooksRealtime() {
     return; 
   }
   if (typeof db !== "undefined") {
-    db.ref("users/" + u.phone + "/books").on("value", s => {
-      const un = s.val() || {};
-      userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
-      drawBooks();
-    }, (error) => {
-      console.warn("Realtime read warning:", error);
-    });
+    // 🔧 RACE FIX: Mobile te page khulde hi Firebase read karan nal
+    // 'permission denied' aa jandi si (login restore hone ton pehle).
+    // Hun Firebase login 100% wapas milne ton BAAD hi listener lagda hai.
+    let booksListenerStarted = false;
+    const attachBooksListener = () => {
+      if (booksListenerStarted) return;
+      booksListenerStarted = true;
+      db.ref("users/" + u.phone + "/books").on("value", s => {
+        const un = s.val() || {};
+        userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
+        drawBooks();
+      }, (error) => {
+        console.warn("Realtime read warning:", error);
+        // 🔧 FIX: Agar Firebase login session khatam ho chuki hai (PERMISSION_DENIED),
+        // ta purani localStorage session saaf karo ta ki site sach dikhave ki login karlena hai
+        const authUser = (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) || null;
+        if (!authUser && localStorage.getItem("pp_session")) {
+          localStorage.removeItem("pp_session");
+          localStorage.removeItem("pp_name");
+          localStorage.removeItem("pp_device_id");
+          localStorage.removeItem("asp_device_id");
+        }
+      });
+    };
+
+    if (typeof firebase !== "undefined" && firebase.auth) {
+      // Firebase login wapas milne tak wait karo (eh 100% pakka signal hai)
+      firebase.auth().onAuthStateChanged((authUser) => {
+        if (authUser) attachBooksListener();
+      });
+      // Safety: 12 second vich auth state na mile ta phir vi try karo
+      setTimeout(() => { if (!booksListenerStarted) attachBooksListener(); }, 12000);
+    } else {
+      attachBooksListener();
+    }
   }
 }
 
@@ -1386,7 +1414,12 @@ function enforceSingleDeviceLogin() {
   }
 
   if (typeof db !== "undefined") {
-    const deviceRef = db.ref("users/" + u.phone + "/activeDeviceId");
+    // 🔧 RACE FIX: Firebase login restore hone ton baad hi device check lagao
+    let deviceCheckStarted = false;
+    const attachDeviceCheck = () => {
+      if (deviceCheckStarted) return;
+      deviceCheckStarted = true;
+      const deviceRef = db.ref("users/" + u.phone + "/activeDeviceId");
 
     deviceRef.on("value", snap => {
       const activeDeviceOnServer = snap.val();
@@ -1397,6 +1430,16 @@ function enforceSingleDeviceLogin() {
         logout();
       }
     });
+    };
+
+    if (typeof firebase !== "undefined" && firebase.auth) {
+      firebase.auth().onAuthStateChanged((authUser) => {
+        if (authUser) attachDeviceCheck();
+      });
+      setTimeout(() => { if (!deviceCheckStarted) attachDeviceCheck(); }, 12000);
+    } else {
+      attachDeviceCheck();
+    }
   }
 }
 
@@ -1424,13 +1467,27 @@ function syncPurchasedBooks() {
   if (!u || !u.phone) return;
 
   if (typeof db !== "undefined") {
-    db.ref("users/" + u.phone + "/books").on("value", snap => {
-      const un = snap.val() || {};
-      userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
-      if (typeof drawBooks === "function") {
-        drawBooks();
-      }
-    });
+    // 🔧 RACE FIX: Firebase login restore hone ton baad hi listener lagao
+    let syncStarted = false;
+    const attachSync = () => {
+      if (syncStarted) return;
+      syncStarted = true;
+      db.ref("users/" + u.phone + "/books").on("value", snap => {
+        const un = snap.val() || {};
+        userUnlockedBookIds = Object.keys(un).filter(k => un[k] === true);
+        if (typeof drawBooks === "function") {
+          drawBooks();
+        }
+      });
+    };
+    if (typeof firebase !== "undefined" && firebase.auth) {
+      firebase.auth().onAuthStateChanged((authUser) => {
+        if (authUser) attachSync();
+      });
+      setTimeout(() => { if (!syncStarted) attachSync(); }, 12000);
+    } else {
+      attachSync();
+    }
   }
 }
 

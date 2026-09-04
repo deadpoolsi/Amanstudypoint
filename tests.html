@@ -114,8 +114,8 @@
       </button>
     </div>
 
-    <!-- Live Fast Search Box for tests -->
-    <input type="text" id="testFilterInput" oninput="filterRenderedTests()" placeholder="🔍 ਟੈਸਟ ਲੱਭੋ (ਜਿਵੇਂ: Paid - 131)..." style="width:100%; padding:10px 14px; border:1.5px solid #ced4da; border-radius:8px; font-size:0.92rem; margin-bottom:14px; outline:none;">
+    <!-- Live Ultra-Smooth Search Box -->
+    <input type="text" id="testFilterInput" oninput="filterRenderedTests()" placeholder="🔍 ਟੈਸਟ ਲੱਭੋ (ਜਿਵੇਂ: Paid - 131)..." style="width:100%; padding:11px 14px; border:1.5px solid #ced4da; border-radius:8px; font-size:0.92rem; margin-bottom:14px; outline:none; box-sizing:border-box;">
 
     <!-- Test List Items -->
     <div id="testItemsContainer">
@@ -245,6 +245,7 @@
   let appliedDiscount = 0;
   
   let allParsedSortedTests = [];
+  let searchDebounceTimer = null;
 
   let currentActiveQuiz = [];
   let userSelections = {};
@@ -304,8 +305,6 @@
   /* 2. ਸੁਪਰ ਫਾਸਟ ਲਾਈਟਵੇਟ ਟੈਸਟ ਲੋਡਰ */
   async function fetchCategoryTestsFast() {
     const listEl = document.getElementById("testItemsContainer");
-
-    // Shallow fetch via REST API to avoid downloading MBs of questions
     const shallowUrl = `https://aman-study-point-default-rtdb.firebaseio.com/categoryTests/${curCat}.json?shallow=true`;
 
     try {
@@ -329,8 +328,6 @@
       }
 
       const keys = Object.keys(keysObj);
-      
-      // ਕੁੰਜੀਆਂ ਵਿੱਚੋਂ ਨੰਬਰ ਅਨੁਸਾਰ 1 ਤੋਂ ਲੈ ਕੇ 1000 ਤੱਕ ਤੁਰੰਤ ਲਿਸਟ ਬਣਾਓ
       allParsedSortedTests = keys.map((key, idx) => {
         return {
           key: key,
@@ -341,7 +338,6 @@
         };
       });
 
-      // ਪਹਿਲਾ ਟੈਸਟ FREE DEMO ਰਹੇਗਾ
       if (allParsedSortedTests.length > 0) {
         allParsedSortedTests[0].title = "Test - 1 (Demo)";
         allParsedSortedTests[0].isFreeDemo = true;
@@ -350,7 +346,6 @@
       renderTestCardsList(allParsedSortedTests);
     } catch (e) {
       console.warn("Fast load failed, falling back to RTDB...", e);
-      // ਫਾਲਬੈਕ: ਡਾਇਰੈਕਟ ਫਾਇਰਬੇਸ
       db.ref("categoryTests/" + curCat).once("value").then(snap => {
         const data = snap.val();
         if (!data) return;
@@ -367,6 +362,7 @@
     }
   }
 
+  /* 3. ਆਪਟੀਮਾਈਜ਼ਡ ਰੈਂਡਰਿੰਗ (ਬਿਨਾਂ ਹੈਂਗ ਹੋਏ ਤੇਜ਼ੀ ਨਾਲ ਦਿਖਾਏਗਾ) */
   function renderTestCardsList(tests) {
     const listEl = document.getElementById("testItemsContainer");
     if (!listEl) return;
@@ -376,7 +372,10 @@
       return;
     }
 
-    listEl.innerHTML = tests.map(t => {
+    // ਬ੍ਰਾਊਜ਼ਰ ਨੂੰ ਫ੍ਰੀਜ਼ ਹੋਣ ਤੋਂ ਬਚਾਉਣ ਲਈ ਪਹਿਲੇ 35 ਟੈਸਟ ਦਿਖਾਓ
+    const displayList = tests.slice(0, 35);
+
+    const cardsHtml = displayList.map(t => {
       const canOpen = t.isFreeDemo || hasValidPass;
       return `
         <div class="test-card">
@@ -393,19 +392,29 @@
         </div>
       `;
     }).join("");
+
+    const extraNotice = tests.length > 35 
+      ? `<p style="text-align:center; color:#888; font-size:0.82rem; margin:10px 0;">ਹੋਰ ਟੈਸਟ ਦੇਖਣ ਲਈ ਉੱਪਰ ਸਰਚ ਬਾਕਸ ਵਿੱਚ ਨੰਬਰ ਭਰੋ (ਜਿਵੇਂ: Paid - 140)...</p>` 
+      : "";
+
+    listEl.innerHTML = cardsHtml + extraNotice;
   }
 
+  /* 4. ਡੀਬਾਊਂਸ ਸਰਚ (Debounced Search) */
   function filterRenderedTests() {
-    const q = (document.getElementById("testFilterInput")?.value || "").trim().toLowerCase();
-    if (!q) {
-      renderTestCardsList(allParsedSortedTests);
-      return;
-    }
-    const filtered = allParsedSortedTests.filter(t => t.title.toLowerCase().includes(q));
-    renderTestCardsList(filtered);
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      const q = (document.getElementById("testFilterInput")?.value || "").trim().toLowerCase();
+      if (!q) {
+        renderTestCardsList(allParsedSortedTests);
+        return;
+      }
+      const filtered = allParsedSortedTests.filter(t => (t.title || "").toLowerCase().includes(q));
+      renderTestCardsList(filtered);
+    }, 250);
   }
 
-  /* 3. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ (ਸਿਰਫ਼ ਉਸੇ ਵੇਲੇ ਸਵਾਲ ਫੈਚ ਹੋਣਗੇ) */
+  /* 5. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */
   async function startSpecificTest(testId, isFreeDemo = false) {
     const u = currentUser();
     if (!u) {
@@ -602,7 +611,6 @@
     alert("Razorpay pass gateway");
   }
 
-  // ⚡ ਸ਼ੁਰੂਆਤ: ਤੁਰੰਤ ਫੈਚ ਕਰੋ
   fetchCategoryTestsFast();
   initPassChecking();
 </script>

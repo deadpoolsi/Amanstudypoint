@@ -243,7 +243,7 @@
   let appliedCouponCode = "";
   let selectedPlanType = 'week';
   let appliedDiscount = 0;
-  let cachedCategoryTestsData = null;
+  let cachedTestsData = null;
 
   let currentActiveQuiz = [];
   let userSelections = {};
@@ -252,22 +252,25 @@
   let qSecs = 1200;
   let qTimer = null;
 
-  /* 1. ਪਾਸ ਵੈਰੀਫਿਕੇਸ਼ਨ ਚੈੱਕ ਕਰੋ */
+  /* 1. ਪਾਸ ਸਟੇਟਸ (ਬਿਨਾਂ ਰੁਕਾਵਟ ਬੈਕਗ੍ਰਾਊਂਡ ਵਿੱਚ ਚੈੱਕ ਹੋਵੇਗਾ) */
   function checkUserPassStatus() {
     const u = currentUser();
     const badge = document.getElementById("passStatusBadge");
     const buyBanner = document.getElementById("buyPassBanner");
 
     if (!u) {
-      badge.innerText = "🔒 Login to Unlock";
-      badge.style.background = "#fff3bf";
-      badge.style.color = "#d9480f";
-      buyBanner.style.display = "block";
+      if (badge) {
+        badge.innerText = "🔒 Login to Unlock";
+        badge.style.background = "#fff3bf";
+        badge.style.color = "#d9480f";
+      }
+      if (buyBanner) buyBanner.style.display = "block";
       hasValidPass = false;
-      renderCurrentCategoryTests();
+      renderLoadedCategoryTests();
       return;
     }
 
+    // ਲਾਈਵ ਪਾਸ ਲਿਸਨਰ
     db.ref(`users/${u.phone}/passes/${curCat}`).on("value", snap => {
       const expiry = snap.val();
       const now = Date.now();
@@ -276,21 +279,26 @@
         hasValidPass = true;
         passExpiryTime = expiry;
         const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-        badge.innerText = `✅ Pass Active (${daysLeft} Days)`;
-        badge.style.background = "#ebfbee";
-        badge.style.color = "#2b8a3e";
-        buyBanner.style.display = "none";
+        if (badge) {
+          badge.innerText = `✅ Pass Active (${daysLeft} Days)`;
+          badge.style.background = "#ebfbee";
+          badge.style.color = "#2b8a3e";
+        }
+        if (buyBanner) buyBanner.style.display = "none";
       } else {
         hasValidPass = false;
-        badge.innerText = "🔒 Pass Expired / Locked";
-        badge.style.background = "#ffe3e3";
-        badge.style.color = "#c92a2a";
-        buyBanner.style.display = "block";
+        if (badge) {
+          badge.innerText = "🔒 Pass Expired / Locked";
+          badge.style.background = "#ffe3e3";
+          badge.style.color = "#c92a2a";
+        }
+        if (buyBanner) buyBanner.style.display = "block";
       }
-      renderCurrentCategoryTests();
+      renderLoadedCategoryTests();
     }, () => {
       hasValidPass = false;
-      renderCurrentCategoryTests();
+      if (badge) badge.innerText = "🔒 Locked";
+      renderLoadedCategoryTests();
     });
   }
 
@@ -314,24 +322,26 @@
     });
   }
 
-  /* 3. ਟੈਸਟ ਲੋਡਿੰਗ ਅਤੇ ਰੈਂਡਰਿੰਗ (Instant View) */
-  function loadCategoryTests() {
+  /* 3. ਟੈਸਟ ਤੁਰੰਤ ਸਕ੍ਰੀਨ 'ਤੇ ਲੋਡ ਕਰੋ */
+  function loadCategoryTestsInstant() {
     const listEl = document.getElementById("testItemsContainer");
 
     db.ref("categoryTests/" + curCat).on("value", snap => {
-      cachedCategoryTestsData = snap.val();
-      renderCurrentCategoryTests();
+      cachedTestsData = snap.val();
+      renderLoadedCategoryTests();
     }, (err) => {
       console.error("Test Load Error:", err);
-      if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#c92a2a; padding:20px;">⚠️ ਕਨੈਕਸ਼ਨ ਦਿੱਕਤ ਕਾਰਨ ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ। ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।</p>`;
+      if (listEl) {
+        listEl.innerHTML = `<p style="text-align:center; color:#c92a2a; padding:20px;">⚠️ ਕਨੈਕਸ਼ਨ ਦਿੱਕਤ ਕਾਰਨ ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ। ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।</p>`;
+      }
     });
   }
 
-  function renderCurrentCategoryTests() {
+  function renderLoadedCategoryTests() {
     const listEl = document.getElementById("testItemsContainer");
     if (!listEl) return;
 
-    const data = cachedCategoryTestsData;
+    const data = cachedTestsData;
     if (!data) {
       listEl.innerHTML = `
         <div class="test-card">
@@ -359,13 +369,11 @@
       return match ? parseInt(match[0], 10) : 999999;
     };
 
-    // 1. FREE DEMO ਟੈਸਟ ਲੱਭੋ
     let freeDemoKey = allKeys.find(k => {
       const title = String(data[k]?.title || "").toLowerCase();
       return title.includes("demo") || title.includes("free");
     }) || allKeys[0];
 
-    // 2. ਬਾਕੀ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ 1, 2, 3... ਸੌਰਟ ਕਰੋ
     const otherKeys = allKeys.filter(k => k !== freeDemoKey).sort((a, b) => {
       const numA = getTestNumber(data[a]?.title);
       const numB = getTestNumber(data[b]?.title);
@@ -422,8 +430,8 @@
         launchCBT();
       });
     } else {
-      if (cachedCategoryTestsData && cachedCategoryTestsData[testId] && cachedCategoryTestsData[testId].questions) {
-        currentActiveQuiz = cachedCategoryTestsData[testId].questions;
+      if (cachedTestsData && cachedTestsData[testId] && cachedTestsData[testId].questions) {
+        currentActiveQuiz = cachedTestsData[testId].questions;
         launchCBT();
       } else {
         db.ref("categoryTests/" + curCat + "/" + testId).once("value").then(s => {
@@ -716,12 +724,10 @@
     }
   }
 
-  // ⚡ ਸਭ ਕੁਝ ਪੈਰਲਲ ਸ਼ੁਰੂ ਕਰੋ ਤਾਂ ਜੋ ਪੇਜ ਖੁੱਲ੍ਹਦੇ ਹੀ ਟੈਸਟ ਤੁਰੰਤ ਦਿਖਣ
-  document.addEventListener("DOMContentLoaded", () => {
-    loadCategoryPassPricingData();
-    loadCategoryTests();
-    checkUserPassStatus();
-  });
+  // ⚡ ਸਭ ਕੁਝ ਤੁਰੰਤ ਸ਼ੁਰੂ ਕਰੋ
+  loadCategoryTestsInstant();
+  loadCategoryPassPricingData();
+  checkUserPassStatus();
 </script>
 
 </body>

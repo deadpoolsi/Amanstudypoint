@@ -253,7 +253,7 @@
   let userSelections = {};
   let visitedQuestions = {};
   let currentQIdx = 0;
-  let qSecs = 1200;
+  let qSecs = 6000; // 100 ਮਿੰਟ (6000 ਸਕਿੰਟ)
   let qTimer = null;
 
   /* 1. ਪਾਸ ਸਟੇਟਸ ਚੈੱਕ ਕਰੋ */
@@ -391,7 +391,7 @@
               ${t.isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
             </span>
             <h3 style="margin:4px 0; font-size:1.05rem;">${t.title}</h3>
-            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${t.qCount} | ਸਮਾਂ: ${t.timeMinutes} ਮਿੰਟ</p>
+            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${t.qCount} | ਸਮਾਂ: 100 ਮਿੰਟ</p>
           </div>
           <button onclick="${canOpen ? `startSpecificTest('${t.key}', ${t.isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
             ${canOpen ? 'Start Test 🚀' : 'Unlock 🔒'}
@@ -480,7 +480,7 @@
     userSelections = {};
     visitedQuestions = { 0: true };
     currentQIdx = 0;
-    qSecs = 1200;
+    qSecs = 6000; // 100 ਮਿੰਟ (6000 ਸਕਿੰਟ)
 
     clearInterval(qTimer);
     qTimer = setInterval(() => {

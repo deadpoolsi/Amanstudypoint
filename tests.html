@@ -342,11 +342,20 @@
       const allKeys = Object.keys(data);
       const freeDemoKey = allKeys[0]; // ਸਭ ਤੋਂ ਪਹਿਲਾ ਟੈਸਟ ਹਮੇਸ਼ਾ Free Demo ਰਹੇਗਾ
 
-      // ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ (1, 2, 3...) ਸੌਰਟ ਕਰੋ ਤਾਂ ਜੋ 1 ਉੱਪਰ ਰਹੇ ਤੇ ਬਾਕੀ ਹੇਠਾਂ ਆਉਣ
+      // ਸਿਰਲੇਖ ਵਿੱਚੋਂ ਨੰਬਰ ਕੱਢਣ ਲਈ ਫੰਕਸ਼ਨ
+      const getTestNumber = (titleStr) => {
+        const match = (titleStr || "").match(/\d+/);
+        return match ? parseInt(match[0], 10) : 999999;
+      };
+
+      // ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ 1, 2, 3 ... 20 ਕ੍ਰਮ ਵਿੱਚ ਸੌਰਟ ਕਰੋ
       const paidKeys = allKeys.slice(1).sort((a, b) => {
-        const titleA = (data[a]?.title || a).toLowerCase();
-        const titleB = (data[b]?.title || b).toLowerCase();
-        return titleA.localeCompare(titleB, undefined, { numeric: true, sensitivity: 'base' });
+        const numA = getTestNumber(data[a]?.title);
+        const numB = getTestNumber(data[b]?.title);
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        return (data[a]?.title || "").localeCompare(data[b]?.title || "");
       });
 
       // Free Demo ਸਭ ਤੋਂ ਉੱਪਰ, ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟ ਲੜੀਵਾਰ ਹੇਠਾਂ

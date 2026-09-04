@@ -103,7 +103,7 @@
         <h2 id="bannerTitle" style="margin: 0; color: #d9480f; font-size: 1.25rem;">Test Series</h2>
         <span id="passStatusBadge" style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;">Checking Pass...</span>
       </div>
-      <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ።</p>
+      <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
     </div>
 
     <div id="buyPassBanner" style="display:none; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
@@ -335,6 +335,7 @@
     }
   }
 
+  /* ⚡ Razorpay Real Payment Integration */
   function checkoutSelectedPass() {
     const u = currentUser();
     if (!u) {
@@ -342,9 +343,49 @@
       window.location.href = "login.html";
       return;
     }
+    
     let basePrice = categoryPassPricing[selectedPlanType] || 39;
     let finalPrice = Math.max(1, basePrice - appliedDiscount);
-    alert(`Razorpay Checkout: ${selectedPlanType.toUpperCase()} Pass for ${curCat} at ₹${finalPrice}`);
+
+    var options = {
+      "key": "rzp_live_YOUR_KEY_HERE", 
+      "amount": finalPrice * 100, 
+      "currency": "INR",
+      "name": "Aman Study Point",
+      "description": `${selectedPlanType.toUpperCase()} Pass (${curCat})`,
+      "image": "https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png",
+      "handler": function (response){
+        const now = Date.now();
+        let durationMs = 7 * 24 * 60 * 60 * 1000; 
+        
+        if (selectedPlanType === 'day') durationMs = 24 * 60 * 60 * 1000;
+        else if (selectedPlanType === 'week') durationMs = 7 * 24 * 60 * 60 * 1000;
+        else if (selectedPlanType === 'month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (selectedPlanType === 'sixMonths') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (selectedPlanType === 'year') durationMs = 365 * 24 * 60 * 60 * 1000;
+
+        const expiryTime = now + durationMs;
+
+        db.ref(`users/${u.phone}/passes/${curCat}`).set(expiryTime).then(() => {
+          if (appliedCouponCode && categoryCouponData) {
+            const newUsed = (categoryCouponData.usedCount || 0) + 1;
+            db.ref(`siteSettings/passCoupons/${curCat}/usedCount`).set(newUsed);
+          }
+          alert("🎉 ਮੁਬਾਰਕਾਂ! ਤੁਹਾਡਾ ਪਾਸ ਸਫਲਤਾਪੂਰਵਕ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
+          location.reload();
+        });
+      },
+      "prefill": {
+        "name": u.name,
+        "contact": u.phone
+      },
+      "theme": {
+        "color": "#e8590c"
+      }
+    };
+    
+    var rzp1 = new Razorpay(options);
+    rzp1.open();
   }
 
   function initPassChecking() {

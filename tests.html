@@ -238,7 +238,11 @@
     police: { title: "👮‍♂️ Punjab Police Constable & SI", sub: "ਪੰਜਾਬ ਪੁਲਿਸ ਭਰਤੀ ਲਈ ਸਾਰੇ ਫੁੱਲ ਲੈਂਥ ਮੌਕ ਟੈਸਟ" },
     patwari: { title: "🌾 PSSSB Board (All Exams)", sub: "ਪਟਵਾਰੀ ਅਤੇ ਬੋਰਡ ਦੀਆਂ ਸਾਰੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਵਿਸ਼ੇਸ਼ ਮੌਕ ਟੈਸਟ" },
     clerk: { title: "🎖️ Agniveer GD (Army)", sub: "ਅਗਨੀਵੀਰ ਜੀ.ਡੀ, ਟਰੇਡਸਮੈਨ ਅਤੇ ਡਿਫੈਂਸ ਪ੍ਰੀਖਿਆਵਾਂ ਦੇ ਟੈਸਟ" },
-    ssc: { title: "🏛️ SSC & Railway Exams", sub: "ਸੈਂਟਰਲ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੇ ਪੰਜਾਬੀ ਮਾਧਿਅਮ ਟੈਸਟ" }
+    ssc: { title: "🏛️ SSC & Railway Exams", sub: "ਸੈਂਟਰਲ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੇ ਪੰਜਾਬੀ ਮਾਧਿਅਮ ਟੈਸਟ" },
+    ptet1: { title: "📚 PTET Paper 1", sub: "ਪੰਜਾਬ ਟੀਚਰ ਐਜੂਏਬਿਲਟੀ ਟੈਸਟ (ਪੇਪਰ-1 ਪ੍ਰਾਇਮਰੀ)" },
+    ptet2: { title: "📖 PTET Paper 2", sub: "ਪੰਜਾਬ ਟੀਚਰ ਐਜੂਏਬਿਲਟੀ ਟੈਸਟ (ਪੇਪਰ-2 ਅੱਪਰ ਪ੍ਰਾਇਮਰੀ)" },
+    banking: { title: "🏦 Banking Exams (IBPS/PO)", sub: "ਬੈਂਕਿੰਗ ਪ੍ਰੀਖਿਆਵਾਂ ਲਈ ਸਪੈਸ਼ਲ ਮੌਕ ਟੈਸਟ ਸੀਰੀਜ਼" },
+    current: { title: "⚡ Current Affairs & GK", sub: "ਰੋਜ਼ਾਨਾ ਅਤੇ ਮਾਸਿਕ ਕਰੰਟ ਅਫੇਅਰਜ਼ ਮੌਕ ਟੈਸਟ" }
   };
 
   const meta = catMeta[curCat] || catMeta.police;
@@ -267,7 +271,7 @@
 
   /* 1. ਪਾਸ ਸਟੇਟਸ ਅਤੇ ਐਡਮਿਨ ਪ੍ਰਾਈਸਿੰਗ ਚੈੱਕ ਕਰੋ */
   function loadPassPricingAndCoupons() {
-    db.ref(`siteSettings/passPricing/${curCat}`).on("value", snap => {
+    db.ref(`siteSettings/passPricing/${curCat}`).once("value", snap => {
       const val = snap.val();
       if (val) {
         categoryPassPricing = {
@@ -286,7 +290,7 @@
       }
     });
 
-    db.ref(`siteSettings/passCoupons/${curCat}`).on("value", snap => {
+    db.ref(`siteSettings/passCoupons/${curCat}`).once("value", snap => {
       categoryCouponData = snap.val() || null;
     });
   }
@@ -338,10 +342,8 @@
       window.location.href = "login.html";
       return;
     }
-
     let basePrice = categoryPassPricing[selectedPlanType] || 39;
     let finalPrice = Math.max(1, basePrice - appliedDiscount);
-
     alert(`Razorpay Checkout: ${selectedPlanType.toUpperCase()} Pass for ${curCat} at ₹${finalPrice}`);
   }
 
@@ -710,18 +712,6 @@
     document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
     updatePayButtonText();
-  }
-
-  function checkoutSelectedPass() {
-    const u = currentUser();
-    if (!u) {
-      alert("ਪਾਸ ਖਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
-      window.location.href = "login.html";
-      return;
-    }
-    let basePrice = categoryPassPricing[selectedPlanType] || 39;
-    let finalPrice = Math.max(1, basePrice - appliedDiscount);
-    alert(`Razorpay Checkout: ${selectedPlanType.toUpperCase()} Pass for ${curCat} at ₹${finalPrice}`);
   }
 
   loadPassPricingAndCoupons();

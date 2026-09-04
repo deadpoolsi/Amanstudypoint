@@ -1,148 +1,242 @@
-import crypto from "crypto";
+// @ts-nocheck
+/* ============================================================
+   Aman Study Point — SECURE Verify Payment (api/verify-payment.js)
+   ------------------------------------------------------------
+   🔒 SECURITY FIXES:
+   1. Signature check (pehle vi si — changa)
+   2. NAVA: Razorpay API ton order fetch karke amount check —
+      koi ₹1 da order bana ke ₹399 di cheez na lai sake
+   3. NAVA: Payment "captured" hona zaroori
+   4. NAVA: Idempotency — ikk hi order do vaari use na ho sake
+   5. NAVA: Unlock (books/passes) SIRF server likhda hai —
+      client (browser) de likhne da rasta band
+   ============================================================ */
 
-const ALL_BOOK_IDS = [
-  "punjabi",
-  "gk",
-  "maths",
-  "reasoning",
-  "history",
-  "science",
-  "constitution",
-  "computer"
-];
+const crypto = require("crypto");
 
-// ਪਲਾਨ ਦੇ ਦਿਨ
-const DURATION_DAYS = {
-  week: 7,
-  month: 30,
-  sixMonths: 180,
-  year: 365
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+const FIREBASE_DB_URL =
+  process.env.FIREBASE_DB_URL ||
+  "https://aman-study-point-default-rtdb.firebaseio.com";
+
+/* Firebase admin access — do tarike:
+   (A) FIREBASE_SERVICE_ACCOUNT = poora service account JSON (recommended)
+   (B) FIREBASE_DB_SECRET = legacy database secret (jehde aiha kar layo)      */
+const SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : null;
+const DB_SECRET = process.env.FIREBASE_DB_SECRET || null;
+
+const PASS_DURATIONS = {
+  day: 24 * 60 * 60 * 1000,
+  week: 7 * 24 * 60 * 60 * 1000,
+  month: 30 * 24 * 60 * 60 * 1000,
+  sixMonths: 180 * 24 * 60 * 60 * 1000,
+  year: 365 * 24 * 60 * 60 * 1000,
 };
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, message: "Only POST allowed" });
+const ALL_BOOK_IDS = [
+  "punjabi", "gk", "maths", "reasoning",
+  "history", "science", "constitution", "computer",
+];
+
+function fail(res, status, message) {
+  return res.status(status).json({ success: false, message });
+}
+
+function b64url(input) {
+  return Buffer.from(input).toString("base64")
+    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+/* Service account nalo OAuth access token (zero-dependency, built-in crypto) */
+let cachedToken = null, cachedTokenExpiry = 0;
+async function getAdminAccessToken() {
+  if (DB_SECRET && !SERVICE_ACCOUNT) return { secret: DB_SECRET };
+  if (!SERVICE_ACCOUNT) throw new Error("Firebase admin credentials missing");
+
+  if (cachedToken && Date.now() < cachedTokenExpiry - 60000)
+    return { token: cachedToken };
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claims = b64url(JSON.stringify({
+    iss: SERVICE_ACCOUNT.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  }));
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(`${header}.${claims}`);
+  const signature = b64url(signer.sign(SERVICE_ACCOUNT.private_key));
+  const assertion = `${header}.${claims}.${signature}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) throw new Error("Firebase token mint failed");
+  cachedToken = tokenData.access_token;
+  cachedTokenExpiry = Date.now() + (tokenData.expires_in || 3600) * 1000;
+  return { token: cachedToken };
+}
+
+/* Firebase REST call (admin — rules bypass) */
+async function fbRequest(method, path, body) {
+  const auth = await getAdminAccessToken();
+  let url = `${FIREBASE_DB_URL}/${path}.json`;
+  if (auth.token) url += `?access_token=${encodeURIComponent(auth.token)}`;
+  else url += `?auth=${encodeURIComponent(auth.secret)}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: body !== undefined ? { "Content-Type": "application/json" } : {},
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+  if (!res.ok) throw new Error(`Firebase ${method} ${path}: ${res.status} ${text}`);
+  return data;
+}
+
+function sanitizeUserKey(k) {
+  return typeof k === "string" && k.trim().length >= 3 && !/[\/#$\[\].]/.test(k.trim());
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== "POST") return fail(res, 405, "ਸਿਰਫ਼ POST allowed ਹੈ।");
+  if (!RAZORPAY_KEY_SECRET || (!SERVICE_ACCOUNT && !DB_SECRET))
+    return fail(res, 500, "Server keys missing");
+
+  let body = {};
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+  } catch (e) {
+    return fail(res, 400, "ਗ਼ਲਤ request format।");
   }
 
   const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    phone,
-    bookId,
-    name,
-    amount,
-    couponCode,
-    couponType,
-    category
-  } = req.body;
+    razorpay_payment_id, razorpay_order_id, razorpay_signature,
+  } = body;
+  if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature)
+    return fail(res, 400, "ਅਧੂਰੀ ਜਾਣਕਾਰੀ (Missing required payment tokens)");
 
-  // 1. ਸਾਰੇ ਪੈਰਾਮੀਟਰ ਲਾਜ਼ਮੀ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !phone || !bookId) {
-    return res.status(400).json({ success: false, message: "ਅਧੂਰੀ ਜਾਣਕਾਰੀ (Missing required payment tokens)" });
-  }
-
-  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
-  if (!RAZORPAY_KEY_SECRET) {
-    return res.status(500).json({ success: false, message: "Server configuration error: Key Secret missing" });
-  }
-
-  // 2. ਕ੍ਰਿਪਟੋਗ੍ਰਾਫਿਕ ਸਿਗਨੇਚਰ ਵੈਰੀਫਿਕੇਸ਼ਨ
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac("sha256", RAZORPAY_KEY_SECRET)
-    .update(body.toString())
-    .digest("hex");
-
-  if (expectedSignature !== razorpay_signature) {
-    return res.status(400).json({ success: false, message: "ਅਵੈਧ ਪੇਮੈਂਟ ਸਿਗਨੇਚਰ (Tampered / Fake Payment)" });
-  }
-
-  const FIREBASE_DB_URL = "https://aman-study-point-default-rtdb.firebaseio.com";
-  const DB_SECRET = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+  const phone = String(body.phone || "").trim();
+  if (!sanitizeUserKey(phone))
+    return fail(res, 400, "ਗ਼ਲਤ ਯੂਜ਼ਰ (phone) ਜਾਣਕਾਰੀ।");
 
   try {
-    // 3. ਜਾਂਚ ਕਰੋ ਕਿ ਇਹ ਟੈਸਟ ਪਾਸ ਹੈ ਜਾਂ ਕਿਤਾਬ
-    if (bookId.startsWith("pass_")) {
-      // ਫਾਰਮੈਟ: pass_{category}_{duration} (ਉਦਾਹਰਣ: pass_police_month)
-      const parts = bookId.split("_");
-      const cat = parts[1] || "police";
-      const planType = parts[2] || "month";
-      const days = DURATION_DAYS[planType] || 30;
+    /* STEP 1 — Signature check (HMAC SHA256) */
+    const expectedSig = crypto
+      .createHmac("sha256", RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+    if (expectedSig !== razorpay_signature)
+      return fail(res, 400, "ਅਵੈਧ ਪੇਮੈਂਟ ਸਿਗਨੇਚਰ (Tampered / Fake Payment)");
 
-      const expiryTimestamp = Date.now() + (days * 24 * 60 * 60 * 1000);
+    /* STEP 2 — Order check (sade Razorpay account vich, server-created) */
+    const authHeader =
+      "Basic " + Buffer.from(`${RAZORPAY_KEY_ID || ""}:${RAZORPAY_KEY_SECRET}`).toString("base64");
 
-      // ਯੂਜ਼ਰ ਦੇ ਖਾਤੇ ਵਿੱਚ ਪਾਸ ਦੀ ਐਕਸਪਾਇਰੀ ਡੇਟ ਸੇਵ ਕਰੋ
-      await fetch(`${FIREBASE_DB_URL}/users/${phone}/passes/${cat}.json${DB_SECRET}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(expiryTimestamp)
-      });
-    } else if (bookId === "combo") {
-      // ਕੰਬੋ ਪੈਕ ਅਨਲੌਕ ਕਰੋ
-      const updates = {};
-      ALL_BOOK_IDS.forEach(id => {
-        updates[id] = true;
-      });
-      updates["combo"] = true;
+    const orderRes = await fetch(
+      `https://api.razorpay.com/v1/orders/${razorpay_order_id}`,
+      { headers: { Authorization: authHeader } }
+    );
+    if (!orderRes.ok) return fail(res, 400, "ਆਰਡਰ ਨਹੀਂ ਮਿਲਿਆ।");
+    const order = await orderRes.json();
 
-      await fetch(`${FIREBASE_DB_URL}/users/${phone}/books.json${DB_SECRET}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-    } else {
-      // ਸਿੰਗਲ ਕਿਤਾਬ ਅਨਲੌਕ ਕਰੋ
-      await fetch(`${FIREBASE_DB_URL}/users/${phone}/books/${bookId}.json${DB_SECRET}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(true)
-      });
+    const notes = order.notes || {};
+    const expectedAmount = parseInt(notes.expected_amount) || 0;
+    if (!expectedAmount || order.amount !== expectedAmount)
+      return fail(res, 400, "ਆਰਡਰ ਦੀ ਰਕਮ ਮੇਲ ਨਹੀਂ ਖਾਂਦੀ (Amount mismatch)।");
+
+    /* STEP 3 — Payment check (captured + sahi amount) */
+    const payRes = await fetch(
+      `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
+      { headers: { Authorization: authHeader } }
+    );
+    if (!payRes.ok) return fail(res, 400, "ਪੇਮੈਂਟ ਦੀ ਜਾਣਕਾਰੀ ਨਹੀਂ ਮਿਲੀ।");
+    const payment = await payRes.json();
+    if (payment.status !== "captured")
+      return fail(res, 400, "ਪੇਮੈਂਟ ਹਾਲੇ complete ਨਹੀਂ ਹੋਈ।");
+    if (payment.amount !== order.amount)
+      return fail(res, 400, "ਪੈਸੇ ਦੀ ਰਕਮ ਪੂਰੀ ਨਹੀਂ ਹੈ (Underpaid)।");
+
+    /* STEP 4 — Idempotency (ikk order = ikk hi vaari use) */
+    const already = await fbRequest("GET", `paymentOrders/${razorpay_order_id.replace(/[.#$\/\[\]]/g, "_")}`);
+    if (already && already.processed) {
+      // Pehle hi unlock ho chukka — dubara grant nahi karna
+      return res.status(200).json({ success: true, message: "ਪਹਿਲਾਂ ਹੀ ਐਕਟਿਵ ਹੈ।", already: true });
     }
 
-    // 4. ਕੂਪਨ ਵਰਤੋਂ ਕਾਊਂਟਰ ਅੱਪਡੇਟ ਕਰੋ (usedCount + 1)
-    if (couponCode && couponCode.trim() !== "") {
-      try {
-        let couponPath = "";
-        if (couponType === "category" && category) {
-          couponPath = `siteSettings/passPricing/${category}/coupon/usedCount`;
-        } else if (bookId.startsWith("pass_")) {
-          const cat = bookId.split("_")[1] || "police";
-          couponPath = `siteSettings/passPricing/${cat}/coupon/usedCount`;
-        } else {
-          couponPath = `siteSettings/coupon/usedCount`;
-        }
+    /* STEP 5 — Grant (SIRF server likhda hai) */
+    const type = notes.item_type === "pass" ? "pass" : "book";
+    let grantInfo = {};
 
-        const getRes = await fetch(`${FIREBASE_DB_URL}/${couponPath}.json${DB_SECRET}`);
-        const curCount = (await getRes.json()) || 0;
-        await fetch(`${FIREBASE_DB_URL}/${couponPath}.json${DB_SECRET}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(curCount + 1)
-        });
-      } catch (cErr) {
-        console.warn("Coupon usage increment warning:", cErr);
+    if (type === "pass") {
+      const planId = notes.plan_id;
+      const category = notes.category;
+      const durationMs = PASS_DURATIONS[planId];
+      if (!durationMs || !/^[a-z0-9]+$/i.test(category || ""))
+        return fail(res, 400, "ਆਰਡਰ ਦੀ ਜਾਣਕਾਰੀ ਗ਼ਲਤ ਹੈ।");
+
+      const expiry = Date.now() + durationMs;
+      await fbRequest("PATCH", `users/${encodeURIComponent(phone)}/passes`, {
+        [category]: expiry,
+      });
+      grantInfo = { type: "pass", planId, category, expiry };
+
+      // Coupon usedCount server-side update (te admin hi kar sakda hai)
+      if (notes.coupon_code) {
+        const cp = await fbRequest("GET", `siteSettings/passPricing/${category}/coupon`);
+        if (cp && String(cp.code || "").toUpperCase() === String(notes.coupon_code).toUpperCase()) {
+          const used = (parseInt(cp.usedCount) || 0) + 1;
+          await fbRequest("PATCH", `siteSettings/passPricing/${category}/coupon`, { usedCount: used });
+        }
+      }
+    } else {
+      const bookId = notes.book_id;
+      if (!/^[a-z0-9_-]+$/i.test(bookId || ""))
+        return fail(res, 400, "ਆਰਡਰ ਦੀ ਜਾਣਕਾਰੀ ਗ਼ਲਤ ਹੈ।");
+
+      if (bookId === "combo") {
+        // Sarvi kitaaban unlock
+        const patch = {};
+        ALL_BOOK_IDS.forEach(id => { patch[id] = true; });
+        await fbRequest("PATCH", `users/${encodeURIComponent(phone)}/books`, patch);
+        grantInfo = { type: "combo", books: ALL_BOOK_IDS };
+      } else {
+        await fbRequest("PATCH", `users/${encodeURIComponent(phone)}/books`, { [bookId]: true });
+        grantInfo = { type: "book", bookId };
       }
     }
 
-    // 5. ਪੇਮੈਂਟ ਆਡਿਟ ਲੌਗ ਦਰਜ ਕਰੋ
-    await fetch(`${FIREBASE_DB_URL}/payments/${razorpay_payment_id}.json${DB_SECRET}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone: phone,
-        name: name || "Student",
-        itemPurchased: bookId,
-        amount: amount || 0,
-        couponUsed: couponCode || "None",
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        timestamp: new Date().toISOString()
-      })
-    });
+    /* STEP 6 — Record (audit + idempotency lai) */
+    const record = {
+      processed: true,
+      paymentId: razorpay_payment_id,
+      orderId: razorpay_order_id,
+      amount: payment.amount,
+      phone,
+      name: String(body.name || "Student").slice(0, 60),
+      ...grantInfo,
+      couponCode: notes.coupon_code || "",
+      at: Date.now(),
+    };
+    await fbRequest("PUT", `paymentOrders/${razorpay_order_id.replace(/[.#$\/\[\]]/g, "_")}`, record);
+    await fbRequest("PUT", `payments/${razorpay_payment_id.replace(/[.#$\/\[\]]/g, "_")}`, record);
 
-    return res.status(200).json({ success: true, message: "ਭੁਗਤਾਨ ਸਫਲ ਰਿਹਾ ਅਤੇ ਆਈਟਮ ਅਨਲੌਕ ਹੋ ਗਈ!" });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "ਡਾਟਾਬੇਸ ਅੱਪਡੇਟ ਅਸਫਲ: " + error.message });
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("verify-payment crash:", err);
+    return fail(res, 500, "ਸਰਵਰ ਸਮੱਸਿਆ। WhatsApp te contact karo: 90413-21843");
   }
-}
+};

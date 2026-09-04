@@ -290,7 +290,7 @@
       }
     });
 
-    db.ref(`siteSettings/passCoupons/${curCat}`).once("value", snap => {
+    db.ref(`siteSettings/passPricing/${curCat}/coupon`).once("value", snap => {
       categoryCouponData = snap.val() || null;
     });
   }
@@ -335,7 +335,7 @@
     }
   }
 
-  /* ⚡ Razorpay Real Payment Integration */
+  /* ⚡ Razorpay Real Payment Integration & Fixed Pass Activation */
   function checkoutSelectedPass() {
     const u = currentUser();
     if (!u) {
@@ -366,13 +366,16 @@
 
         const expiryTime = now + durationMs;
 
+        // 🔍 ਸਹੀ ਫੋਨ ਨੰਬਰ ਅਤੇ ਮੌਜੂਦਾ ਕੈਟਾਗਰੀ (curCat) ਤੇ ਪਾਸ ਸੇਵ ਕਰੋ
         db.ref(`users/${u.phone}/passes/${curCat}`).set(expiryTime).then(() => {
           if (appliedCouponCode && categoryCouponData) {
             const newUsed = (categoryCouponData.usedCount || 0) + 1;
-            db.ref(`siteSettings/passCoupons/${curCat}/usedCount`).set(newUsed);
+            db.ref(`siteSettings/passPricing/${curCat}/coupon/usedCount`).set(newUsed);
           }
-          alert("🎉 ਮੁਬਾਰਕਾਂ! ਤੁਹਾਡਾ ਪਾਸ ਸਫਲਤਾਪੂਰਵਕ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
+          alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
           location.reload();
+        }).catch(err => {
+          alert("⚠️ ਪਾਸ ਐਕਟਿਵ ਕਰਨ ਵਿੱਚ ਡੇਟਾਬੇਸ ਐਰਰ ਆਇਆ: " + err.message);
         });
       },
       "prefill": {

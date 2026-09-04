@@ -228,7 +228,6 @@
 <script src="app.js"></script>
 
 <script>
-// --- 🔄 SWITCH TABS (Login / Register) ---
 function switchTab(type) {
   hideError();
   document.getElementById("formForgot").style.display = "none";
@@ -257,7 +256,6 @@ function hideError() {
   document.getElementById("loginError").style.display = "none";
 }
 
-// 🔑 ਹਰ ਨਵੇਂ ਡਿਵਾਈਸ ਲਈ ਯੂਨੀਕ Device ID ਜਨਰੇਟ ਕਰਨ ਦਾ ਫੰਕਸ਼ਨ
 function generateDeviceId() {
   return 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 }
@@ -282,9 +280,7 @@ async function handleRegister() {
     const user = credential.user;
     if (!user) throw new Error("Firebase did not return a user.");
 
-    try { await user.updateProfile({ displayName: name }); } catch (e) {
-      console.warn("Profile update warning:", e);
-    }
+    try { await user.updateProfile({ displayName: name }); } catch (e) {}
 
     try {
       await db.ref("accounts/" + phone).update({
@@ -292,13 +288,12 @@ async function handleRegister() {
         authType: "email-password",
         createdAt: firebase.database.ServerValue.TIMESTAMP
       });
-      // 🔒 ਨਵਾਂ Device ID ਰਜਿਸਟਰ ਕਰੋ
       await db.ref("users/" + phone).update({ 
         name, phone, uid: user.uid, email: authEmail,
         activeDeviceId: newDeviceId 
       });
     } catch (dbError) {
-      console.warn("Student profile database save skipped:", dbError);
+      console.warn("Database profile save skipped:", dbError);
     }
 
     fetch("/api/notify-login", {
@@ -310,7 +305,7 @@ async function handleRegister() {
         email: "N/A",
         authType: "Phone Register"
       })
-    }).catch(err => console.warn("Telegram alert error:", err));
+    }).catch(() => {});
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", name);
@@ -319,13 +314,11 @@ async function handleRegister() {
     alert("🎉 Account successfully ਬਣ ਗਿਆ!");
     window.location.href = "index.html";
   } catch (error) {
-    console.error("STUDENT REGISTRATION ERROR:", error);
+    console.error("Registration error:", error);
     if (error.code === "auth/email-already-in-use") {
       showError("⚠️ ਇਹ mobile number ਪਹਿਲਾਂ ਹੀ registered ਹੈ। Login ਕਰੋ।");
     } else if (error.code === "auth/weak-password") {
       showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 characters ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
-    } else if (error.code === "auth/operation-not-allowed") {
-      showError("⚠️ Firebase ਵਿੱਚ Email/Password Authentication enabled ਨਹੀਂ ਹੈ।");
     } else if (error.code === "auth/network-request-failed") {
       showError("⚠️ Internet connection ਦੀ ਸਮੱਸਿਆ ਹੈ।");
     } else {
@@ -334,7 +327,7 @@ async function handleRegister() {
   }
 }
 
-// --- 🔐 MOBILE + PASSWORD LOGIN (Auto-Overwrite Device) ---
+// --- 🔐 MOBILE + PASSWORD LOGIN (Safe Execution) ---
 async function handleLogin() {
   hideError();
 
@@ -352,19 +345,25 @@ async function handleLogin() {
     const user = credential.user;
 
     let studentName = (user && user.displayName) || "Student";
+
+    // ਡਾਟਾਬੇਸ ਪੜ੍ਹਨ ਦੀ ਕੋਸ਼ਿਸ਼ (ਜੇਕਰ ਰੂਲਜ਼ ਰੋਕਣ ਤਾਂ ਵੀ ਲੌਗਇਨ ਨਾ ਰੁਕੇ)
     try {
       const snap = await db.ref("accounts/" + phone).once("value");
       const acc = snap.val() || {};
       studentName = acc.name || studentName;
-    } catch (dbError) {
-      console.warn("Student profile read skipped:", dbError);
+    } catch (e) {
+      console.warn("Read account skipped:", e);
     }
 
-    // ⚡ ਨਵੇਂ ਡਿਵਾਈਸ ਦਾ Device ID ਸਿੱਧਾ Firebase ਵਿੱਚ ਅੱਪਡੇਟ ਕਰੋ (ਪੁਰਾਣਾ ਡਿਵਾਈਸ ਆਟੋਮੈਟਿਕ ਲੌਗਆਊਟ ਹੋ ਜਾਵੇਗਾ)
-    await db.ref("users/" + phone).update({
-      name: studentName,
-      activeDeviceId: newDeviceId
-    });
+    // ਨਵਾਂ ਡਿਵਾਈਸ ID ਅੱਪਡੇਟ ਕਰੋ (Safe Catch)
+    try {
+      await db.ref("users/" + phone).update({
+        name: studentName,
+        activeDeviceId: newDeviceId
+      });
+    } catch (e) {
+      console.warn("Active device write skipped:", e);
+    }
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", studentName);
@@ -373,8 +372,13 @@ async function handleLogin() {
     alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
     window.location.href = "index.html";
   } catch (error) {
-    console.error("Student Login Error:", error);
-    if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+    console.error("Login error:", error);
+    if (
+      error.code === "auth/invalid-credential" || 
+      error.code === "auth/invalid-login-credentials" || 
+      error.code === "auth/user-not-found" || 
+      error.code === "auth/wrong-password"
+    ) {
       showError("⚠️ ਮੋਬਾਈਲ ਨੰਬਰ ਜਾਂ password ਗਲਤ ਹੈ।");
     } else if (error.code === "auth/too-many-requests") {
       showError("⚠️ ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ ਹੈ। ਕੁਝ ਸਮੇਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
@@ -386,61 +390,45 @@ async function handleLogin() {
   }
 }
 
-// --- 🌐 GOOGLE LOGIN (Auto-Overwrite Device) ---
+// --- 🌐 GOOGLE LOGIN ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
-    .then((result) => {
+    .then(async (result) => {
       const user = result.user;
       const name = user.displayName || "Student";
       const identifier = user.phoneNumber || user.email.split('@')[0];
       const newDeviceId = generateDeviceId();
 
-      db.ref("accounts/" + identifier).once("value", (snap) => {
-        const isNewUser = !snap.exists();
-
-        db.ref("accounts/" + identifier).update({
+      try {
+        await db.ref("accounts/" + identifier).update({
           name: name,
           phone: identifier,
           email: user.email,
           authType: "google",
           password: "GOOGLE_AUTH"
-        }).then(() => {
-          // ⚡ ਨਵੇਂ ਡਿਵਾਈਸ ਦਾ Device ID ਅੱਪਡੇਟ ਕਰੋ
-          db.ref("users/" + identifier).update({ 
-            name: name, 
-            phone: identifier,
-            activeDeviceId: newDeviceId 
-          });
-
-          if (isNewUser) {
-            fetch("/api/notify-login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: name,
-                phone: identifier,
-                email: user.email,
-                authType: "Google Login"
-              })
-            }).catch(err => console.warn("Telegram alert error:", err));
-          }
-
-          localStorage.setItem("pp_session", identifier);
-          localStorage.setItem("pp_name", name);
-          localStorage.setItem("pp_device_id", newDeviceId);
-
-          alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
-          window.location.href = "index.html";
         });
-      });
+        await db.ref("users/" + identifier).update({ 
+          name: name, 
+          phone: identifier,
+          activeDeviceId: newDeviceId 
+        });
+      } catch (e) {
+        console.warn("Google sync skipped:", e);
+      }
+
+      localStorage.setItem("pp_session", identifier);
+      localStorage.setItem("pp_name", name);
+      localStorage.setItem("pp_device_id", newDeviceId);
+
+      alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
+      window.location.href = "index.html";
     })
     .catch((error) => {
       alert("Google Login Error: " + error.message);
     });
 }
 
-// --- 📲 FORGOT PASSWORD ---
 function showForgotForm() {
   document.getElementById("formLogin").style.display = "none";
   document.getElementById("formReg").style.display = "none";
@@ -469,9 +457,7 @@ function sendForgotWhatsApp() {
   );
 
   const adminWhatsApp = "9041321843";
-  const waUrl = `https://api.whatsapp.com/send?phone=91${adminWhatsApp}&text=${msg}`;
-
-  window.open(waUrl, "_blank");
+  window.open(`https://api.whatsapp.com/send?phone=91${adminWhatsApp}&text=${msg}`, "_blank");
 }
 </script>
 </body>

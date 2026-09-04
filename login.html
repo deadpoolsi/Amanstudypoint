@@ -186,7 +186,7 @@
     <button type="submit" class="btn-submit">➔ Login</button>
   </form>
 
-  <!-- 2. Register Form (100% Validated) -->
+  <!-- 2. Register Form -->
   <form id="formReg" style="display:none;" onsubmit="event.preventDefault(); handleRegister();">
     <div class="field">
       <label>👤 Full Name (ਵਿਦਿਆਰਥੀ ਦਾ ਪੂਰਾ ਨਾਮ)</label>
@@ -257,12 +257,9 @@ function hideError() {
   document.getElementById("loginError").style.display = "none";
 }
 
-// 🔒 ਪਾਸਵਰਡ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੋਡ (Hash) ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ
-async function hashPassword(plainText) {
-  const msgUint8 = new TextEncoder().encode(plainText);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// 🔑 ਹਰ ਨਵੇਂ ਡਿਵਾਈਸ ਲਈ ਯੂਨੀਕ Device ID ਜਨਰੇਟ ਕਰਨ ਦਾ ਫੰਕਸ਼ਨ
+function generateDeviceId() {
+  return 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 }
 
 // --- 🆕 FIREBASE AUTH STUDENT REGISTRATION ---
@@ -278,6 +275,7 @@ async function handleRegister() {
   if (pass.length < 6) return showError("⚠️ Password ਘੱਟੋ-ਘੱਟ 6 characters ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।");
 
   const authEmail = phone + "@amanstudypoint.student";
+  const newDeviceId = generateDeviceId();
 
   try {
     const credential = await firebase.auth().createUserWithEmailAndPassword(authEmail, pass);
@@ -294,12 +292,15 @@ async function handleRegister() {
         authType: "email-password",
         createdAt: firebase.database.ServerValue.TIMESTAMP
       });
-      await db.ref("users/" + phone).update({ name, phone, uid: user.uid, email: authEmail });
+      // 🔒 ਨਵਾਂ Device ID ਰਜਿਸਟਰ ਕਰੋ
+      await db.ref("users/" + phone).update({ 
+        name, phone, uid: user.uid, email: authEmail,
+        activeDeviceId: newDeviceId 
+      });
     } catch (dbError) {
       console.warn("Student profile database save skipped:", dbError);
     }
 
-    // 🔔 ਨਵੇਂ ਫ਼ੋਨ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਦਾ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਅਲਰਟ ਭੇਜੋ
     fetch("/api/notify-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -313,6 +314,8 @@ async function handleRegister() {
 
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", name);
+    localStorage.setItem("pp_device_id", newDeviceId);
+
     alert("🎉 Account successfully ਬਣ ਗਿਆ!");
     window.location.href = "index.html";
   } catch (error) {
@@ -331,7 +334,7 @@ async function handleRegister() {
   }
 }
 
-// --- 🔐 MOBILE + PASSWORD LOGIN ---
+// --- 🔐 MOBILE + PASSWORD LOGIN (Auto-Overwrite Device) ---
 async function handleLogin() {
   hideError();
 
@@ -342,6 +345,7 @@ async function handleLogin() {
   if (!pass || pass.length < 6) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ।");
 
   const authEmail = phone + "@amanstudypoint.student";
+  const newDeviceId = generateDeviceId();
 
   try {
     const credential = await firebase.auth().signInWithEmailAndPassword(authEmail, pass);
@@ -356,8 +360,16 @@ async function handleLogin() {
       console.warn("Student profile read skipped:", dbError);
     }
 
+    // ⚡ ਨਵੇਂ ਡਿਵਾਈਸ ਦਾ Device ID ਸਿੱਧਾ Firebase ਵਿੱਚ ਅੱਪਡੇਟ ਕਰੋ (ਪੁਰਾਣਾ ਡਿਵਾਈਸ ਆਟੋਮੈਟਿਕ ਲੌਗਆਊਟ ਹੋ ਜਾਵੇਗਾ)
+    await db.ref("users/" + phone).update({
+      name: studentName,
+      activeDeviceId: newDeviceId
+    });
+
     localStorage.setItem("pp_session", phone);
     localStorage.setItem("pp_name", studentName);
+    localStorage.setItem("pp_device_id", newDeviceId);
+
     alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
     window.location.href = "index.html";
   } catch (error) {
@@ -374,7 +386,7 @@ async function handleLogin() {
   }
 }
 
-// --- 🌐 GOOGLE LOGIN ---
+// --- 🌐 GOOGLE LOGIN (Auto-Overwrite Device) ---
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider)
@@ -382,6 +394,7 @@ function loginWithGoogle() {
       const user = result.user;
       const name = user.displayName || "Student";
       const identifier = user.phoneNumber || user.email.split('@')[0];
+      const newDeviceId = generateDeviceId();
 
       db.ref("accounts/" + identifier).once("value", (snap) => {
         const isNewUser = !snap.exists();
@@ -393,9 +406,13 @@ function loginWithGoogle() {
           authType: "google",
           password: "GOOGLE_AUTH"
         }).then(() => {
-          db.ref("users/" + identifier).update({ name: name, phone: identifier });
+          // ⚡ ਨਵੇਂ ਡਿਵਾਈਸ ਦਾ Device ID ਅੱਪਡੇਟ ਕਰੋ
+          db.ref("users/" + identifier).update({ 
+            name: name, 
+            phone: identifier,
+            activeDeviceId: newDeviceId 
+          });
 
-          // 🔔 ਨਵੇਂ ਗੂਗਲ ਲੌਗਇਨ ਦਾ ਟੈਲੀਗ੍ਰਾਮ 'ਤੇ ਅਲਰਟ ਭੇਜੋ
           if (isNewUser) {
             fetch("/api/notify-login", {
               method: "POST",
@@ -411,6 +428,8 @@ function loginWithGoogle() {
 
           localStorage.setItem("pp_session", identifier);
           localStorage.setItem("pp_name", name);
+          localStorage.setItem("pp_device_id", newDeviceId);
+
           alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
           window.location.href = "index.html";
         });
@@ -454,7 +473,6 @@ function sendForgotWhatsApp() {
 
   window.open(waUrl, "_blank");
 }
-
 </script>
 </body>
 </html>

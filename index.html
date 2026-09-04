@@ -163,6 +163,50 @@
       </div>
     </a>
 
+    <!-- Card 5: PTET Paper 1 -->
+    <a href="tests.html?cat=ptet1" style="text-decoration: none; color: inherit;">
+      <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <span id="badge_count_ptet1" class="test-count-badge">⏳ Loading...</span>
+        <div style="font-size: 2rem; margin-bottom: 6px;">📚</div>
+        <div style="font-weight: 800; font-size: 0.95rem; color: #0ca678;">PTET Paper 1</div>
+        <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">Primary Teacher (1st-5th)</div>
+        <span style="display: inline-block; margin-top: 8px; font-size: 0.7rem; background: #ebfbee; color: #0ca678; padding: 2px 8px; border-radius: 12px; font-weight: 700;">ਸਾਰੇ ਮੌਕ ਟੈਸਟ ➡️</span>
+      </div>
+    </a>
+
+    <!-- Card 6: PTET Paper 2 -->
+    <a href="tests.html?cat=ptet2" style="text-decoration: none; color: inherit;">
+      <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <span id="badge_count_ptet2" class="test-count-badge">⏳ Loading...</span>
+        <div style="font-size: 2rem; margin-bottom: 6px;">📖</div>
+        <div style="font-weight: 800; font-size: 0.95rem; color: #f76707;">PTET Paper 2</div>
+        <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">Upper Primary (6th-8th)</div>
+        <span style="display: inline-block; margin-top: 8px; font-size: 0.7rem; background: #fff4e6; color: #d9480f; padding: 2px 8px; border-radius: 12px; font-weight: 700;">ਸਾਰੇ ਮੌਕ ਟੈਸਟ ➡️</span>
+      </div>
+    </a>
+
+    <!-- Card 7: Banking Exams -->
+    <a href="tests.html?cat=banking" style="text-decoration: none; color: inherit;">
+      <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <span id="badge_count_banking" class="test-count-badge">⏳ Loading...</span>
+        <div style="font-size: 2rem; margin-bottom: 6px;">🏦</div>
+        <div style="font-weight: 800; font-size: 0.95rem; color: #364fc7;">Banking Exams</div>
+        <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">IBPS, Clerk & PO</div>
+        <span style="display: inline-block; margin-top: 8px; font-size: 0.7rem; background: #edf2ff; color: #364fc7; padding: 2px 8px; border-radius: 12px; font-weight: 700;">ਸਾਰੇ ਮੌਕ ਟੈਸਟ ➡️</span>
+      </div>
+    </a>
+
+    <!-- Card 8: Current Affairs -->
+    <a href="tests.html?cat=current" style="text-decoration: none; color: inherit;">
+      <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <span id="badge_count_current" class="test-count-badge">⏳ Loading...</span>
+        <div style="font-size: 2rem; margin-bottom: 6px;">⚡</div>
+        <div style="font-weight: 800; font-size: 0.95rem; color: #c2255c;">Current Affairs</div>
+        <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">Daily & Monthly GK</div>
+        <span style="display: inline-block; margin-top: 8px; font-size: 0.7rem; background: #fff0f6; color: #c2255c; padding: 2px 8px; border-radius: 12px; font-weight: 700;">ਸਾਰੇ ਮੌਕ ਟੈਸਟ ➡️</span>
+      </div>
+    </a>
+
   </div>
 </section>
 
@@ -372,7 +416,7 @@
 
   // 3. ⚡ ਸੁਪਰ ਫਾਸਟ ਲਾਈਵ ਟੈਸਟ ਕਾਊਂਟਰ (Formatted with Commas e.g. 7,131)
   async function updateCategoryTestBadges() {
-    const cats = ['police', 'patwari', 'clerk', 'ssc'];
+    const cats = ['police', 'patwari', 'clerk', 'ssc', 'ptet1', 'ptet2', 'banking', 'current'];
 
     cats.forEach(async (cat) => {
       const badge = document.getElementById(`badge_count_${cat}`);

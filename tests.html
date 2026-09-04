@@ -322,6 +322,18 @@
     }
 
     if (categoryCouponData && categoryCouponData.code === codeInp && categoryCouponData.active) {
+      const limit = parseInt(categoryCouponData.limit) || 0;
+      const used = parseInt(categoryCouponData.usedCount) || 0;
+
+      // 🔍 ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਕੂਪਨ ਦੀ ਵਰਤੋਂ ਦੀ ਲਿਮਿਟ ਪੂਰੀ ਤਾਂ ਨਹੀਂ ਹੋ ਗਈ
+      if (limit > 0 && used >= limit) {
+        msgEl.innerHTML = `<span style="color:#e03131;">⚠️ ਇਹ ਕੂਪਨ ਆਪਣੀ ਵਰਤੋਂ ਦੀ ਲਿਮਿਟ ਪੂਰੀ ਕਰ ਚੁੱਕਾ ਹੈ (Expired)!</span>`;
+        appliedDiscount = 0;
+        appliedCouponCode = "";
+        updatePayButtonText();
+        return;
+      }
+
       const discountPct = parseInt(categoryCouponData.discount) || 0;
       appliedDiscount = Math.round((basePrice * discountPct) / 100);
       appliedCouponCode = codeInp;
@@ -365,11 +377,13 @@
         else if (selectedPlanType === 'year') durationMs = 365 * 24 * 60 * 60 * 1000;
 
         const expiryTime = now + durationMs;
+        const cleanPhone = String(u.phone).trim();
 
         // 🔍 ਸਹੀ ਫੋਨ ਨੰਬਰ ਅਤੇ ਮੌਜੂਦਾ ਕੈਟਾਗਰੀ (curCat) ਤੇ ਪਾਸ ਸੇਵ ਕਰੋ
-        db.ref(`users/${u.phone}/passes/${curCat}`).set(expiryTime).then(() => {
+        db.ref(`users/${cleanPhone}/passes/${curCat}`).set(expiryTime).then(() => {
           if (appliedCouponCode && categoryCouponData) {
-            const newUsed = (categoryCouponData.usedCount || 0) + 1;
+            const currentUsed = parseInt(categoryCouponData.usedCount) || 0;
+            const newUsed = currentUsed + 1;
             db.ref(`siteSettings/passPricing/${curCat}/coupon/usedCount`).set(newUsed);
           }
           alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫਲ ਹੋ ਗਈ ਹੈ ਅਤੇ ਤੁਹਾਡਾ ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");

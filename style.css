@@ -68,12 +68,12 @@ header {
   justify-content: space-between;
   align-items: center;
   min-height: 60px;
-  padding: 8px 16px;
-  gap: 10px;
+  padding: 8px 12px;
+  gap: 6px;
 }
 
 .logo {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: var(--primary);
   text-decoration: none;
@@ -84,26 +84,34 @@ header {
 nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px; /* ਕੰਪਿਊਟਰ ਸਕ੍ਰੀਨ ਲਈ ਬਟਨਾਂ ਵਿੱਚਕਾਰ ਫ਼ਾਸਲਾ ਘਟਾਇਆ ਗਿਆ ਹੈ */
 }
 
 nav a, nav button {
   text-decoration: none;
   color: var(--text);
-  font-size: 0.88rem;
+  font-size: 0.8rem; /* ਫੋਂਟ ਸਾਈਜ਼ ਸੰਖੇਪ ਕੀਤਾ ਗਿਆ ਹੈ */
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 5px 8px; /* ਪੈਡਿੰਗ ਘਟਾਈ ਗਈ ਹੈ */
   border-radius: 6px;
-  flex-shrink: 0;
+  flex-shrink: 1;
   background: transparent;
   border: none;
   cursor: pointer;
   transition: 0.2s;
+  white-space: nowrap;
 }
 
 nav a:hover, nav button:hover {
   color: var(--primary);
   background: rgba(232, 89, 12, 0.1);
+}
+
+/* ਯੂਜ਼ਰ ਦਾ ਨਾਮ ਬਹੁਤ ਲੰਬਾ ਹੋਣ 'ਤੇ ਓਵਰਫਲੋ ਰੋਕਣ ਲਈ */
+#accountBtn {
+  max-width: 125px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menu-toggle-btn {

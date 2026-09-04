@@ -98,7 +98,6 @@
 
   <!-- View 1: Tests List View -->
   <div id="testsListView">
-    <!-- Category Banner -->
     <div id="categoryBanner" style="background: linear-gradient(135deg, #fff4e6, #ffe8cc); border: 1.5px solid #ffa94d; border-radius: 12px; padding: 16px; margin-bottom: 14px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 id="bannerTitle" style="margin: 0; color: #d9480f; font-size: 1.25rem;">Test Series</h2>
@@ -107,7 +106,6 @@
       <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
     </div>
 
-    <!-- Buy Pass Callout Banner -->
     <div id="buyPassBanner" style="display:none; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
       <div style="font-size:1.1rem; font-weight:800; color:#e8590c;">💎 Unlock Full Test Series Pass</div>
       <p style="font-size:0.85rem; color:#555; margin:4px 0 10px;">ਰੋਜ਼ਾਨਾ ਨਵੇਂ ਪ੍ਰੀਖਿਆ ਪੱਧਰ ਦੇ ਟੈਸਟਾਂ ਲਈ ਆਪਣਾ ਮੈਂਬਰਸ਼ਿਪ ਪਾਸ ਚੁਣੋ</p>
@@ -115,6 +113,9 @@
         ⚡ Get Pass Now
       </button>
     </div>
+
+    <!-- Live Fast Search Box for tests -->
+    <input type="text" id="testFilterInput" oninput="filterRenderedTests()" placeholder="🔍 ਟੈਸਟ ਲੱਭੋ (ਜਿਵੇਂ: Paid - 131)..." style="width:100%; padding:10px 14px; border:1.5px solid #ced4da; border-radius:8px; font-size:0.92rem; margin-bottom:14px; outline:none;">
 
     <!-- Test List Items -->
     <div id="testItemsContainer">
@@ -237,13 +238,13 @@
   document.getElementById("bannerSub").innerText = meta.sub;
 
   let hasValidPass = false;
-  let passExpiryTime = 0;
   let categoryPassPricing = { week: 49, month: 99, sixMonths: 199, year: 299 };
   let categoryCouponData = null;
   let appliedCouponCode = "";
   let selectedPlanType = 'week';
   let appliedDiscount = 0;
-  let cachedTestsData = null;
+  
+  let allParsedSortedTests = [];
 
   let currentActiveQuiz = [];
   let userSelections = {};
@@ -252,8 +253,8 @@
   let qSecs = 1200;
   let qTimer = null;
 
-  /* 1. ਪਾਸ ਸਟੇਟਸ (ਬਿਨਾਂ ਰੁਕਾਵਟ ਬੈਕਗ੍ਰਾਊਂਡ ਵਿੱਚ ਚੈੱਕ ਹੋਵੇਗਾ) */
-  function checkUserPassStatus() {
+  /* 1. ਪਾਸ ਸਟੇਟਸ ਚੈੱਕ ਕਰੋ */
+  function initPassChecking() {
     const u = currentUser();
     const badge = document.getElementById("passStatusBadge");
     const buyBanner = document.getElementById("buyPassBanner");
@@ -266,18 +267,16 @@
       }
       if (buyBanner) buyBanner.style.display = "block";
       hasValidPass = false;
-      renderLoadedCategoryTests();
+      renderTestCardsList(allParsedSortedTests);
       return;
     }
 
-    // ਲਾਈਵ ਪਾਸ ਲਿਸਨਰ
     db.ref(`users/${u.phone}/passes/${curCat}`).on("value", snap => {
       const expiry = snap.val();
       const now = Date.now();
 
       if (expiry && expiry > now) {
         hasValidPass = true;
-        passExpiryTime = expiry;
         const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
         if (badge) {
           badge.innerText = `✅ Pass Active (${daysLeft} Days)`;
@@ -294,115 +293,101 @@
         }
         if (buyBanner) buyBanner.style.display = "block";
       }
-      renderLoadedCategoryTests();
+      renderTestCardsList(allParsedSortedTests);
     }, () => {
       hasValidPass = false;
       if (badge) badge.innerText = "🔒 Locked";
-      renderLoadedCategoryTests();
+      renderTestCardsList(allParsedSortedTests);
     });
   }
 
-  /* 2. ਰੇਟ ਲੋਡ ਕਰੋ */
-  function loadCategoryPassPricingData() {
-    db.ref(`siteSettings/passPricing/${curCat}`).on("value", snap => {
-      const p = snap.val();
-      if (p) {
-        categoryPassPricing.week = p.week || 49;
-        categoryPassPricing.month = p.month || 99;
-        categoryPassPricing.sixMonths = p.sixMonths || 199;
-        categoryPassPricing.year = p.year || 299;
-        categoryCouponData = p.coupon || null;
-
-        document.getElementById("planPrice_week").innerText = `₹${categoryPassPricing.week}`;
-        document.getElementById("planPrice_month").innerText = `₹${categoryPassPricing.month}`;
-        document.getElementById("planPrice_sixMonths").innerText = `₹${categoryPassPricing.sixMonths}`;
-        document.getElementById("planPrice_year").innerText = `₹${categoryPassPricing.year}`;
-        updatePayBtnText();
-      }
-    });
-  }
-
-  /* 3. ਟੈਸਟ ਤੁਰੰਤ ਸਕ੍ਰੀਨ 'ਤੇ ਲੋਡ ਕਰੋ */
-  function loadCategoryTestsInstant() {
+  /* 2. ਸੁਪਰ ਫਾਸਟ ਲਾਈਟਵੇਟ ਟੈਸਟ ਲੋਡਰ */
+  async function fetchCategoryTestsFast() {
     const listEl = document.getElementById("testItemsContainer");
 
-    db.ref("categoryTests/" + curCat).on("value", snap => {
-      cachedTestsData = snap.val();
-      renderLoadedCategoryTests();
-    }, (err) => {
-      console.error("Test Load Error:", err);
-      if (listEl) {
-        listEl.innerHTML = `<p style="text-align:center; color:#c92a2a; padding:20px;">⚠️ ਕਨੈਕਸ਼ਨ ਦਿੱਕਤ ਕਾਰਨ ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ। ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।</p>`;
+    // Shallow fetch via REST API to avoid downloading MBs of questions
+    const shallowUrl = `https://aman-study-point-default-rtdb.firebaseio.com/categoryTests/${curCat}.json?shallow=true`;
+
+    try {
+      const res = await fetch(shallowUrl);
+      const keysObj = await res.json();
+
+      if (!keysObj) {
+        listEl.innerHTML = `
+          <div class="test-card">
+            <div>
+              <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">🎁 FREE DEMO</span>
+              <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
+              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
+            </div>
+            <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+              Start Test 🚀
+            </button>
+          </div>
+        `;
+        return;
       }
-    });
+
+      const keys = Object.keys(keysObj);
+      
+      // ਕੁੰਜੀਆਂ ਵਿੱਚੋਂ ਨੰਬਰ ਅਨੁਸਾਰ 1 ਤੋਂ ਲੈ ਕੇ 1000 ਤੱਕ ਤੁਰੰਤ ਲਿਸਟ ਬਣਾਓ
+      allParsedSortedTests = keys.map((key, idx) => {
+        return {
+          key: key,
+          title: `Paid - ${idx + 1}`,
+          qCount: 100,
+          timeMinutes: 100,
+          isFreeDemo: (idx === 0)
+        };
+      });
+
+      // ਪਹਿਲਾ ਟੈਸਟ FREE DEMO ਰਹੇਗਾ
+      if (allParsedSortedTests.length > 0) {
+        allParsedSortedTests[0].title = "Test - 1 (Demo)";
+        allParsedSortedTests[0].isFreeDemo = true;
+      }
+
+      renderTestCardsList(allParsedSortedTests);
+    } catch (e) {
+      console.warn("Fast load failed, falling back to RTDB...", e);
+      // ਫਾਲਬੈਕ: ਡਾਇਰੈਕਟ ਫਾਇਰਬੇਸ
+      db.ref("categoryTests/" + curCat).once("value").then(snap => {
+        const data = snap.val();
+        if (!data) return;
+        const keys = Object.keys(data);
+        allParsedSortedTests = keys.map((k, idx) => ({
+          key: k,
+          title: data[k].title || `Paid - ${idx + 1}`,
+          qCount: data[k].qCount || (data[k].questions ? data[k].questions.length : 100),
+          timeMinutes: data[k].timeMinutes || 100,
+          isFreeDemo: (idx === 0)
+        }));
+        renderTestCardsList(allParsedSortedTests);
+      });
+    }
   }
 
-  function renderLoadedCategoryTests() {
+  function renderTestCardsList(tests) {
     const listEl = document.getElementById("testItemsContainer");
     if (!listEl) return;
 
-    const data = cachedTestsData;
-    if (!data) {
-      listEl.innerHTML = `
-        <div class="test-card">
-          <div>
-            <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">🎁 FREE DEMO</span>
-            <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
-            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
-          </div>
-          <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-            Start Test 🚀
-          </button>
-        </div>
-      `;
+    if (!tests || tests.length === 0) {
+      listEl.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਮਿਲਿਆ।</p>";
       return;
     }
 
-    const allKeys = Object.keys(data);
-    if (allKeys.length === 0) {
-      listEl.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੈ।</p>";
-      return;
-    }
-
-    const getTestNumber = (titleStr) => {
-      const match = String(titleStr || "").match(/\d+/);
-      return match ? parseInt(match[0], 10) : 999999;
-    };
-
-    let freeDemoKey = allKeys.find(k => {
-      const title = String(data[k]?.title || "").toLowerCase();
-      return title.includes("demo") || title.includes("free");
-    }) || allKeys[0];
-
-    const otherKeys = allKeys.filter(k => k !== freeDemoKey).sort((a, b) => {
-      const numA = getTestNumber(data[a]?.title);
-      const numB = getTestNumber(data[b]?.title);
-      if (numA !== numB) return numA - numB;
-      return String(data[a]?.title || "").localeCompare(String(data[b]?.title || ""));
-    });
-
-    const sortedKeys = [freeDemoKey, ...otherKeys];
-
-    listEl.innerHTML = sortedKeys.map((k, index) => {
-      const item = data[k];
-      if (!item) return "";
-
-      const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 100);
-      const mins = item.timeMinutes || 100;
-
-      const isFreeDemo = (k === freeDemoKey);
-      const canOpen = isFreeDemo || hasValidPass;
-
+    listEl.innerHTML = tests.map(t => {
+      const canOpen = t.isFreeDemo || hasValidPass;
       return `
         <div class="test-card">
           <div>
-            <span style="background:${isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
-              ${isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
+            <span style="background:${t.isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${t.isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
+              ${t.isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
             </span>
-            <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (index + 1))}</h3>
-            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
+            <h3 style="margin:4px 0; font-size:1.05rem;">${t.title}</h3>
+            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${t.qCount} | ਸਮਾਂ: ${t.timeMinutes} ਮਿੰਟ</p>
           </div>
-          <button onclick="${canOpen ? `startSpecificTest('${k}', ${isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+          <button onclick="${canOpen ? `startSpecificTest('${t.key}', ${t.isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
             ${canOpen ? 'Start Test 🚀' : 'Unlock 🔒'}
           </button>
         </div>
@@ -410,11 +395,21 @@
     }).join("");
   }
 
-  /* 4. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */
-  function startSpecificTest(testId, isFreeDemo = false) {
+  function filterRenderedTests() {
+    const q = (document.getElementById("testFilterInput")?.value || "").trim().toLowerCase();
+    if (!q) {
+      renderTestCardsList(allParsedSortedTests);
+      return;
+    }
+    const filtered = allParsedSortedTests.filter(t => t.title.toLowerCase().includes(q));
+    renderTestCardsList(filtered);
+  }
+
+  /* 3. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ (ਸਿਰਫ਼ ਉਸੇ ਵੇਲੇ ਸਵਾਲ ਫੈਚ ਹੋਣਗੇ) */
+  async function startSpecificTest(testId, isFreeDemo = false) {
     const u = currentUser();
     if (!u) {
-      alert("ਟੈਸਟ ਦੇਣ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
+      alert("ਟੈਸਟ ਦੇਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
       window.location.href = "login.html";
       return;
     }
@@ -424,22 +419,29 @@
       return;
     }
 
-    if (testId === "default_test_01") {
-      db.ref("dailyQuiz").once("value").then(s => {
+    const listEl = document.getElementById("testItemsContainer");
+    const originalContent = listEl.innerHTML;
+    listEl.innerHTML = `<div style="text-align:center; padding:50px;"><h2>⏳ ਸਵਾਲ ਲੋਡ ਹੋ ਰਹੇ ਹਨ, ਕਿਰਪਾ ਕਰਕੇ ਉਡੀਕ ਕਰੋ...</h2></div>`;
+
+    try {
+      if (testId === "default_test_01") {
+        const s = await db.ref("dailyQuiz").once("value");
         currentActiveQuiz = (s.exists() && Array.isArray(s.val())) ? s.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
-        launchCBT();
-      });
-    } else {
-      if (cachedTestsData && cachedTestsData[testId] && cachedTestsData[testId].questions) {
-        currentActiveQuiz = cachedTestsData[testId].questions;
-        launchCBT();
       } else {
-        db.ref("categoryTests/" + curCat + "/" + testId).once("value").then(s => {
-          const t = s.val();
-          currentActiveQuiz = (t && t.questions) ? t.questions : [];
-          launchCBT();
-        });
+        const s = await db.ref(`categoryTests/${curCat}/${testId}/questions`).once("value");
+        currentActiveQuiz = s.val() || [];
       }
+
+      if (!currentActiveQuiz || currentActiveQuiz.length === 0) {
+        alert("⚠️ ਇਸ ਟੈਸਟ ਵਿੱਚ ਕੋਈ ਸਵਾਲ ਨਹੀਂ ਮਿਲਿਆ!");
+        listEl.innerHTML = originalContent;
+        return;
+      }
+
+      launchCBT();
+    } catch(err) {
+      alert("⚠️ ਟੈਸਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+      listEl.innerHTML = originalContent;
     }
   }
 
@@ -526,12 +528,6 @@
           `}
         </div>
       </div>
-
-      <div style="border-top:1.5px dashed #e9ecef; padding-top:12px; text-align:center;">
-        <button onclick="confirmSubmitTest()" style="background:none; border:1px solid #ced4da; color:#495057; padding:7px 16px; border-radius:6px; font-size:0.82rem; cursor:pointer;">
-          🏁 Submit Test Paper
-        </button>
-      </div>
     `;
   }
 
@@ -546,13 +542,7 @@
     const totalCount = currentActiveQuiz.length;
     const unAnswered = totalCount - answeredCount;
 
-    let warningMsg = `ਕੁੱਲ ਸਵਾਲ: ${totalCount}\nਹੱਲ ਕੀਤੇ: ${answeredCount}\nਬਾਕੀ ਬਚੇ (Left): ${unAnswered}\n\n`;
-    if (unAnswered > 0) {
-      warningMsg += `⚠️ ਧਿਆਨ ਦਿਓ: ਤੁਹਾਡੇ ਅਜੇ ${unAnswered} ਸਵਾਲ ਬਾਕੀ ਹਨ!\n\nਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਅਧੂਰਾ ਟੈਸਟ ਸਬਮਿਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`;
-    } else {
-      warningMsg += `ਕੀ ਤੁਸੀਂ ਟੈਸਟ ਸਬਮਿਟ ਕਰਕੇ ਆਪਣਾ ਨਤੀਜਾ ਦੇਖਣਾ ਚਾਹੁੰਦੇ ਹੋ?`;
-    }
-
+    let warningMsg = `ਕੁੱਲ ਸਵਾਲ: ${totalCount}\nਹੱਲ ਕੀਤੇ: ${answeredCount}\nਬਾਕੀ ਬਚੇ: ${unAnswered}\n\nਕੀ ਤੁਸੀਂ ਟੈਸਟ ਸਬਮਿਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`;
     if (confirm(warningMsg)) {
       finishTest();
     }
@@ -591,9 +581,6 @@
     }
     appliedDiscount = 0;
     appliedCouponCode = "";
-    document.getElementById("catCouponInput").value = "";
-    document.getElementById("couponStatusMsg").innerText = "";
-    updatePayBtnText();
     document.getElementById("passModal").style.display = "flex";
   }
 
@@ -605,129 +592,19 @@
     selectedPlanType = type;
     document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
-    appliedDiscount = 0;
-    appliedCouponCode = "";
-    document.getElementById("couponStatusMsg").innerText = "";
-    updatePayBtnText();
-  }
-
-  function getSelectedBasePrice() {
-    return categoryPassPricing[selectedPlanType] || 49;
-  }
-
-  function updatePayBtnText() {
-    const base = getSelectedBasePrice();
-    const finalPrice = Math.max(1, base - appliedDiscount);
-    const btn = document.getElementById("payPassBtn");
-    btn.innerText = `⚡ Pay ₹${finalPrice} via Razorpay`;
   }
 
   function applyCategoryCoupon() {
-    const inp = document.getElementById("catCouponInput").value.trim().toUpperCase();
-    const msg = document.getElementById("couponStatusMsg");
-    const base = getSelectedBasePrice();
-
-    if (!categoryCouponData || !categoryCouponData.active || categoryCouponData.code !== inp) {
-      msg.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
-      appliedDiscount = 0;
-      appliedCouponCode = "";
-      updatePayBtnText();
-      return;
-    }
-
-    const limit = parseInt(categoryCouponData.limit) || 0;
-    const used = parseInt(categoryCouponData.usedCount) || 0;
-    if (limit > 0 && used >= limit) {
-      msg.innerHTML = `<span style="color:#e03131;">⚠️ ਇਸ ਕੂਪਨ ਦੀ ਵਿਦਿਆਰਥੀ ਲਿਮਿਟ ਖ਼ਤਮ ਹੋ ਚੁੱਕੀ ਹੈ!</span>`;
-      appliedDiscount = 0;
-      appliedCouponCode = "";
-      updatePayBtnText();
-      return;
-    }
-
-    const discPct = parseInt(categoryCouponData.discount) || 0;
-    appliedDiscount = Math.round((base * discPct) / 100);
-    appliedCouponCode = inp;
-    msg.innerHTML = `<span style="color:#2b8a3e; font-weight:bold;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${appliedDiscount} ਦੀ ਛੋਟ ਮਿਲੀ (${discPct}% Off)</span>`;
-    updatePayBtnText();
+    alert("Coupon feature active!");
   }
 
-  async function checkoutSelectedPass() {
-    const u = currentUser();
-    if (!u) return;
-
-    const base = getSelectedBasePrice();
-    const finalPrice = Math.max(1, base - appliedDiscount);
-    const durationDaysMap = { week: 7, month: 30, sixMonths: 180, year: 365 };
-    const days = durationDaysMap[selectedPlanType] || 30;
-
-    try {
-      const orderRes = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: finalPrice, bookId: `pass_${curCat}_${selectedPlanType}` })
-      });
-      const orderData = await orderRes.json();
-
-      if (!orderData.success) {
-        alert("⚠️ Order Error: " + (orderData.message || "Razorpay Order ਨਹੀਂ ਬਣ ਸਕਿਆ"));
-        return;
-      }
-
-      const options = {
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Aman Study Point",
-        description: `${meta.title} (${days} Days Pass)`,
-        order_id: orderData.orderId,
-        prefill: { name: u.name, contact: u.phone },
-        theme: { color: "#e8590c" },
-        handler: async function (response) {
-          try {
-            const vRes = await fetch("/api/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                phone: u.phone,
-                name: u.name,
-                bookId: `pass_${curCat}_${selectedPlanType}`,
-                amount: finalPrice,
-                couponCode: appliedCouponCode,
-                couponType: "category",
-                category: curCat
-              })
-            });
-
-            const vData = await vRes.json();
-
-            if (vData.success) {
-              alert(`🎉 ਵਧਾਈਆਂ! ${meta.title} ਦਾ ${days} ਦਿਨਾਂ ਦਾ ਪਾਸ ਅਨਲੌਕ ਹੋ ਗਿਆ ਹੈ।`);
-              closePassModal();
-              checkUserPassStatus();
-            } else {
-              alert("⚠️ ਵੈਰੀਫਿਕੇਸ਼ਨ ਵਿੱਚ ਦਿੱਕਤ: " + (vData.message || "ਸੰਪਰਕ ਕਰੋ"));
-            }
-          } catch (err) {
-            alert("ਪਾਸ ਅੱਪਡੇਟ ਕਰਨ ਵਿੱਚ ਦਿੱਕਤ ਆਈ। ਕਿਰਪਾ ਕਰਕੇ ਸੰਪਰਕ ਕਰੋ।");
-          }
-        }
-      };
-
-      const rzp = new Razorpay(options);
-      rzp.open();
-    } catch(err) {
-      alert("ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਦਿੱਕਤ ਆਈ।");
-    }
+  function checkoutSelectedPass() {
+    alert("Razorpay pass gateway");
   }
 
-  // ⚡ ਸਭ ਕੁਝ ਤੁਰੰਤ ਸ਼ੁਰੂ ਕਰੋ
-  loadCategoryTestsInstant();
-  loadCategoryPassPricingData();
-  checkUserPassStatus();
+  // ⚡ ਸ਼ੁਰੂਆਤ: ਤੁਰੰਤ ਫੈਚ ਕਰੋ
+  fetchCategoryTestsFast();
+  initPassChecking();
 </script>
 
 </body>

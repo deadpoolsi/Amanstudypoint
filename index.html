@@ -31,10 +31,13 @@
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 800;
-    padding: 3px 9px;
-    border-radius: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
     margin-bottom: 6px;
-    transition: all 0.2s;
+    background: linear-gradient(135deg, #fff3bf, #ffe8cc);
+    color: #d9480f;
+    border: 1px solid #ffa94d;
+    box-shadow: 0 2px 6px rgba(232,89,12,0.2);
   }
 </style>
   
@@ -98,7 +101,7 @@
   </div>
 </section>
 
-<!-- 🎯 Exam Categories (With Live Test Counts) -->
+<!-- 🎯 Exam Categories (With Highlighted Test Counts) -->
 <section class="container" style="margin-top: 24px; margin-bottom: 20px;">
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
     <div>
@@ -113,7 +116,7 @@
     <!-- Card 1: Punjab Police -->
     <a href="tests.html?cat=police" style="text-decoration: none; color: inherit;">
       <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-        <span id="badge_count_police" class="test-count-badge" style="background:#e7f5ff; color:#1971c2;">⏳ Checking...</span>
+        <span id="badge_count_police" class="test-count-badge">⏳ Loading...</span>
         <div style="font-size: 2rem; margin-bottom: 6px;">👮‍♂️</div>
         <div style="font-weight: 800; font-size: 0.95rem; color: #1c7ed6;">Punjab Police</div>
         <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">Constable & SI</div>
@@ -124,7 +127,7 @@
     <!-- Card 2: PSSSB Board All Exams -->
     <a href="tests.html?cat=patwari" style="text-decoration: none; color: inherit;">
       <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-        <span id="badge_count_patwari" class="test-count-badge" style="background:#ebfbee; color:#2b8a3e;">⏳ Checking...</span>
+        <span id="badge_count_patwari" class="test-count-badge">⏳ Loading...</span>
         <div style="font-size: 2rem; margin-bottom: 6px;">🌾</div>
         <div style="font-weight: 800; font-size: 0.95rem; color: #2b8a3e;">PSSSB Board</div>
         <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">All Exams (Patwari & Others)</div>
@@ -135,7 +138,7 @@
     <!-- Card 3: Agniveer GD -->
     <a href="tests.html?cat=clerk" style="text-decoration: none; color: inherit;">
       <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-        <span id="badge_count_clerk" class="test-count-badge" style="background:#fff0f6; color:#c2255c;">⏳ Checking...</span>
+        <span id="badge_count_clerk" class="test-count-badge">⏳ Loading...</span>
         <div style="font-size: 2rem; margin-bottom: 6px;">🎖️</div>
         <div style="font-weight: 800; font-size: 0.95rem; color: #d9480f;">Agniveer GD</div>
         <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">Army GD & Tradesman</div>
@@ -146,7 +149,7 @@
     <!-- Card 4: Central & SSC -->
     <a href="tests.html?cat=ssc" style="text-decoration: none; color: inherit;">
       <div style="background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-        <span id="badge_count_ssc" class="test-count-badge" style="background:#f3f0ff; color:#5f3dc4;">⏳ Checking...</span>
+        <span id="badge_count_ssc" class="test-count-badge">⏳ Loading...</span>
         <div style="font-size: 2rem; margin-bottom: 6px;">🏛️</div>
         <div style="font-weight: 800; font-size: 0.95rem; color: #5f3dc4;">SSC & Railway</div>
         <div style="font-size: 0.75rem; color: #868e96; margin-top: 2px;">GD, MTS & Group D</div>
@@ -341,7 +344,7 @@
 <script src="app.js"></script>
 
 <script>
-  // 1. ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਨੋਟਿਸ ਬਿਨਾਂ ਦੇਰੀ ਦੇ ਦਿਖਾਓ
+  // 1. ਪਹਿਲਾਂ ਤੋਂ ਸੇਵ ਨੋਟਿਸ ਬਿਨਾਂ 1 ਸਕਿੰਟ ਦੀ ਦੇਰੀ ਦੇ ਤੁਰੰਤ ਦਿਖਾਓ
   const bar = document.getElementById('topAnnouncement');
   const cachedNotice = localStorage.getItem('asp_announcement');
   if (cachedNotice && bar) {
@@ -361,7 +364,7 @@
     });
   }
 
-  // 3. ⚡ ਸੁਪਰ ਫਾਸਟ ਲਾਈਵ ਟੈਸਟ ਕਾਊਂਟਰ (REST API Shallow Fetch)
+  // 3. ⚡ ਸੁਪਰ ਫਾਸਟ ਲਾਈਵ ਟੈਸਟ ਕਾਊਂਟਰ (Formatted with Commas e.g. 7,131)
   async function updateCategoryTestBadges() {
     const cats = ['police', 'patwari', 'clerk', 'ssc'];
 
@@ -369,10 +372,10 @@
       const badge = document.getElementById(`badge_count_${cat}`);
       if (!badge) return;
 
-      // ਲੋਕਲ ਕੈਸ਼ਡ ਗਿਣਤੀ ਤੁਰੰਤ ਦਿਖਾਓ
       const cachedCount = localStorage.getItem(`asp_test_count_${cat}`);
       if (cachedCount) {
-        badge.innerText = `🎯 ${cachedCount}+ Tests`;
+        const formattedNum = Number(cachedCount).toLocaleString('en-IN');
+        badge.innerHTML = `🎯 <b>${formattedNum}+ Tests</b>`;
       }
 
       try {
@@ -381,13 +384,14 @@
         
         if (data && typeof data === 'object') {
           const count = Object.keys(data).length;
-          badge.innerText = `🎯 ${count}+ Tests`;
+          const formattedNum = count.toLocaleString('en-IN'); // 7,131 ਵਰਗਾ ਫਾਰਮੈਟ ਬਣਾਵੇਗਾ
+          badge.innerHTML = `🎯 <b>${formattedNum}+ Tests</b>`;
           localStorage.setItem(`asp_test_count_${cat}`, count);
         } else {
-          badge.innerText = `🎯 50+ Tests`;
+          badge.innerHTML = `🎯 <b>50+ Tests</b>`;
         }
       } catch (e) {
-        if (!cachedCount) badge.innerText = `🎯 50+ Tests`;
+        if (!cachedCount) badge.innerHTML = `🎯 <b>50+ Tests</b>`;
       }
     });
   }

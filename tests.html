@@ -7,7 +7,6 @@
   <link rel="icon" type="image/png" href="https://i.postimg.cc/1XhhHQGg/IMG-20260828-115727.png">
   <link rel="stylesheet" href="style.css?v=2">
   <style>
-    /* 🔒 ਪੂਰੀ ਸੁਰੱਖਿਆ: ਟੈਕਸਟ ਕਾਪੀ ਅਤੇ ਇੰਸਪੈਕਟ ਰੋਕ */
     body, html {
       -webkit-user-select: none;
       -moz-user-select: none;
@@ -140,7 +139,6 @@
     
     <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਆਪਣੀ ਮਿਆਦ ਚੁਣੋ ਅਤੇ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟ ਅਨਲੌਕ ਕਰੋ:</p>
 
-    <!-- Plan Options -->
     <div id="plansList">
       <div class="pass-plan-card active" onclick="selectPlan('week', this)">
         <div>
@@ -175,7 +173,6 @@
       </div>
     </div>
 
-    <!-- Promo Coupon Box -->
     <div style="background:#f8f9fa; border:1px dashed #ffa94d; border-radius:8px; padding:10px; margin:14px 0;">
       <div style="font-size:0.8rem; font-weight:700; color:#444; margin-bottom:6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਲਗਾਓ):</div>
       <div style="display:flex; gap:6px;">
@@ -198,7 +195,6 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-  // 🔒 ਸੁਰੱਖਿਆ: ਕਾਪੀ ਅਤੇ F12/Ctrl+U ਬਲਾਕ
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
     if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) {
@@ -247,6 +243,7 @@
   let appliedCouponCode = "";
   let selectedPlanType = 'week';
   let appliedDiscount = 0;
+  let cachedCategoryTestsData = null;
 
   let currentActiveQuiz = [];
   let userSelections = {};
@@ -256,7 +253,7 @@
   let qTimer = null;
 
   /* 1. ਪਾਸ ਵੈਰੀਫਿਕੇਸ਼ਨ ਚੈੱਕ ਕਰੋ */
-  async function checkUserPassStatus() {
+  function checkUserPassStatus() {
     const u = currentUser();
     const badge = document.getElementById("passStatusBadge");
     const buyBanner = document.getElementById("buyPassBanner");
@@ -267,12 +264,11 @@
       badge.style.color = "#d9480f";
       buyBanner.style.display = "block";
       hasValidPass = false;
-      loadCategoryTests();
+      renderCurrentCategoryTests();
       return;
     }
 
-    try {
-      const snap = await db.ref(`users/${u.phone}/passes/${curCat}`).once("value");
+    db.ref(`users/${u.phone}/passes/${curCat}`).on("value", snap => {
       const expiry = snap.val();
       const now = Date.now();
 
@@ -291,14 +287,14 @@
         badge.style.color = "#c92a2a";
         buyBanner.style.display = "block";
       }
-    } catch(e) {
+      renderCurrentCategoryTests();
+    }, () => {
       hasValidPass = false;
-    }
-
-    loadCategoryTests();
+      renderCurrentCategoryTests();
+    });
   }
 
-  /* 2. ਰੇਟ ਅਤੇ ਟੈਸਟ ਲੋਡ ਕਰੋ */
+  /* 2. ਰੇਟ ਲੋਡ ਕਰੋ */
   function loadCategoryPassPricingData() {
     db.ref(`siteSettings/passPricing/${curCat}`).on("value", snap => {
       const p = snap.val();
@@ -318,78 +314,95 @@
     });
   }
 
+  /* 3. ਟੈਸਟ ਲੋਡਿੰਗ ਅਤੇ ਰੈਂਡਰਿੰਗ (Instant View) */
   function loadCategoryTests() {
     const listEl = document.getElementById("testItemsContainer");
 
     db.ref("categoryTests/" + curCat).on("value", snap => {
-      const data = snap.val();
-      if (!data) {
-        listEl.innerHTML = `
-          <div class="test-card">
-            <div>
-              <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">FREE DEMO</span>
-              <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
-              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
-            </div>
-            <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-              Start Test 🚀
-            </button>
-          </div>
-        `;
-        return;
-      }
-
-      const allKeys = Object.keys(data);
-      const freeDemoKey = allKeys[0]; // ਸਭ ਤੋਂ ਪਹਿਲਾ ਟੈਸਟ ਹਮੇਸ਼ਾ Free Demo ਰਹੇਗਾ
-
-      // ਸਿਰਲੇਖ ਵਿੱਚੋਂ ਨੰਬਰ ਕੱਢਣ ਲਈ ਫੰਕਸ਼ਨ
-      const getTestNumber = (titleStr) => {
-        const match = (titleStr || "").match(/\d+/);
-        return match ? parseInt(match[0], 10) : 999999;
-      };
-
-      // ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ 1, 2, 3 ... 20 ਕ੍ਰਮ ਵਿੱਚ ਸੌਰਟ ਕਰੋ
-      const paidKeys = allKeys.slice(1).sort((a, b) => {
-        const numA = getTestNumber(data[a]?.title);
-        const numB = getTestNumber(data[b]?.title);
-        if (numA !== numB) {
-          return numA - numB;
-        }
-        return (data[a]?.title || "").localeCompare(data[b]?.title || "");
-      });
-
-      // Free Demo ਸਭ ਤੋਂ ਉੱਪਰ, ਬਾਕੀ ਸਾਰੇ ਪੇਡ ਟੈਸਟ ਲੜੀਵਾਰ ਹੇਠਾਂ
-      const sortedKeys = [freeDemoKey, ...paidKeys];
-
-      listEl.innerHTML = sortedKeys.map((k, index) => {
-        const item = data[k];
-        if (!item) return "";
-
-        const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 30);
-        const mins = item.timeMinutes || 20;
-
-        const isFreeDemo = (k === freeDemoKey);
-        const canOpen = isFreeDemo || hasValidPass;
-
-        return `
-          <div class="test-card">
-            <div>
-              <span style="background:${isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
-                ${isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
-              </span>
-              <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (index + 1))}</h3>
-              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
-            </div>
-            <button onclick="${canOpen ? `startSpecificTest('${k}', ${isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-              ${canOpen ? 'Start Test 🚀' : 'Unlock 🔒'}
-            </button>
-          </div>
-        `;
-      }).join("");
+      cachedCategoryTestsData = snap.val();
+      renderCurrentCategoryTests();
+    }, (err) => {
+      console.error("Test Load Error:", err);
+      if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#c92a2a; padding:20px;">⚠️ ਕਨੈਕਸ਼ਨ ਦਿੱਕਤ ਕਾਰਨ ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ। ਪੇਜ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।</p>`;
     });
   }
 
-  /* 3. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */
+  function renderCurrentCategoryTests() {
+    const listEl = document.getElementById("testItemsContainer");
+    if (!listEl) return;
+
+    const data = cachedCategoryTestsData;
+    if (!data) {
+      listEl.innerHTML = `
+        <div class="test-card">
+          <div>
+            <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">🎁 FREE DEMO</span>
+            <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
+            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
+          </div>
+          <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+            Start Test 🚀
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    const allKeys = Object.keys(data);
+    if (allKeys.length === 0) {
+      listEl.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੈ।</p>";
+      return;
+    }
+
+    const getTestNumber = (titleStr) => {
+      const match = String(titleStr || "").match(/\d+/);
+      return match ? parseInt(match[0], 10) : 999999;
+    };
+
+    // 1. FREE DEMO ਟੈਸਟ ਲੱਭੋ
+    let freeDemoKey = allKeys.find(k => {
+      const title = String(data[k]?.title || "").toLowerCase();
+      return title.includes("demo") || title.includes("free");
+    }) || allKeys[0];
+
+    // 2. ਬਾਕੀ ਟੈਸਟਾਂ ਨੂੰ ਲੜੀਵਾਰ 1, 2, 3... ਸੌਰਟ ਕਰੋ
+    const otherKeys = allKeys.filter(k => k !== freeDemoKey).sort((a, b) => {
+      const numA = getTestNumber(data[a]?.title);
+      const numB = getTestNumber(data[b]?.title);
+      if (numA !== numB) return numA - numB;
+      return String(data[a]?.title || "").localeCompare(String(data[b]?.title || ""));
+    });
+
+    const sortedKeys = [freeDemoKey, ...otherKeys];
+
+    listEl.innerHTML = sortedKeys.map((k, index) => {
+      const item = data[k];
+      if (!item) return "";
+
+      const qCount = Array.isArray(item.questions) ? item.questions.length : (item.qCount || 100);
+      const mins = item.timeMinutes || 100;
+
+      const isFreeDemo = (k === freeDemoKey);
+      const canOpen = isFreeDemo || hasValidPass;
+
+      return `
+        <div class="test-card">
+          <div>
+            <span style="background:${isFreeDemo ? '#ebfbee' : (canOpen ? '#e7f5ff' : '#fff3bf')}; color:${isFreeDemo ? '#2b8a3e' : (canOpen ? '#1971c2' : '#d9480f')}; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">
+              ${isFreeDemo ? '🎁 FREE DEMO' : (canOpen ? '✅ UNLOCKED' : '🔒 PASS REQUIRED')}
+            </span>
+            <h3 style="margin:4px 0; font-size:1.05rem;">${item.title || ('Mock Test ' + (index + 1))}</h3>
+            <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: ${qCount} | ਸਮਾਂ: ${mins} ਮਿੰਟ</p>
+          </div>
+          <button onclick="${canOpen ? `startSpecificTest('${k}', ${isFreeDemo})` : `openPassPurchaseModal()`}" class="btn btn-primary" style="background:${canOpen ? '#e8590c' : '#495057'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+            ${canOpen ? 'Start Test 🚀' : 'Unlock 🔒'}
+          </button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  /* 4. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */
   function startSpecificTest(testId, isFreeDemo = false) {
     const u = currentUser();
     if (!u) {
@@ -409,11 +422,16 @@
         launchCBT();
       });
     } else {
-      db.ref("categoryTests/" + curCat + "/" + testId).once("value").then(s => {
-        const t = s.val();
-        currentActiveQuiz = (t && t.questions) ? t.questions : [];
+      if (cachedCategoryTestsData && cachedCategoryTestsData[testId] && cachedCategoryTestsData[testId].questions) {
+        currentActiveQuiz = cachedCategoryTestsData[testId].questions;
         launchCBT();
-      });
+      } else {
+        db.ref("categoryTests/" + curCat + "/" + testId).once("value").then(s => {
+          const t = s.val();
+          currentActiveQuiz = (t && t.questions) ? t.questions : [];
+          launchCBT();
+        });
+      }
     }
   }
 
@@ -460,7 +478,6 @@
         </div>
       </div>
 
-      <!-- Question Palette -->
       <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:85px; overflow-y:auto;">
           ${currentActiveQuiz.map((_, i) => {
@@ -474,10 +491,8 @@
         </div>
       </div>
 
-      <!-- Question Text -->
       <div style="font-size:1.05rem; font-weight:700; margin-bottom:14px; line-height:1.4;">${cur.q}</div>
 
-      <!-- Options -->
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
         ${cur.options.map((opt, idx) => {
           const sel = userSelections[currentQIdx] === idx;
@@ -486,7 +501,6 @@
         }).join("")}
       </div>
 
-      <!-- Primary Action Buttons -->
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px;">
         <div style="display:flex; gap:6px;">
           <button onclick="prevQ()" ${currentQIdx === 0 ? 'disabled' : ''} style="padding:10px 14px; border:1px solid #ccc; background:#fff; border-radius:8px; cursor:pointer; font-weight:600;">⬅️ Prev</button>
@@ -505,7 +519,6 @@
         </div>
       </div>
 
-      <!-- Safe Separated Submit Link -->
       <div style="border-top:1.5px dashed #e9ecef; padding-top:12px; text-align:center;">
         <button onclick="confirmSubmitTest()" style="background:none; border:1px solid #ced4da; color:#495057; padding:7px 16px; border-radius:6px; font-size:0.82rem; cursor:pointer;">
           🏁 Submit Test Paper
@@ -520,7 +533,6 @@
   function prevQ() { if (currentQIdx > 0) { currentQIdx--; renderQuestion(); } }
   function jumpTo(idx) { currentQIdx = idx; renderQuestion(); }
 
-  /* ⚠️ ਦੋਹਰੀ ਪੁਸ਼ਟੀ ਨਾਲ ਸਬਮਿਟ ਕਰੋ */
   function confirmSubmitTest() {
     const answeredCount = Object.keys(userSelections).length;
     const totalCount = currentActiveQuiz.length;
@@ -562,7 +574,6 @@
     `;
   }
 
-  /* 4. Pass Modal & Razorpay Checkout */
   function openPassPurchaseModal() {
     const u = currentUser();
     if (!u) {
@@ -616,7 +627,6 @@
       return;
     }
 
-    // 🔒 Student Usage Limit Check
     const limit = parseInt(categoryCouponData.limit) || 0;
     const used = parseInt(categoryCouponData.usedCount) || 0;
     if (limit > 0 && used >= limit) {
@@ -640,8 +650,6 @@
 
     const base = getSelectedBasePrice();
     const finalPrice = Math.max(1, base - appliedDiscount);
-
-    // Plan Duration to Days
     const durationDaysMap = { week: 7, month: 30, sixMonths: 180, year: 365 };
     const days = durationDaysMap[selectedPlanType] || 30;
 
@@ -669,7 +677,6 @@
         theme: { color: "#e8590c" },
         handler: async function (response) {
           try {
-            // ਸਰਵਰ-ਸਾਈਡ ਵੈਰੀਫਿਕੇਸ਼ਨ ਕਾਲ (ਕੂਪਨ ਕੋਡ ਸਮੇਤ)
             const vRes = await fetch("/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -709,8 +716,10 @@
     }
   }
 
+  // ⚡ ਸਭ ਕੁਝ ਪੈਰਲਲ ਸ਼ੁਰੂ ਕਰੋ ਤਾਂ ਜੋ ਪੇਜ ਖੁੱਲ੍ਹਦੇ ਹੀ ਟੈਸਟ ਤੁਰੰਤ ਦਿਖਣ
   document.addEventListener("DOMContentLoaded", () => {
     loadCategoryPassPricingData();
+    loadCategoryTests();
     checkUserPassStatus();
   });
 </script>

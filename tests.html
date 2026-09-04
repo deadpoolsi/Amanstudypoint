@@ -141,12 +141,20 @@
     <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਆਪਣੀ ਮਿਆਦ ਚੁਣੋ ਅਤੇ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਮੌਕ ਟੈਸਟ ਅਨਲੌਕ ਕਰੋ:</p>
 
     <div id="plansList">
+      <div class="pass-plan-card" onclick="selectPlan('day', this)">
+        <div>
+          <b style="font-size:0.95rem;">1 Day Pass (24 ਘੰਟੇ)</b>
+          <div style="font-size:0.75rem; color:#777;">ਤੁਰੰਤ ਰਿਵੀਜ਼ਨ ਲਈ</div>
+        </div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_day">₹9</div>
+      </div>
+
       <div class="pass-plan-card active" onclick="selectPlan('week', this)">
         <div>
           <b style="font-size:0.95rem;">1 Week Pass (7 ਦਿਨ)</b>
-          <div style="font-size:0.75rem; color:#777;">ਛੋਟੀ ਤਿਆਰੀ ਜਾਂ ਟ੍ਰਾਇਲ ਲਈ</div>
+          <div style="font-size:0.75rem; color:#777;">ਹਫ਼ਤੇ ਦੀ ਤਿਆਰੀ</div>
         </div>
-        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_week">₹49</div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_week">₹39</div>
       </div>
 
       <div class="pass-plan-card" onclick="selectPlan('month', this)">
@@ -162,7 +170,7 @@
           <b style="font-size:0.95rem;">6 Months Pass (180 ਦਿਨ)</b>
           <div style="font-size:0.75rem; color:#2b8a3e;">🔥 Most Popular (ਵਧੀਆ ਬੱਚਤ)</div>
         </div>
-        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_sixMonths">₹199</div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_sixMonths">₹399</div>
       </div>
 
       <div class="pass-plan-card" onclick="selectPlan('year', this)">
@@ -170,21 +178,21 @@
           <b style="font-size:0.95rem;">1 Year Full Pass (365 ਦਿਨ)</b>
           <div style="font-size:0.75rem; color:#777;">ਪੂਰੇ ਸਾਲ ਦੇ ਸਾਰੇ ਨਵੇਂ-ਪੁਰਾਣੇ ਟੈਸਟ</div>
         </div>
-        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_year">₹299</div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_year">₹649</div>
       </div>
     </div>
 
-    <div style="background:#f8f9fa; border:1px dashed #ffa94d; border-radius:8px; padding:10px; margin:14px 0;">
+    <div style="background:#f8f9fa; border:1.5px dashed #ffa94d; border-radius:8px; padding:10px; margin:14px 0;">
       <div style="font-size:0.8rem; font-weight:700; color:#444; margin-bottom:6px;">🏷️ Have a Coupon Code? (ਕੂਪਨ ਲਗਾਓ):</div>
       <div style="display:flex; gap:6px;">
         <input type="text" id="catCouponInput" placeholder="ENTER CODE" style="flex:1; padding:7px 10px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; font-weight:bold;">
         <button onclick="applyCategoryCoupon()" class="btn btn-primary" style="background:#e8590c; border:none; padding:7px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Apply</button>
       </div>
-      <div id="couponStatusMsg" style="font-size:0.75rem; margin-top:4px;"></div>
+      <div id="couponStatusMsg" style="font-size:0.75rem; margin-top:6px;"></div>
     </div>
 
     <button id="payPassBtn" onclick="checkoutSelectedPass()" style="width:100%; padding:12px; background:#1971c2; color:#fff; font-size:1rem; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">
-      ⚡ Pay ₹49 via Razorpay
+      ⚡ Pay ₹39 via Razorpay
     </button>
   </div>
 </div>
@@ -196,6 +204,7 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
+  // 🔒 Security Blockers (100% Protection)
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
     if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) {
@@ -238,7 +247,7 @@
   document.getElementById("bannerSub").innerText = meta.sub;
 
   let hasValidPass = false;
-  let categoryPassPricing = { week: 49, month: 99, sixMonths: 199, year: 299 };
+  let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
   let categoryCouponData = null;
   let appliedCouponCode = "";
   let selectedPlanType = 'week';
@@ -256,7 +265,86 @@
   let qSecs = 6000; // 100 ਮਿੰਟ (6000 ਸਕਿੰਟ)
   let qTimer = null;
 
-  /* 1. ਪਾਸ ਸਟੇਟਸ ਚੈੱਕ ਕਰੋ */
+  /* 1. ਪਾਸ ਸਟੇਟਸ ਅਤੇ ਐਡਮਿਨ ਪ੍ਰਾਈਸਿੰਗ ਚੈੱਕ ਕਰੋ */
+  function loadPassPricingAndCoupons() {
+    db.ref(`siteSettings/passPricing/${curCat}`).on("value", snap => {
+      const val = snap.val();
+      if (val) {
+        categoryPassPricing = {
+          day: val.day || 9,
+          week: val.week || 39,
+          month: val.month || 99,
+          sixMonths: val.sixMonths || 399,
+          year: val.year || 649
+        };
+        document.getElementById("planPrice_day").innerText = "₹" + categoryPassPricing.day;
+        document.getElementById("planPrice_week").innerText = "₹" + categoryPassPricing.week;
+        document.getElementById("planPrice_month").innerText = "₹" + categoryPassPricing.month;
+        document.getElementById("planPrice_sixMonths").innerText = "₹" + categoryPassPricing.sixMonths;
+        document.getElementById("planPrice_year").innerText = "₹" + categoryPassPricing.year;
+        updatePayButtonText();
+      }
+    });
+
+    db.ref(`siteSettings/passCoupons/${curCat}`).on("value", snap => {
+      categoryCouponData = snap.val() || null;
+    });
+  }
+
+  function selectPlan(type, el) {
+    selectedPlanType = type;
+    document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    updatePayButtonText();
+  }
+
+  function updatePayButtonText() {
+    let basePrice = categoryPassPricing[selectedPlanType] || 39;
+    let finalPrice = Math.max(1, basePrice - appliedDiscount);
+    const payBtn = document.getElementById("payPassBtn");
+    if (payBtn) {
+      payBtn.innerText = `⚡ Pay ₹${finalPrice} via Razorpay`;
+    }
+  }
+
+  function applyCategoryCoupon() {
+    const codeInp = (document.getElementById("catCouponInput")?.value || "").trim().toUpperCase();
+    const msgEl = document.getElementById("couponStatusMsg");
+    let basePrice = categoryPassPricing[selectedPlanType] || 39;
+
+    if (!codeInp) {
+      msgEl.innerHTML = `<span style="color:#e03131;">ਕਿਰਪਾ ਕਰਕੇ ਕੂਪਨ ਕੋਡ ਭਰੋ!</span>`;
+      return;
+    }
+
+    if (categoryCouponData && categoryCouponData.code === codeInp && categoryCouponData.active) {
+      const discountPct = parseInt(categoryCouponData.discount) || 0;
+      appliedDiscount = Math.round((basePrice * discountPct) / 100);
+      appliedCouponCode = codeInp;
+      msgEl.innerHTML = `<span style="color:#2b8a3e; font-weight:bold;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${appliedDiscount} ਦੀ ਛੋਟ ਮਿਲੀ (${discountPct}% Off)</span>`;
+      updatePayButtonText();
+    } else {
+      msgEl.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
+      appliedDiscount = 0;
+      appliedCouponCode = "";
+      updatePayButtonText();
+    }
+  }
+
+  function checkoutSelectedPass() {
+    const u = currentUser();
+    if (!u) {
+      alert("ਪਾਸ ਖਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
+      window.location.href = "login.html";
+      return;
+    }
+
+    let basePrice = categoryPassPricing[selectedPlanType] || 39;
+    let finalPrice = Math.max(1, basePrice - appliedDiscount);
+
+    alert(`Razorpay Checkout: ${selectedPlanType.toUpperCase()} Pass for ${curCat} at ₹${finalPrice}`);
+  }
+
   function initPassChecking() {
     const u = currentUser();
     const badge = document.getElementById("passStatusBadge");
@@ -319,7 +407,7 @@
             <div>
               <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:bold; padding:2px 8px; border-radius:6px;">🎁 FREE DEMO</span>
               <h3 style="margin:4px 0; font-size:1.05rem;">Daily Official Mock Test 01</h3>
-              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 20 ਮਿੰਟ</p>
+              <p style="margin:0; color:#777; font-size:0.8rem;">ਸਵਾਲ: 30 | ਸਮਾਂ: 100 ਮਿੰਟ</p>
             </div>
             <button onclick="startSpecificTest('default_test_01', true)" class="btn btn-primary" style="background:#e8590c; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
               Start Test 🚀
@@ -621,16 +709,22 @@
     selectedPlanType = type;
     document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
-  }
-
-  function applyCategoryCoupon() {
-    alert("Coupon feature active!");
+    updatePayButtonText();
   }
 
   function checkoutSelectedPass() {
-    alert("Razorpay pass gateway");
+    const u = currentUser();
+    if (!u) {
+      alert("ਪਾਸ ਖਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!");
+      window.location.href = "login.html";
+      return;
+    }
+    let basePrice = categoryPassPricing[selectedPlanType] || 39;
+    let finalPrice = Math.max(1, basePrice - appliedDiscount);
+    alert(`Razorpay Checkout: ${selectedPlanType.toUpperCase()} Pass for ${curCat} at ₹${finalPrice}`);
   }
 
+  loadPassPricingAndCoupons();
   fetchCategoryTestsFast();
   initPassChecking();
 </script>

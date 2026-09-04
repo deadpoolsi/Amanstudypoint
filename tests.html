@@ -245,6 +245,8 @@
   let appliedDiscount = 0;
   
   let allParsedSortedTests = [];
+  let currentVisibleLimit = 40;
+  let activeFilteredList = [];
   let searchDebounceTimer = null;
 
   let currentActiveQuiz = [];
@@ -268,7 +270,7 @@
       }
       if (buyBanner) buyBanner.style.display = "block";
       hasValidPass = false;
-      renderTestCardsList(allParsedSortedTests);
+      renderTestCardsList(allParsedSortedTests, true);
       return;
     }
 
@@ -294,11 +296,11 @@
         }
         if (buyBanner) buyBanner.style.display = "block";
       }
-      renderTestCardsList(allParsedSortedTests);
+      renderTestCardsList(allParsedSortedTests, false);
     }, () => {
       hasValidPass = false;
       if (badge) badge.innerText = "🔒 Locked";
-      renderTestCardsList(allParsedSortedTests);
+      renderTestCardsList(allParsedSortedTests, false);
     });
   }
 
@@ -343,7 +345,7 @@
         allParsedSortedTests[0].isFreeDemo = true;
       }
 
-      renderTestCardsList(allParsedSortedTests);
+      renderTestCardsList(allParsedSortedTests, true);
     } catch (e) {
       console.warn("Fast load failed, falling back to RTDB...", e);
       db.ref("categoryTests/" + curCat).once("value").then(snap => {
@@ -357,23 +359,28 @@
           timeMinutes: data[k].timeMinutes || 100,
           isFreeDemo: (idx === 0)
         }));
-        renderTestCardsList(allParsedSortedTests);
+        renderTestCardsList(allParsedSortedTests, true);
       });
     }
   }
 
-  /* 3. ਆਪਟੀਮਾਈਜ਼ਡ ਰੈਂਡਰਿੰਗ (ਬਿਨਾਂ ਹੈਂਗ ਹੋਏ ਤੇਜ਼ੀ ਨਾਲ ਦਿਖਾਏਗਾ) */
-  function renderTestCardsList(tests) {
+  /* 3. ਆਪਟੀਮਾਈਜ਼ਡ ਰੈਂਡਰਿੰਗ (Load More + Pagination ਸਿਸਟਮ) */
+  function renderTestCardsList(tests, isNewSearch = false) {
     const listEl = document.getElementById("testItemsContainer");
     if (!listEl) return;
 
-    if (!tests || tests.length === 0) {
+    activeFilteredList = tests || [];
+
+    if (isNewSearch) {
+      currentVisibleLimit = 40;
+    }
+
+    if (activeFilteredList.length === 0) {
       listEl.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਮਿਲਿਆ।</p>";
       return;
     }
 
-    // ਬ੍ਰਾਊਜ਼ਰ ਨੂੰ ਫ੍ਰੀਜ਼ ਹੋਣ ਤੋਂ ਬਚਾਉਣ ਲਈ ਪਹਿਲੇ 35 ਟੈਸਟ ਦਿਖਾਓ
-    const displayList = tests.slice(0, 35);
+    const displayList = activeFilteredList.slice(0, currentVisibleLimit);
 
     const cardsHtml = displayList.map(t => {
       const canOpen = t.isFreeDemo || hasValidPass;
@@ -393,25 +400,38 @@
       `;
     }).join("");
 
-    const extraNotice = tests.length > 35 
-      ? `<p style="text-align:center; color:#888; font-size:0.82rem; margin:10px 0;">ਹੋਰ ਟੈਸਟ ਦੇਖਣ ਲਈ ਉੱਪਰ ਸਰਚ ਬਾਕਸ ਵਿੱਚ ਨੰਬਰ ਭਰੋ (ਜਿਵੇਂ: Paid - 140)...</p>` 
-      : "";
+    let loadMoreBtn = "";
+    if (currentVisibleLimit < activeFilteredList.length) {
+      const remaining = activeFilteredList.length - currentVisibleLimit;
+      loadMoreBtn = `
+        <div style="text-align:center; margin:16px 0 24px;">
+          <button onclick="loadMoreTestsClick()" class="btn btn-primary" style="background:#1971c2; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9rem;">
+            ➕ Load More Tests (ਬਾਕੀ: ${remaining})
+          </button>
+        </div>
+      `;
+    }
 
-    listEl.innerHTML = cardsHtml + extraNotice;
+    listEl.innerHTML = cardsHtml + loadMoreBtn;
   }
 
-  /* 4. ਡੀਬਾਊਂਸ ਸਰਚ (Debounced Search) */
+  function loadMoreTestsClick() {
+    currentVisibleLimit += 40;
+    renderTestCardsList(activeFilteredList, false);
+  }
+
+  /* 4. ਡੀਬਾਊਂਸ ਸਰਚ (ਸਾਰੇ 5,000 ਟੈਸਟਾਂ ਵਿੱਚੋਂ ਤੇਜ਼ੀ ਨਾਲ ਲੱਭੇਗਾ) */
   function filterRenderedTests() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
       const q = (document.getElementById("testFilterInput")?.value || "").trim().toLowerCase();
       if (!q) {
-        renderTestCardsList(allParsedSortedTests);
+        renderTestCardsList(allParsedSortedTests, true);
         return;
       }
       const filtered = allParsedSortedTests.filter(t => (t.title || "").toLowerCase().includes(q));
-      renderTestCardsList(filtered);
-    }, 250);
+      renderTestCardsList(filtered, true);
+    }, 200);
   }
 
   /* 5. ਟੈਸਟ ਸ਼ੁਰੂ ਕਰੋ */

@@ -103,7 +103,7 @@
         <h2 id="bannerTitle" style="margin: 0; color: #d9480f; font-size: 1.25rem;">Test Series</h2>
         <span id="passStatusBadge" style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;">Checking Pass...</span>
       </div>
-      <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ።</p>
+      <p id="bannerSub" style="margin: 6px 0 0 0; color: #666; font-size: 0.88rem;">ਸਾਰੇ ਉਪਲਬਧ ਮੌਕ ਟੈਸਟ ਹੱਲ ਕਰੋ ਅਤੇ ਆਪਣੀ ਰੈਂਕ ਚੈੱਕ ਕਰੋ।</p>
     </div>
 
     <div id="buyPassBanner" style="display:none; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
@@ -286,12 +286,11 @@
         document.getElementById("planPrice_month").innerText = "₹" + categoryPassPricing.month;
         document.getElementById("planPrice_sixMonths").innerText = "₹" + categoryPassPricing.sixMonths;
         document.getElementById("planPrice_year").innerText = "₹" + categoryPassPricing.year;
+        
+        // 🔍 ਸਹੀ ਪਾਥ ਤੋਂ ਕੂਪਨ ਡੇਟਾ ਲੋਡ ਕਰੋ
+        categoryCouponData = val.coupon || null;
         updatePayButtonText();
       }
-    });
-
-    db.ref(`siteSettings/passPricing/${curCat}/coupon`).once("value", snap => {
-      categoryCouponData = snap.val() || null;
     });
   }
 

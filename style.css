@@ -279,17 +279,17 @@ body.dark-mode .combo-card {
    6. BOOKS GRID (2-Columns on Mobile)
    ========================================== */
 .grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
   padding: 8px 0;
-  width: 100%;
+  width: 100% !important;
 }
 
 @media (min-width: 768px) {
   .grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 18px !important;
   }
 }
 
@@ -299,11 +299,13 @@ body.dark-mode .combo-card {
   border-radius: 14px;
   padding: 12px 8px;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 220px;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 230px !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .pill {
@@ -341,15 +343,15 @@ body.dark-mode .combo-card {
   margin-bottom: 8px;
 }
 
-.book-bottom, .book-card .book-footer {
+.book-bottom, .book-card .book-footer, .book-card > div:last-child {
   margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
   border-top: 1px dashed var(--line);
   padding-top: 8px;
-  width: 100%;
+  width: 100% !important;
 }
 
 .price, .price-tag, .book-card .book-price {
@@ -365,12 +367,13 @@ body.dark-mode .combo-card {
 }
 
 .book-card .btn, .book-card button, .book-card a.btn {
-  width: 100%;
-  padding: 7px 4px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  width: 100% !important;
+  padding: 8px 4px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
   border-radius: 6px;
   text-align: center;
+  box-sizing: border-box !important;
 }
 
 /* ==========================================
@@ -560,91 +563,9 @@ footer {
   opacity: 1;
 }
 
-/* 📱 Perfect 2-Column Mobile Grid */
-.grid, .books-grid, #booksList, #booksGrid, .books-container, #allBooksList {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 10px !important;
-  width: 100% !important;
-}
-
-.book-card, .card {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  padding: 12px 8px !important;
-  min-height: 230px !important;
-}
-
-/* 🔘 ਬਟਨ ਇੱਕ-ਦੂਜੇ ਦੇ ਉੱਪਰ-ਹੇਠਾਂ ਰੱਖੋ ਤਾਂ ਜੋ ਭਿੜਨ ਨਾ */
-.book-bottom, .book-card .book-footer {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 6px !important;
-  width: 100% !important;
-  margin-top: auto !important;
-  border-top: 1px dashed #eee !important;
-  padding-top: 8px !important;
-}
-
-.book-card .btn-group, .book-card > div:last-child {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  width: 100% !important;
-}
-
-.book-card .btn, .book-card a.btn, .book-card button {
-  width: 100% !important;
-  padding: 6px 2px !important;
-  font-size: 0.78rem !important;
-}
-
-/* 📚 ਕਾਰਡ ਦਾ ਸਾਈਜ਼ ਅਤੇ ਲੇਆਉਟ */
-.book-card, .card {
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 12px 8px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  border-radius: 12px !important;
-  box-sizing: border-box !important;
-}
-
-/* 🔘 ਬਟਨ ਅਤੇ ਕੀਮਤ ਨੂੰ ਠੀਕ ਕਰਨਾ */
-.book-card .book-bottom, 
-.book-card .book-footer,
-.book-card > div:last-child {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 6px !important;
-  width: 100% !important;
-  margin-top: auto !important;
-}
-
-.book-card .btn, 
-.book-card a.btn, 
-.book-card button {
-  width: 100% !important;
-  padding: 8px 4px !important;
-  font-size: 0.82rem !important;
-  font-weight: 700 !important;
-  text-align: center !important;
-  box-sizing: border-box !important;
-}
-
-/* 💻 ਵੱਡੀ ਸਕ੍ਰੀਨ (ਕੰਪਿਊਟਰ / ਲੈਪਟਾਪ) ਲਈ */
-@media (min-width: 768px) {
-  #books, #booksList, #booksGrid, .grid, .books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-    gap: 16px !important;
-  }
-}
-
-/* 📊 Compact & Clean Analytics Stat Boxes */
+/* ==========================================
+   10. ANALYTICS & PYQ COMPACT OVERRIDES
+   ========================================== */
 #userAnalyticsBox .card {
   padding: 16px 12px !important;
   min-height: auto !important;
@@ -674,13 +595,6 @@ footer {
   text-align: center !important;
 }
 
-#userAnalyticsBox .card:has(h4),
-#userAnalyticsBox > div:last-child {
-  padding: 14px 16px !important;
-  min-height: auto !important;
-}
-
-/* 📑 Compact PYQ Card */
 #pyqListContainer .card,
 #pyqList .card,
 #pyq .card {

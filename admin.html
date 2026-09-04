@@ -6,6 +6,15 @@
 <title>Admin Panel — Aman Study Point</title>
 <link rel="stylesheet" href="style.css">
 <style>
+  /* 🔒 100% Security Enabled */
+  body, html {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  @media print { body { display: none !important; } }
+
   * { box-sizing: border-box; }
   body {
     background: #f4f5f7;
@@ -572,7 +581,7 @@ async function handleAdminLogin() {
 
   err.style.display = "none";
   if (!email || !pass) { err.textContent = "⚠️ ਈਮੇਲ ਅਤੇ ਪਾਸਵਰਡ ਭਰੋ!"; err.style.display = "block"; return; }
-  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) { err.textContent = "⛔ ਇਹ Admin Email ਨਹੀਂ ਹੈ।"; err.style.display = "block"; return; }
+  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) { err.textContent = "⛔ ਇਹ Admin Email ਨਹੀਂ ਹੈ።"; err.style.display = "block"; return; }
 
   try {
     await auth.signInWithEmailAndPassword(email, pass);
@@ -608,7 +617,7 @@ function loadAllAdminModules() {
   loadFirebaseData();
 }
 
-/* 💎 Exam Pass Pricing & Coupon Handlers (With 1 Day Pass & Student Limit) */
+/* 💎 Exam Pass Pricing & Coupon Handlers */
 function loadCategoryPassPricing() {
   const cat = document.getElementById("pricingCatSelect").value;
   db.ref(`siteSettings/passPricing/${cat}`).once("value", snap => {
@@ -666,12 +675,13 @@ function saveCategoryPassPricing() {
       usedCount: cachedCatCouponUsed
     }
   }).then(() => {
-    alert(`✅ ${cat.toUpperCase()} Pass Pricing and Coupon Saved!`);
-    loadCategoryPassPricing();
+    alert(`✅ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!`);
+  }).catch((err) => {
+    alert("⚠️ ਸੇਵ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + err.message);
   });
 }
 
-/* 🏷️ Books Coupon Handler (With Student Limit) */
+/* 🏷️ Books Coupon Handler */
 function loadBooksCouponConfig() {
   db.ref("siteSettings/coupon").once("value", snap => {
     const c = snap.val() || { code: "", discount: 0, active: false, limit: 0, usedCount: 0 };
@@ -787,12 +797,11 @@ function handleFileSelect(event) {
   reader.readAsText(file);
 }
 
-/* ⚡ 1-Click Multi-Test JSON Uploader (Batch Uploading for 1,000+ Tests) */
+/* ⚡ 1-Click Multi-Test JSON Uploader */
 async function uploadBulkJsonTests() {
   const cat = document.getElementById("bulkCatSelect").value;
   let testsArray = loadedFileJsonData;
 
-  // ਜੇਕਰ ਫਾਈਲ ਨਹੀਂ ਚੁਣੀ ਤਾਂ ਟੈਕਸਟ ਏਰੀਆ ਵਿੱਚੋਂ ਪੜ੍ਹੋ
   if (!testsArray) {
     const rawJson = document.getElementById("bulkJsonInput").value.trim();
     if (!rawJson) return alert("⚠️ ਪਹਿਲਾਂ ਕੋਈ .json ਫਾਈਲ ਸਿਲੈਕਟ ਕਰੋ ਜਾਂ JSON ਡਾਟਾ ਪੇਸਟ ਕਰੋ!");
@@ -815,7 +824,7 @@ async function uploadBulkJsonTests() {
 
   const now = Date.now();
   const todayStr = new Date().toLocaleDateString('pa-IN');
-  const BATCH_SIZE = 50; // ਹਰ ਬੈਚ ਵਿੱਚ 50 ਟੈਸਟ ਤਾਂ ਜੋ ਬ੍ਰਾਊਜ਼ਰ ਹੈਂਗ ਨਾ ਹੋਵੇ
+  const BATCH_SIZE = 50;
 
   try {
     for (let i = 0; i < testsArray.length; i += BATCH_SIZE) {

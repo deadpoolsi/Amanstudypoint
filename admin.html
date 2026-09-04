@@ -150,16 +150,16 @@
     <button class="tab-btn" onclick="switchAdminTab('tab_settings', this)">⚙️ Settings & PYQ</button>
   </div>
 
-  <!-- TAB 1: 🎯 MOCK TESTS (Daily + Exam Series + Bulk JSON) -->
+  <!-- TAB 1: 🎯 MOCK TESTS (Daily + Exam Series + Bulk JSON File Uploader) -->
   <div id="tab_tests" class="tab-content-panel active">
     
-    <!-- 📦 NEW: Bulk Multi-Test JSON Uploader (10-50 Tests at Once) -->
+    <!-- 📦 Bulk Multi-Test JSON File Uploader -->
     <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#1971c2; margin:0;">📦 Bulk Multi-Test Uploader (JSON)</h3>
-        <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:12px;">Fastest Mode ⚡</span>
+        <h3 style="color:#1971c2; margin:0;">📦 Bulk Multi-Test Uploader (JSON File / Direct)</h3>
+        <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:12px;">Fastest ⚡</span>
       </div>
-      <p style="font-size:0.85rem; color:#666; margin:6px 0 12px;">ਇੱਕੋ ਵਾਰ ਵਿੱਚ 10, 20 ਜਾਂ 50 ਟੈਸਟ ਇਕੱਠੇ ਅੱਪਲੋਡ ਕਰੋ (AI ਤੋਂ ਤਿਆਰ ਕਰਵਾ ਕੇ):</p>
+      <p style="font-size:0.85rem; color:#666; margin:6px 0 12px;">ਸਿੱਧੀ .json ਫਾਈਲ ਸਿਲੈਕਟ ਕਰੋ ਜਾਂ ਹੇਠਾਂ ਕੋਡ ਪੇਸਟ ਕਰਕੇ ਸੈਂਕੜੇ ਟੈਸਟ ਇਕੱਠੇ ਅੱਪਲੋਡ ਕਰੋ:</p>
       
       <div style="margin-bottom:10px;">
         <label style="font-size:0.8rem; font-weight:bold;">ਕੈਟਾਗਰੀ ਚੁਣੋ:</label>
@@ -171,17 +171,20 @@
         </select>
       </div>
 
-      <textarea id="bulkJsonInput" class="bulk-textarea" style="height:120px; border-color:#a5d8ff;" placeholder='[
-  {
-    "title": "Paid - 8",
-    "timeMinutes": 100,
-    "questions": [
-      { "q": "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", "options": ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], "answer": 1 }
-    ]
-  }
-]'></textarea>
+      <!-- 📁 File Selector -->
+      <div style="background:#fff; border:1.5px dashed #1971c2; padding:12px; border-radius:8px; margin-bottom:10px; text-align:center;">
+        <label style="font-weight:700; color:#1971c2; display:block; margin-bottom:6px; font-size:0.88rem;">
+          📁 ਕੰਪਿਊਟਰ ਜਾਂ ਫੋਨ ਵਿੱਚੋਂ .json ਫਾਈਲ ਚੁਣੋ:
+        </label>
+        <input type="file" id="jsonFileInput" accept=".json" onchange="handleFileSelect(event)" style="font-size:0.85rem;">
+        <div id="fileStatusInfo" style="font-size:0.78rem; color:#2b8a3e; font-weight:bold; margin-top:5px;"></div>
+      </div>
 
-      <button class="btn btn-primary" onclick="uploadBulkJsonTests()" style="margin-top:8px; width:100%; padding:11px; background:#1971c2; font-weight:bold;">
+      <div style="text-align:center; font-size:0.75rem; color:#888; margin-bottom:6px;">— ਜਾਂ ਹੇਠਾਂ JSON ਕੋਡ ਪੇਸਟ ਕਰੋ —</div>
+
+      <textarea id="bulkJsonInput" class="bulk-textarea" style="height:90px; border-color:#a5d8ff;" placeholder='ਜੇਕਰ ਫਾਈਲ ਨਹੀਂ ਚੁਣੀ ਤਾਂ JSON ਇੱਥੇ ਪੇਸਟ ਕਰੋ...'></textarea>
+
+      <button id="bulkUploadBtn" class="btn btn-primary" onclick="uploadBulkJsonTests()" style="margin-top:8px; width:100%; padding:11px; background:#1971c2; font-weight:bold;">
         ⚡ Upload All Tests Together (1-Click)
       </button>
     </div>
@@ -508,6 +511,7 @@ let currentResultsData = [];
 let cachedCatCouponUsed = 0;
 let cachedBookCouponUsed = 0;
 let currentCategoryTestsRaw = [];
+let loadedFileJsonData = null;
 
 function isAdminUser(user) {
   return !!(user && user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase());
@@ -729,50 +733,97 @@ function publishCategoryTest() {
   }
 }
 
-/* ⚡ 1-Click Multi-Test JSON Uploader */
+/* 📁 File Selector Handler */
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  const info = document.getElementById("fileStatusInfo");
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        loadedFileJsonData = parsed;
+        info.innerText = `✅ ਫਾਈਲ ਸਿਲੈਕਟ ਹੋ ਗਈ: ${file.name} (ਕੁੱਲ ${parsed.length} ਟੈਸਟ ਮਿਲੇ)`;
+        document.getElementById("bulkJsonInput").value = `[ ${parsed.length} Tests Loaded from ${file.name} ]`;
+      } else {
+        alert("⚠️ ਇਸ ਫਾਈਲ ਵਿੱਚ ਟੈਸਟਾਂ ਦੀ ਲਿਸਟ (Array) ਸਹੀ ਨਹੀਂ ਹੈ!");
+        info.innerText = "";
+      }
+    } catch (err) {
+      alert("⚠️ JSON ਫਾਈਲ ਪੜ੍ਹਨ ਵਿੱਚ ਗਲਤੀ: " + err.message);
+      info.innerText = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ⚡ 1-Click Multi-Test JSON Uploader (Batch Uploading for 1,000+ Tests) */
 async function uploadBulkJsonTests() {
   const cat = document.getElementById("bulkCatSelect").value;
-  const rawJson = document.getElementById("bulkJsonInput").value.trim();
+  let testsArray = loadedFileJsonData;
 
-  if (!rawJson) return alert("⚠️ ਪਹਿਲਾਂ JSON ਡਾਟਾ ਪੇਸਟ ਕਰੋ!");
-
-  let testsArray = [];
-  try {
-    testsArray = JSON.parse(rawJson);
-    if (!Array.isArray(testsArray) || testsArray.length === 0) {
-      return alert("⚠️ JSON ਇੱਕ ਲਿਸਟ (Array [ ... ]) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!");
+  // ਜੇਕਰ ਫਾਈਲ ਨਹੀਂ ਚੁਣੀ ਤਾਂ ਟੈਕਸਟ ਏਰੀਆ ਵਿੱਚੋਂ ਪੜ੍ਹੋ
+  if (!testsArray) {
+    const rawJson = document.getElementById("bulkJsonInput").value.trim();
+    if (!rawJson) return alert("⚠️ ਪਹਿਲਾਂ ਕੋਈ .json ਫਾਈਲ ਸਿਲੈਕਟ ਕਰੋ ਜਾਂ JSON ਡਾਟਾ ਪੇਸਟ ਕਰੋ!");
+    try {
+      testsArray = JSON.parse(rawJson);
+    } catch (e) {
+      return alert("⚠️ JSON ਫਾਰਮੈਟ ਵਿੱਚ ਸਿੰਟੈਕਸ ਗਲਤੀ ਹੈ!");
     }
-  } catch (e) {
-    return alert("⚠️ JSON ਫਾਰਮੈਟ ਵਿੱਚ ਗਲਤੀ ਹੈ! ਚੈੱਕ ਕਰੋ ਕਿ ਸਾਰੇ ਬਰੈਕਟ { } ਅਤੇ [ ] ਸਹੀ ਬੰਦ ਹਨ।");
   }
 
-  if (!confirm(`ਕੀ ਤੁਸੀਂ ${testsArray.length} ਟੈਸਟ ਇਕੱਠੇ ${cat.toUpperCase()} ਵਿੱਚ ਅੱਪਲੋਡ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) return;
+  if (!Array.isArray(testsArray) || testsArray.length === 0) {
+    return alert("⚠️ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਮਿਲਿਆ!");
+  }
+
+  if (!confirm(`ਕੀ ਤੁਸੀਂ "${cat.toUpperCase()}" ਕੈਟਾਗਰੀ ਵਿੱਚ ਸਾਰੇ ${testsArray.length} ਟੈਸਟ ਇਕੱਠੇ ਅੱਪਲੋਡ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) return;
+
+  const btn = document.getElementById("bulkUploadBtn");
+  btn.disabled = true;
+  btn.innerText = `⏳ 0 / ${testsArray.length} ਅੱਪਲੋਡ ਹੋ ਰਹੇ ਹਨ...`;
 
   const now = Date.now();
   const todayStr = new Date().toLocaleDateString('pa-IN');
-  const updates = {};
-
-  testsArray.forEach((t, idx) => {
-    const testKey = "test_" + (now + idx * 10);
-    const qs = Array.isArray(t.questions) ? t.questions : [];
-    updates[`categoryTests/${cat}/${testKey}`] = {
-      title: t.title || `Mock Test ${idx + 1}`,
-      timeMinutes: parseInt(t.timeMinutes) || 100,
-      qCount: qs.length,
-      createdAt: todayStr,
-      questions: qs
-    };
-  });
+  const BATCH_SIZE = 50; // ਹਰ ਬੈਚ ਵਿੱਚ 50 ਟੈਸਟ ਤਾਂ ਜੋ ਬ੍ਰਾਊਜ਼ਰ ਹੈਂਗ ਨਾ ਹੋਵੇ
 
   try {
-    await db.ref().update(updates);
-    alert(`🎉 ਸ਼ਾਨਦਾਰ! ਸਾਰੇ ${testsArray.length} ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਲਾਈਵ ਹੋ ਗਏ ਹਨ!`);
+    for (let i = 0; i < testsArray.length; i += BATCH_SIZE) {
+      const chunk = testsArray.slice(i, i + BATCH_SIZE);
+      const updates = {};
+
+      chunk.forEach((t, idx) => {
+        const globalIdx = i + idx;
+        const testKey = "test_" + (now + globalIdx * 10);
+        const qs = Array.isArray(t.questions) ? t.questions : [];
+        updates[`categoryTests/${cat}/${testKey}`] = {
+          title: t.title || `Mock Test ${globalIdx + 1}`,
+          timeMinutes: parseInt(t.timeMinutes) || 100,
+          qCount: qs.length,
+          createdAt: todayStr,
+          questions: qs
+        };
+      });
+
+      await db.ref().update(updates);
+      btn.innerText = `⏳ ${Math.min(i + BATCH_SIZE, testsArray.length)} / ${testsArray.length} ਅੱਪਲੋਡ ਹੋ ਗਏ...`;
+    }
+
+    alert(`🎉 ਮੁਬਾਰਕਾਂ! ਸਾਰੇ ${testsArray.length} ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਲਾਈਵ ਹੋ ਗਏ ਹਨ!`);
+    loadedFileJsonData = null;
+    document.getElementById("jsonFileInput").value = "";
+    document.getElementById("fileStatusInfo").innerText = "";
     document.getElementById("bulkJsonInput").value = "";
     document.getElementById("catTestSelect").value = cat;
     loadCategoryTestsAdmin();
   } catch (err) {
     console.error("Bulk Upload Error:", err);
     alert("⚠️ ਅੱਪਲੋਡ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "⚡ Upload All Tests Together (1-Click)";
   }
 }
 

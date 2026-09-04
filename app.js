@@ -11,7 +11,7 @@ const firebaseConfig = {
   measurementId: "G-2V2R173QC3"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const INSTITUTE = {
@@ -39,7 +39,12 @@ let currentAppliedCoupon = null;
 
 const session = () => localStorage.getItem("pp_session");
 const setSession = (p) => localStorage.setItem("pp_session", p);
-const clearSession = () => localStorage.removeItem("pp_session");
+const clearSession = () => {
+  localStorage.removeItem("pp_session");
+  localStorage.removeItem("pp_name");
+  localStorage.removeItem("pp_device_id");
+  localStorage.removeItem("asp_device_id");
+};
 const currentUser = () => {
   const p = session();
   return p ? { phone: p, name: localStorage.getItem("pp_name") || "Student" } : null;
@@ -72,9 +77,8 @@ async function logout() {
     console.warn("Firebase sign-out warning:", e);
   }
   clearSession();
-  localStorage.removeItem("pp_name");
   toast("Logged out ✓");
-  setTimeout(() => location.href = "index.html", 600);
+  setTimeout(() => location.href = "login.html", 400);
 }
 
 /* 1. Theme */
@@ -263,7 +267,7 @@ function drawBooks() {
   }
 }
 
-/* 4. Checkout Modal with Coupon Discount (With Usage Limit) & Razorpay Gateway */
+/* 4. Checkout Modal with Coupon Discount & Razorpay Gateway */
 const RAZORPAY_KEY_ID = "rzp_live_TWdKzxxstllGLQ";
 function openBuy(id) {
   const u = currentUser();
@@ -321,7 +325,6 @@ function applyCoupon(originalPrice, id, name) {
     return;
   }
 
-  // 🔒 Student Usage Limit Check
   const limit = parseInt(activeCoupon.limit) || 0;
   const used = parseInt(activeCoupon.usedCount) || 0;
   if (limit > 0 && used >= limit) {
@@ -380,9 +383,7 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
         name: u.name || "Student",
         contact: u.phone || ""
       },
-      theme: {
-        color: "#e8590c"
-      },
+      theme: { color: "#e8590c" },
       handler: async function (response) {
         try {
           const verifyRes = await fetch("/api/verify-payment", {
@@ -411,21 +412,13 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
         } catch (err) {
           alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ।");
         }
-      },
-      modal: {
-        ondismiss: function () {
-          console.log("Payment popup closed");
-        }
       }
     };
 
     const rzp = new Razorpay(options);
-    rzp.on("payment.failed", function (resp) {
-      alert("⚠️ Payment Failed: " + (resp.error.description || "ਟ੍ਰਾਂਜੈਕਸ਼ਨ ਰੱਦ ਹੋ ਗਈ"));
-    });
     rzp.open();
   } catch (err) {
-    alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ।");
   }
 }
 
@@ -451,7 +444,7 @@ function loadPublicPYQs() {
       const p = data[key];
       const views = (p.views || 0).toLocaleString();
       return `
-        <div style="background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; margin:0 auto 10px auto; max-width:550px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:block; height:auto; min-height:auto;">
+        <div style="background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; margin:0 auto 10px auto; max-width:550px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:8px;">${p.exam || 'Exam'}</span>
             <span style="font-size:0.8rem; color:#e8590c; font-weight:700;">👁️ ${views}+ Views</span>
@@ -477,18 +470,13 @@ function openSecurePYQ(key) {
   }
 
   localStorage.setItem(storageKey, "done");
-
   try {
     if (typeof db !== "undefined") {
-      db.ref("pyqList/" + key + "/views").transaction(function(current) {
-        return (current || 0) + 1;
-      });
+      db.ref("pyqList/" + key + "/views").transaction(c => (c || 0) + 1);
     }
-  } catch (err) {
-    console.warn("View update error:", err);
-  }
+  } catch (err) {}
 
-  setTimeout(function() {
+  setTimeout(() => {
     window.location.href = `reader.html?id=${key}&type=pyq`;
   }, 200);
 }
@@ -536,10 +524,10 @@ function loadUserAnalytics() {
   });
 }
 
-/* 7. 🚀 TESTBOOK CBT QUIZ ENGINE (Question Palette, Navigation, Auto-Submit) */
+/* 7. CBT QUIZ ENGINE */
 let activeQuiz = [];
-let userSelections = {};     // qIdx -> selectedOptionIndex (e.g. 0, 1, 2, 3)
-let visitedQuestions = {};   // qIdx -> true (visited tracking for Red/Gray)
+let userSelections = {};
+let visitedQuestions = {};
 let quizVersion = "v1";
 let currentQIdx = 0;
 let qTimer = null;
@@ -555,14 +543,7 @@ function getProgressKey() {
 function saveQuizState() {
   const key = getProgressKey();
   if (!key) return;
-  const state = {
-    currentQIdx,
-    userSelections,
-    visitedQuestions,
-    qSecs,
-    isTimerStarted,
-    quizVersion
-  };
+  const state = { currentQIdx, userSelections, visitedQuestions, qSecs, isTimerStarted, quizVersion };
   localStorage.setItem(key, JSON.stringify(state));
 }
 
@@ -699,7 +680,7 @@ function showQuizStartScreen() {
         </ul>
       </div>
 
-      <button class="btn btn-primary" onclick="startQuizNow()" style="background:#e8590c; color:#fff; font-size:1.05rem; font-weight:bold; padding:12px 30px; border-radius:8px; border:none; cursor:pointer; width:100%; max-width:280px; box-shadow:0 4px 12px rgba(232,89,12,0.25);">
+      <button class="btn btn-primary" onclick="startQuizNow()" style="background:#e8590c; color:#fff; font-size:1.05rem; font-weight:bold; padding:12px 30px; border-radius:8px; border:none; cursor:pointer; width:100%; max-width:280px;">
         🚀 Start CBT Test Now
       </button>
     </div>
@@ -734,7 +715,6 @@ function startTimer() {
   }, 1000);
 }
 
-/* Main CBT Render Engine */
 function renderCBTInterface() {
   const box = document.getElementById("quizBox");
   if (!box || activeQuiz.length === 0) return;
@@ -746,48 +726,31 @@ function renderCBTInterface() {
   const m = Math.floor(qSecs / 60), s = qSecs % 60;
   const curSelected = userSelections[currentQIdx];
   const isLast = (currentQIdx === activeQuiz.length - 1);
-
-  // Count answered questions
   const answeredCount = Object.keys(userSelections).length;
 
   box.innerHTML = `
-    <!-- Top CBT Status Bar -->
     <div style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:10px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <div>
         <span style="font-weight:800; font-size:1rem; color:#212529;">Question ${currentQIdx + 1}</span>
         <span style="color:#868e96; font-size:0.85rem;"> / ${activeQuiz.length}</span>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:0.8rem; background:#e7f5ff; color:#1971c2; font-weight:700; padding:4px 8px; border-radius:6px;">
-          Solved: ${answeredCount}/${activeQuiz.length}
-        </span>
+        <span style="font-size:0.8rem; background:#e7f5ff; color:#1971c2; font-weight:700; padding:4px 8px; border-radius:6px;">Solved: ${answeredCount}/${activeQuiz.length}</span>
         <span id="cbtTimerDisplay" style="background:#ffe8cc; color:#d9480f; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.95rem;">
           ⏱️ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}
         </span>
       </div>
     </div>
 
-    <!-- Question Palette (1 to N circle buttons) -->
     <div style="background:#fff; border:1.5px solid #edf2f7; border-radius:10px; padding:12px; margin-bottom:14px;">
-      <div style="font-size:0.8rem; font-weight:700; color:#6c757d; margin-bottom:8px; display:flex; justify-content:space-between;">
-        <span>🎯 QUESTION PALETTE (ਸਿੱਧਾ ਸਵਾਲ 'ਤੇ ਜਾਓ)</span>
-        <span style="font-size:0.75rem;">🟢 Done | 🔴 Skipped</span>
-      </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:100px; overflow-y:auto; padding:2px;">
         ${activeQuiz.map((_, i) => {
           const isAnswered = userSelections[i] !== undefined;
           const isVisited = visitedQuestions[i] === true;
           const isCurrent = i === currentQIdx;
 
-          let bg = "#e9ecef";
-          let color = "#495057";
-
-          if (isAnswered) {
-            bg = "#2b8a3e"; color = "#fff"; // Green
-          } else if (isVisited) {
-            bg = "#e03131"; color = "#fff"; // Red (Skipped)
-          }
-
+          let bg = isAnswered ? "#2b8a3e" : (isVisited ? "#e03131" : "#e9ecef");
+          let color = (isAnswered || isVisited) ? "#fff" : "#495057";
           const currentBorder = isCurrent ? "border: 2.5px solid #1971c2; transform: scale(1.1); font-weight:900;" : "border: 1px solid #ced4da;";
 
           return `
@@ -799,13 +762,11 @@ function renderCBTInterface() {
       </div>
     </div>
 
-    <!-- Question Text -->
-    <div style="background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:16px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:16px; margin-bottom:14px;">
       <div style="font-size:1.05rem; font-weight:700; color:#212529; line-height:1.5; margin-bottom:16px;">
         ${cur.q}
       </div>
 
-      <!-- Options -->
       <div style="display:flex; flex-direction:column; gap:8px;">
         ${cur.options.map((opt, optIdx) => {
           const isSelected = (curSelected === optIdx);
@@ -814,7 +775,7 @@ function renderCBTInterface() {
             : "background:#fff; border:1.5px solid #dee2e6; color:#333;";
 
           return `
-            <button onclick="cbtSelectOption(${optIdx})" style="text-align:left; padding:12px 14px; border-radius:8px; font-size:0.95rem; cursor:pointer; transition:all 0.15s; ${activeOptStyle}">
+            <button onclick="cbtSelectOption(${optIdx})" style="text-align:left; padding:12px 14px; border-radius:8px; font-size:0.95rem; cursor:pointer; ${activeOptStyle}">
               <span style="display:inline-block; width:22px; font-weight:bold;">${String.fromCharCode(65 + optIdx)})</span> ${opt}
             </button>
           `;
@@ -822,7 +783,6 @@ function renderCBTInterface() {
       </div>
     </div>
 
-    <!-- CBT Action Controls (Prev, Clear, Save & Next) -->
     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px;">
       <div style="display:flex; gap:6px;">
         <button onclick="cbtPrev()" ${currentQIdx === 0 ? 'disabled' : ''} class="btn btn-ghost" style="padding:10px 14px; font-weight:bold; font-size:0.88rem; border:1px solid #ced4da; background:#fff; border-radius:8px; cursor:pointer;">
@@ -835,7 +795,7 @@ function renderCBTInterface() {
 
       <div>
         ${!isLast ? `
-          <button onclick="cbtNext()" class="btn btn-primary" style="background:#e8590c; color:#fff; font-weight:bold; padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-size:0.95rem; box-shadow:0 2px 6px rgba(232,89,12,0.3);">
+          <button onclick="cbtNext()" class="btn btn-primary" style="background:#e8590c; color:#fff; font-weight:bold; padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-size:0.95rem;">
             Save & Next ➡️
           </button>
         ` : `
@@ -846,7 +806,6 @@ function renderCBTInterface() {
       </div>
     </div>
 
-    <!-- Separated Safe Submit Zone -->
     <div style="border-top:1.5px dashed #e9ecef; padding-top:12px; text-align:center;">
       <button onclick="confirmCBTSubmit()" style="background:none; border:1px solid #adb5bd; color:#495057; padding:7px 16px; border-radius:6px; font-size:0.82rem; cursor:pointer;">
         🏁 Submit Test Paper
@@ -916,7 +875,6 @@ function finishCBTTest() {
 
   box.innerHTML = `<div style="text-align:center; padding:30px;"><div style="font-size:2.5rem;">⏳</div><h3>ਟੈਸਟ ਦਾ ਨਤੀਜਾ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ...</h3></div>`;
 
-  // Build sequential array of answers matching API expectations (-1 if skipped)
   const finalAnswersArray = activeQuiz.map((_, i) => {
     return userSelections[i] !== undefined ? userSelections[i] : -1;
   });
@@ -1152,50 +1110,6 @@ function editStudentName() {
   }
 }
 
-/* Google Sign-in */
-function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .then((result) => {
-      const user = result.user;
-      const name = user.displayName || "Student";
-      const identifier = user.phoneNumber || user.email.split('@')[0];
-
-      db.ref("accounts/" + identifier).once("value", (snap) => {
-        const isNewUser = !snap.exists();
-
-        db.ref("accounts/" + identifier).update({
-          name: name,
-          phone: identifier,
-          email: user.email,
-          authType: "google"
-        }).then(() => {
-          setSession(identifier);
-          localStorage.setItem("pp_name", name);
-
-          if (isNewUser) {
-            fetch("/api/notify-login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: name,
-                phone: identifier,
-                email: user.email,
-                authType: "Google Login"
-              })
-            }).catch(err => console.warn("Telegram alert error:", err));
-          }
-
-          toast("✅ Google Login Successful!");
-          setTimeout(() => location.href = "index.html", 500);
-        });
-      });
-    })
-    .catch((error) => {
-      alert("Google Sign-In Error: " + error.message);
-    });
-}
-
 function closePosterModal() {
   const pm = document.getElementById("posterModal");
   if (pm) pm.style.display = "none";
@@ -1397,9 +1311,7 @@ async function shareCertificateWhatsApp(studentName, score, total, examTitle) {
           title: "My Mock Test Certificate",
           text: shareText
         });
-      } catch (err) {
-        console.log("Sharing failed", err);
-      }
+      } catch (err) {}
     } else {
       const link = document.createElement("a");
       link.download = "My_MockTest_Certificate.png";
@@ -1454,30 +1366,32 @@ function renderStreakBadge(streak) {
   return `<span style="background:#fff3bf; color:#d9480f; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:20px; border:1px solid #ffd43b; display:inline-flex; align-items:center; gap:3px; margin-left:6px;">🔥 ${streak} Day${streak > 1 ? 's' : ''} Streak</span>`;
 }
 
-/* 🔒 STRICT SECURITY: Single Device Login & Anti-Inspection */
+/* 🔒 SINGLE ACTIVE SESSION (Auto-Overwrite & Auto-Logout Old Device) */
 function enforceSingleDeviceLogin() {
   const u = currentUser();
-  if (!u) return;
+  if (!u || !u.phone) return;
 
-  let localDeviceId = localStorage.getItem("asp_device_id");
+  // login.html ਤੋਂ ਪ੍ਰਾਪਤ ਕੀਤਾ ਗਿਆ Device ID
+  let localDeviceId = localStorage.getItem("pp_device_id") || localStorage.getItem("asp_device_id");
+
+  // ਜੇਕਰ ਪੁਰਾਣਾ ਬ੍ਰਾਊਜ਼ਰ ਹੈ ਜਿਸ ਕੋਲ Device ID ਨਹੀਂ ਹੈ
   if (!localDeviceId) {
-    localDeviceId = "dev_" + Math.random().toString(36).substring(2) + Date.now();
-    localStorage.setItem("asp_device_id", localDeviceId);
+    localDeviceId = "dev_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
+    localStorage.setItem("pp_device_id", localDeviceId);
+    if (typeof db !== "undefined") {
+      db.ref("users/" + u.phone + "/activeDeviceId").set(localDeviceId);
+    }
   }
 
   if (typeof db !== "undefined") {
-    const userRef = db.ref("users/" + u.phone + "/currentDeviceId");
+    const deviceRef = db.ref("users/" + u.phone + "/activeDeviceId");
 
-    userRef.once("value", snap => {
-      if (!snap.exists()) {
-        userRef.set(localDeviceId);
-      }
-    });
-
-    userRef.on("value", snap => {
-      const activeDevice = snap.val();
-      if (activeDevice && activeDevice !== localDeviceId) {
-        alert("⚠️ ਤੁਹਾਡਾ ਖਾਤਾ ਕਿਸੇ ਹੋਰ ਡਿਵਾਈਸ 'ਤੇ ਖੁੱਲ੍ਹ ਚੁੱਕਾ ਹੈ। ਤੁਸੀਂ ਇੱਥੋਂ ਲੌਗਆਉਟ ਹੋ ਰਹੇ ਹੋ।");
+    deviceRef.on("value", snap => {
+      const activeDeviceOnServer = snap.val();
+      
+      // ਜੇਕਰ ਸਰਵਰ 'ਤੇ Device ID ਮੌਜੂਦ ਹੈ ਅਤੇ ਉਹ ਇਸ ਡਿਵਾਈਸ ਦੇ ID ਨਾਲ ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ, ਤਾਂ ਹੀ ਲੌਗਆਉਟ ਕਰੋ
+      if (activeDeviceOnServer && activeDeviceOnServer !== localDeviceId) {
+        alert("⚠️ ਤੁਹਾਡਾ ਖਾਤਾ ਕਿਸੇ ਨਵੇਂ ਡਿਵਾਈਸ 'ਤੇ ਲੌਗਇਨ ਹੋ ਚੁੱਕਾ ਹੈ। ਇਸ ਡਿਵਾਈਸ ਤੋਂ ਲੌਗਆਉਟ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ।");
         logout();
       }
     });

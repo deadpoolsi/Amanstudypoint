@@ -1,3 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
+Disallow: /ca-admin.html
+Disallow: /cleanup.html
+Disallow: /reset-password.html
+Disallow: /debug.html
+Disallow: /api/
+
 Sitemap: https://amanstudypoint.vercel.app/sitemap.xml

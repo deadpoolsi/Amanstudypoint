@@ -64,11 +64,13 @@ async function getAdminAccessToken() {
   return cachedToken;
 }
 
-/* Firebase REST call (admin — rules bypass) */
+/* Firebase REST call (admin — rules bypass)
+   🔧 FIX: OAuth access_token de nal "Unauthorized request" aa raha si —
+   DB_SECRET (legacy) proven tarika hai (payments vich mahine chal raha) */
+const DB_SECRET = process.env.FIREBASE_DB_SECRET || null;
 async function fb(method, path, body) {
-  const token = await getAdminAccessToken();
-  if (!token) throw new Error("FIREBASE_SERVICE_ACCOUNT missing");
-  const url = `${FIREBASE_DB_URL}/${path}.json?access_token=${encodeURIComponent(token)}`;
+  if (!DB_SECRET) throw new Error("FIREBASE_DB_SECRET set nahi hai (Vercel env)");
+  const url = `${FIREBASE_DB_URL}/${path}.json?auth=${encodeURIComponent(DB_SECRET)}`;
   const res = await fetch(url, {
     method,
     headers: body !== undefined ? { "Content-Type": "application/json" } : {},
@@ -113,9 +115,6 @@ module.exports = async (req, res) => {
     const isAdmin = await verifyAdmin(adminIdToken);
     if (!isAdmin) {
       return res.status(403).json({ success: false, message: "ਸਿਰਫ਼ Admin ਹੀ ਇਹ ਕਰ ਸਕਦਾ ਹੈ!" });
-    }
-    if (!SERVICE_ACCOUNT) {
-      return res.status(500).json({ success: false, message: "FIREBASE_SERVICE_ACCOUNT set nahi hai" });
     }
 
     const results = [];

@@ -53,7 +53,10 @@ function b64url(input) {
 /* Service account nalo OAuth access token (zero-dependency, built-in crypto) */
 let cachedToken = null, cachedTokenExpiry = 0;
 async function getAdminAccessToken() {
-  if (DB_SECRET && !SERVICE_ACCOUNT) return { secret: DB_SECRET };
+  // 🔧 FIX: DB_SECRET nu PEHAL do — OAuth access_token kai project de
+  // database te "Unauthorized request" dinda hai. DB_SECRET proven hai
+  // (payments mahiniyan toh issi naal chal rahe han).
+  if (DB_SECRET) return { secret: DB_SECRET };
   if (!SERVICE_ACCOUNT) throw new Error("Firebase admin credentials missing");
 
   if (cachedToken && Date.now() < cachedTokenExpiry - 60000)

@@ -164,15 +164,6 @@
 
   <div id="loginError" class="error-msg"></div>
 
-  <!-- Google Login Button -->
-  <button type="button" class="btn-ghost" onclick="loginWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px solid #ced4da; padding: 10px; font-weight: 600; margin-bottom: 12px; background: #fff;">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px; height: 18px;"> Continue with Google
-  </button>
-
-  <div style="text-align: center; margin-bottom: 14px;">
-    <span style="color: #888; font-size: 0.85rem;">— ਜਾਂ (OR) —</span>
-  </div>
-
   <!-- 1. Login Form -->
   <form id="formLogin" onsubmit="event.preventDefault(); handleLogin();">
     <div class="field">
@@ -389,45 +380,6 @@ async function handleLogin() {
       showError("⚠️ Login ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + (error.message || error.code));
     }
   }
-}
-
-// --- 🌐 GOOGLE LOGIN ---
-function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .then(async (result) => {
-      const user = result.user;
-      const name = user.displayName || "Student";
-      const identifier = user.phoneNumber || user.email.split('@')[0];
-      const newDeviceId = generateDeviceId();
-
-      try {
-        await db.ref("accounts/" + identifier).update({
-          name: name,
-          phone: identifier,
-          email: user.email,
-          authType: "google",
-          password: "GOOGLE_AUTH"
-        });
-        await db.ref("users/" + identifier).update({ 
-          name: name, 
-          phone: identifier,
-          activeDeviceId: newDeviceId 
-        });
-      } catch (e) {
-        console.warn("Google sync skipped:", e);
-      }
-
-      localStorage.setItem("pp_session", identifier);
-      localStorage.setItem("pp_name", name);
-      localStorage.setItem("pp_device_id", newDeviceId);
-
-      alert("✅ ਲੌਗਇਨ ਸਫਲ ਰਿਹਾ!");
-      window.location.href = "index.html";
-    })
-    .catch((error) => {
-      alert("Google Login Error: " + error.message);
-    });
 }
 
 function showForgotForm() {

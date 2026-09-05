@@ -265,6 +265,8 @@
 
   let currentActiveQuiz = [];
   let currentTestId = "default_test_01"; // 🔐 server scoring layi yad rakhi jandi hai
+  let currentTestTitle = "Mock Test"; // 🎉 share message layi test da naam
+  let lastResult = null; // 🎉 share button layi (inline escaping ton bachan)
   let userSelections = {};
   let visitedQuestions = {};
   let currentQIdx = 0;
@@ -715,6 +717,8 @@
       // 🔐 SECURITY FIX: sawaal hun secure API ton — jawab (answer) server
       // hi kadhi dinda hai ate paid test layi pass-check VI server karda hai
       currentTestId = testId;
+      const tMeta = (allParsedSortedTests || []).find(x => x.key === testId);
+      currentTestTitle = (tMeta && tMeta.title) ? tMeta.title : (testId === "default_test_01" ? "Daily Mock Test" : "Mock Test");
       if (testId === "default_test_01") {
         const r = await fetch("/api/get-quiz", {
           method: "POST",
@@ -844,7 +848,7 @@
     `;
   }
 
-  function selectOpt(idx) { userSelections[currentQIdx] = idx; renderQuestion(); }
+  function selectOpt(idx) { userSelections[currentQIdx] = idx; sndSelect(); renderQuestion(); }
   function clearOpt() { delete userSelections[currentQIdx]; renderQuestion(); }
   function nextQ() { if (currentQIdx < currentActiveQuiz.length - 1) { currentQIdx++; renderQuestion(); } }
   function prevQ() { if (currentQIdx > 0) { currentQIdx--; renderQuestion(); } }
@@ -860,6 +864,119 @@
       finishTest();
     }
   }
+
+  // ═══════════ 🎉 UPGRADE: SOUND + CONFETTI + SHARE (self-contained) ═══════════
+  // 🔊 SOUND ENGINE — Web Audio API (koi mp3 file nahi chahidi, phone-fast)
+  let audioCtx = null;
+  function ensureAudioCtx() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {}
+    return audioCtx;
+  }
+  function playTone(freq, dur, type, vol, delay) {
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+    try {
+      const t = ctx.currentTime + (delay || 0);
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.15));
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + (dur || 0.15) + 0.05);
+    } catch (e) {}
+  }
+  // ਜਵਾਬ ਚੁਣਨ 'ਤੇ ਛੋਟੀ ਜਿਹੀ 'ਟਿੱਕ' + ਹਲਕਾ ਵਾਈਬ੍ਰੇਸ਼ਨ
+  function sndSelect() {
+    playTone(880, 0.06, "sine", 0.08);
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  }
+  // ਨਤੀਜੇ 'ਤੇ — ਵਧੀਆ ਸਕੋਰ ਤੇ ਜਿੱਤ ਦਾ ਰਾਗ 🎵, ਘੱਟ ਸਕੋਰ ਤੇ ਹੌਸਲਾ-ਅਵਾਜ਼
+  function sndResult(pct) {
+    if (pct >= 60) {
+      playTone(523.25, 0.13, "triangle", 0.16, 0);
+      playTone(659.25, 0.13, "triangle", 0.16, 0.13);
+      playTone(783.99, 0.13, "triangle", 0.16, 0.26);
+      playTone(1046.50, 0.35, "triangle", 0.18, 0.39);
+      if (navigator.vibrate) { try { navigator.vibrate([70, 50, 70, 50, 150]); } catch (e) {} }
+    } else {
+      playTone(440, 0.16, "sine", 0.13, 0);
+      playTone(349.23, 0.30, "sine", 0.13, 0.20);
+      if (navigator.vibrate) { try { navigator.vibrate(90); } catch (e) {} }
+    }
+  }
+
+  // 🎊 CONFETTI — canvas 'ਤੇ ਰੰਗੀਨ ਕਾਗ਼ਜ਼ (koi library nahi)
+  function launchConfetti(level) {
+    if (!level) return;
+    try {
+      const big = (level >= 2);
+      const cv = document.createElement("canvas");
+      cv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;";
+      document.body.appendChild(cv);
+      const ctx = cv.getContext("2d");
+      cv.width = window.innerWidth; cv.height = window.innerHeight;
+      const N = big ? 180 : 90;
+      const colors = ["#e8590c", "#fab005", "#2b8a3e", "#1971c2", "#f783ac", "#7048e8"];
+      const P = [];
+      for (let i = 0; i < N; i++) {
+        P.push({
+          x: Math.random() * cv.width,
+          y: -20 - Math.random() * cv.height * 0.6,
+          w: 6 + Math.random() * 6,
+          h: 8 + Math.random() * 8,
+          c: colors[i % colors.length],
+          vy: 2 + Math.random() * 3,
+          vx: -1.5 + Math.random() * 3,
+          rot: Math.random() * Math.PI,
+          vr: -0.12 + Math.random() * 0.24
+        });
+      }
+      const t0 = Date.now();
+      const life = big ? 4500 : 3000;
+      (function anim() {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        let alive = false;
+        for (const p of P) {
+          p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.03;
+          if (p.y < cv.height + 30) alive = true;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        if (alive && Date.now() - t0 < life) requestAnimationFrame(anim);
+        else cv.remove();
+      })();
+    } catch (e) {}
+  }
+
+  // 📲 WHATSAPP SHARE — ਮੁਫ਼ਤ ਵਾਇਰਲ ਮਾਰਕੀਟਿੰਗ
+  function shareResultWhatsApp() {
+    if (!lastResult) return;
+    const r = lastResult;
+    const txt = "🎯 *" + r.title + "* ਟੈਸਟ ਦਾ ਮੇਰਾ ਸਕੋਰ!\n" +
+                "✅ " + r.score + "/" + r.total + " (" + r.pct + "%)\n" +
+                "ਤੂੰ ਵੀ ਆਪਣੀ ਤਿਆਰੀ ਜਾਂਚ ਲੈ 👇\n" +
+                "https://amanstudypoint.vercel.app";
+    window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
+  }
+
+  // 🔢 Percentage count-up animation (0 → pct)
+  function animatePct(pct) {
+    const el = document.getElementById("pctCounter");
+    if (!el) return;
+    const t0 = Date.now(), dur = 900;
+    (function tick() {
+      const k = Math.min(1, (Date.now() - t0) / dur);
+      el.innerText = Math.round(pct * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(tick);
+    })();
+  }
+  // ═══════════ END UPGRADE ENGINES ═══════════
 
   async function finishTest() {
     clearInterval(qTimer);
@@ -898,18 +1015,40 @@
       const total = d.total;
       const pct = d.percentage;
 
+      // 🎉 ਗ੍ਰੇਡ ਤੈਅ — ਹੌਸਲਾ-ਵਧਾਊ ਪੰਜਾਬੀ ਸੁਨੇਹੇ ਨਾਲ
+      const grade = pct >= 90 ? { emoji: "🏆", g: "A+", msg: "ਸ਼ਾਬਾਸ਼! ਤੁਸੀਂ ਕਾਬਿਲ ਹੋ!", col: "#2b8a3e", bg: "#ebfbee" } :
+                    pct >= 75 ? { emoji: "🎉", g: "A",  msg: "ਵੱਧੀਆ ਸਕੋਰ! ਸ਼ਾਨਦਾਰ!", col: "#2b8a3e", bg: "#d3f9d8" } :
+                    pct >= 60 ? { emoji: "👍", g: "B",  msg: "ਚੰਗਾ ਸਕੋਰ — ਹੋਰ ਸੁਧਾਰੋ!", col: "#1971c2", bg: "#e7f5ff" } :
+                    pct >= 40 ? { emoji: "🙂", g: "C",  msg: "ਠੀਕ ਹੈ — ਹੋਰ ਮਿਹਨਤ ਕਰੋ!", col: "#e8590c", bg: "#fff4e6" } :
+                                { emoji: "📚", g: "D",  msg: "ਹੌਲੇ ਨਾ ਹੋਵੋ — ਅਗਲੀ ਵਾਰ ਪੱਕਾ ਵਧੀਆ!", col: "#e03131", bg: "#ffe3e3" };
+      lastResult = { score: score, total: total, pct: pct, title: currentTestTitle };
+
       box.innerHTML = `
-      <div style="text-align:center; padding:25px;">
-        <div style="font-size:3rem;">🎉</div>
-        <h2>Test Completed!</h2>
-        <div style="font-size:2.2rem; font-weight:bold; color:#e8590c; margin:10px 0;">${score} / ${total}</div>
-        <p style="color:#2b8a3e; font-weight:bold;">Percentage: ${pct}%</p>
-        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
-          <a href="tests.html?cat=${curCat}" style="padding:10px 18px; background:#1971c2; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold;">📋 More Tests</a>
-          <a href="index.html" style="padding:10px 18px; background:#f1f3f5; color:#333; text-decoration:none; border-radius:8px; font-weight:bold;">🏠 Home</a>
+      <style>@keyframes popIn{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}</style>
+      <div style="text-align:center; padding:25px 12px;">
+        <div style="font-size:3.4rem; animation:popIn 0.6s ease;">${grade.emoji}</div>
+        <h2 style="margin:6px 0 2px;">Test Completed!</h2>
+        <div style="color:#888; font-size:0.9rem; margin-bottom:10px;">${currentTestTitle}</div>
+        <div style="background:${grade.bg}; border:2px solid ${grade.col}; border-radius:14px; padding:18px; max-width:340px; margin:10px auto;">
+          <div style="display:inline-block; background:${grade.col}; color:#fff; font-weight:800; font-size:1.1rem; padding:3px 14px; border-radius:20px;">Grade: ${grade.g}</div>
+          <div style="font-size:2.4rem; font-weight:800; color:${grade.col}; margin:10px 0 2px;">${score} / ${total}</div>
+          <div style="font-size:1.6rem; font-weight:800; color:${grade.col};"><span id="pctCounter">0</span>%</div>
+          <p style="font-weight:700; color:${grade.col}; margin:10px 0 0;">${grade.msg}</p>
+        </div>
+        <div style="margin-top:18px; display:flex; flex-direction:column; gap:10px; max-width:300px; margin-left:auto; margin-right:auto;">
+          <button onclick="shareResultWhatsApp()" style="background:#25D366; color:#fff; padding:12px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:1rem; box-shadow:0 3px 8px rgba(37,211,102,0.35);">
+            📲 ਸਕੋਰ WhatsApp 'ਤੇ ਸਾਂਝਾ ਕਰੋ
+          </button>
+          <div style="display:flex; gap:10px;">
+            <a href="tests.html?cat=${curCat}" style="flex:1; padding:10px 12px; background:#1971c2; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold;">📋 ਹੋਰ ਟੈਸਟ</a>
+            <a href="index.html" style="flex:1; padding:10px 12px; background:#f1f3f5; color:#333; text-decoration:none; border-radius:8px; font-weight:bold;">🏠 ਹੋਮ</a>
+          </div>
         </div>
       </div>
     `;
+      animatePct(pct);
+      sndResult(pct);
+      launchConfetti(pct >= 90 ? 2 : (pct >= 60 ? 1 : 0));
     } catch (e) {
       box.innerHTML = `<div style="text-align:center; padding:30px; color:#c92a2a;"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ</h3><p style="color:#777;">ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰ ਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p></div>`;
     }

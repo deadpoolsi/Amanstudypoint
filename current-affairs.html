@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌍 Current Affairs — Aman Study Point</title>
+  <meta name="description" content="Current Affairs — Days & Themes, G.K Bytes, Appointments, Awards, Govt. Schemes, Sports, Events, Reports & Rankings — ਮਹੀਨੇਵਾਰ ਪੰਜਾਬੀ ਅਪਡੇਟ">
+  <link rel="icon" href="assets/favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Gurmukhi", sans-serif; background: #f4f6f8; min-height: 100vh; }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 12px; padding-bottom: 40px; }
+    .topbar { background: #e8590c; color: #fff; padding: 14px 12px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(232,89,12,0.3); }
+    .topbar .inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 10px; width: 100%; }
+    .backbtn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 1.1rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .card { background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.15s; cursor: pointer; }
+    .card:active { transform: scale(0.97); }
+    .sec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .month-row { background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+    .month-row:active { transform: scale(0.98); }
+    .badge { font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 14px; }
+    .modal-box { background: #fff; border-radius: 14px; padding: 18px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+    .pass-plan-card { display: flex; justify-content: space-between; align-items: center; border: 2px solid #e9ecef; border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+    .pass-plan-card.active { border-color: #e8590c; background: #fff4e6; }
+    .ca-bullet { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1.5px solid #edf2f7; border-radius: 10px; padding: 11px 12px; margin-bottom: 8px; }
+    .ca-num { min-width: 26px; height: 26px; background: #fff4e6; color: #e8590c; font-weight: 800; font-size: 0.85rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .ca-head { background: #fff4e6; color: #d9480f; font-weight: 800; border-radius: 10px; padding: 10px 12px; margin: 14px 0 8px 0; font-size: 1rem; border: 1.5px dashed #ffc078; }
+    .btn { border: none; border-radius: 10px; font-weight: 800; cursor: pointer; padding: 12px; font-size: 1rem; }
+    .btn-primary { background: #e8590c; color: #fff; }
+    .btn-green { background: #2b8a3e; color: #fff; }
+    .lockbox { background: #fff; border: 2px solid #ffe3e3; border-radius: 14px; padding: 22px; text-align: center; margin-top: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <button class="backbtn" id="backBtn" onclick="goBack()" style="display:none;">←</button>
+    <div style="font-size: 1.35rem;">🌍</div>
+    <div style="flex:1;">
+      <div style="font-weight: 800; font-size: 0.98rem;" id="pageTitle">Current Affairs</div>
+      <div style="font-size: 0.72rem; opacity: 0.9;">ਹਰ ਪ੍ਰੀਖਿਆ ਦੀ ਜਿੱਤ ਦਾ ਰਾਜ਼ 🔑</div>
+    </div>
+    <span id="passBadge" style="background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 12px;">⏳</span>
+  </div>
+</div>
+
+<div class="wrap" id="mainWrap">ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...</div>
+
+<!-- 💎 PASS MODAL -->
+<div id="passModal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px;">
+      <h3 style="margin:0; color:#e8590c;">💎 Current Affairs Pass</h3>
+      <button onclick="closePassModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; font-weight:bold;">✕</button>
+    </div>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:14px;">ਮਿਆਦ ਚੁਣੋ — ਸਾਰੇ 8 ਸੈਕਸ਼ਨਾਂ ਦੇ ਸਾਰੇ ਮਹੀਨੇ ਅਨਲੌਕ:</p>
+    <div id="plansList">
+      <div class="pass-plan-card" onclick="selectPlan('day', this)">
+        <div><b style="font-size:0.95rem;">1 Day Pass (24 ਘੰਟੇ)</b><div style="font-size:0.75rem; color:#777;">ਤੁਰੰਤ ਰਿਵੀਜ਼ਨ ਲਈ</div></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_day">₹9</div>
+      </div>
+      <div class="pass-plan-card active" onclick="selectPlan('week', this)">
+        <div><b style="font-size:0.95rem;">1 Week Pass (7 ਦਿਨ)</b><div style="font-size:0.75rem; color:#777;">ਹਫ਼ਤੇ ਦੀ ਤਿਆਰੀ</div></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_week">₹39</div>
+      </div>
+      <div class="pass-plan-card" onclick="selectPlan('month', this)">
+        <div><b style="font-size:0.95rem;">1 Month Pass (30 ਦਿਨ)</b><div style="font-size:0.75rem; color:#777;">ਮਹੀਨੇ ਦੇ ਸਾਰੇ ਅਪਡੇਟ</div></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_month">₹99</div>
+      </div>
+      <div class="pass-plan-card" onclick="selectPlan('sixMonths', this)">
+        <div><b style="font-size:0.95rem;">6 Months Pass (180 ਦਿਨ)</b><div style="font-size:0.75rem; color:#2b8a3e;">🔥 Most Popular (ਵਧੀਆ ਬੱਚਤ)</div></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_sixMonths">₹399</div>
+      </div>
+      <div class="pass-plan-card" onclick="selectPlan('year', this)">
+        <div><b style="font-size:0.95rem;">1 Year Full Pass (365 ਦਿਨ)</b><div style="font-size:0.75rem; color:#777;">ਪੂਰੇ ਸਾਲ ਦੇ ਸਾਰੇ ਮਹੀਨੇ</div></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#e8590c;" id="planPrice_year">₹649</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; margin:10px 0;">
+      <input id="couponInput" placeholder="Coupon code (ਜੇਕਰ ਹੋਵੇ)" style="flex:1; padding:10px; border:1.5px solid #dee2e6; border-radius:8px; font-size:0.9rem;">
+      <button onclick="applyCoupon()" style="padding:10px 14px; border:none; background:#495057; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer;">Apply</button>
+    </div>
+    <div id="couponMsg" style="font-size:0.8rem; margin-bottom:6px;"></div>
+    <button id="payPassBtn" class="btn btn-primary" style="width:100%;" onclick="checkoutSelectedPass()">⚡ Pay ₹39 via Razorpay</button>
+    <p style="font-size:0.7rem; color:#999; text-align:center; margin-top:8px;">🔒 100% ਸੁਰੱਖਿਅਤ ਪੇਮੈਂਟ | ਮਦਦ ਲਈ WhatsApp: 90413-21843</p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  storageBucket: "aman-study-point.firebasestorage.app",
+  messagingSenderId: "1059866846804",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1",
+  measurementId: "G-2V2R173QC3"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ═══════════ CONFIG: 8 SECTIONS ═══════════ */
+const CA_SECTIONS = {
+  daysThemes:   { icon: "📅", name: "Days & Themes",        pun: "ਦਿਨ ਤੇ ਥੀਮ" },
+  gkBytes:      { icon: "💡", name: "G.K Bytes",            pun: "ਜੀ.ਕੇ. ਬਾਈਟਸ" },
+  appointments: { icon: "👔", name: "Appointments",         pun: "ਨਿਯੁਕਤੀਆਂ" },
+  awards:       { icon: "🏅", name: "Awards",               pun: "ਇਨਾਮ" },
+  govtSchemes:  { icon: "🏛️", name: "Govt. Schemes",        pun: "ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ" },
+  sports:       { icon: "🏏", name: "Sports",               pun: "ਖੇਡਾਂ" },
+  events:       { icon: "🌍", name: "Events",               pun: "ਸਮਾਗਮ" },
+  reports:      { icon: "📊", name: "Reports & Rankings",   pun: "ਰਿਪੋਰਟਾਂ ਤੇ ਰੈਂਕਿੰਗ" }
+};
+const CA_PASS_CAT = "ca";
+
+/* ═══════════ STATE ═══════════ */
+let currentView = "sections";   // sections | months | content
+let currentSection = null;
+let currentMonth = null;
+let hasValidPass = false;
+let selectedPlanType = "week";
+let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
+let categoryCouponData = null;
+let appliedDiscount = 0;
+let appliedCouponCode = "";
+
+const currentUser = () => {
+  const p = localStorage.getItem("pp_session");
+  return p ? { phone: p, name: localStorage.getItem("pp_name") || "Student" } : null;
+};
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ═══════════ INIT ═══════════ */
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    initPage();
+  } else {
+    if (localStorage.getItem("pp_session")) localStorage.removeItem("pp_session");
+    showLoginPrompt();
+  }
+});
+
+function showLoginPrompt() {
+  document.getElementById("mainWrap").innerHTML = `
+    <div class="lockbox">
+      <div style="font-size:3rem;">🔐</div>
+      <h2 style="margin:10px 0 6px;">ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ</h2>
+      <p style="color:#777; font-size:0.9rem; margin-bottom:16px;">Current Affairs ਵੇਖਣ ਲਈ ਲੌਗਇਨ ਜ਼ਰੂਰੀ ਹੈ</p>
+      <a href="login.html" class="btn btn-primary" style="text-decoration:none; display:inline-block; padding:12px 30px;">📱 ਲੌਗਿਨ / ਨਵਾਂ ਅਕਾਊਂਟ</a>
+    </div>`;
+}
+
+function initPage() {
+  const u = currentUser();
+  if (!u) { showLoginPrompt(); return; }
+
+  // 🔒 Pass status (live)
+  db.ref(`users/${u.phone}/passes/${CA_PASS_CAT}`).on("value", snap => {
+    const expiry = snap.val();
+    const badge = document.getElementById("passBadge");
+    if (expiry && expiry > Date.now()) {
+      hasValidPass = true;
+      const daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
+      badge.innerText = `💎 ${daysLeft}D`;
+      badge.style.background = "rgba(255,255,255,0.35)";
+    } else {
+      hasValidPass = false;
+      badge.innerText = "🔒 Pass";
+      badge.style.background = "rgba(255,255,255,0.2)";
+    }
+  });
+
+  loadPassPricing();
+  renderSections();
+}
+
+/* ═══════════ VIEW 1: SECTIONS ═══════════ */
+function renderSections() {
+  currentView = "sections";
+  document.getElementById("backBtn").style.display = "none";
+  document.getElementById("pageTitle").innerText = "Current Affairs";
+  const u = currentUser();
+  const html = `
+    <div style="background:linear-gradient(135deg,#e8590c,#f76707); color:#fff; border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="font-size:1.4rem;">🌍 ਆਓ ਕਰੰਟ ਅਫ਼ੇਅਰਜ਼ ਜਿੱਤੀਏ!</div>
+      <div style="font-size:0.85rem; margin-top:4px; opacity:0.95;">ਪੰਜਾਬ ਦੀਆਂ ਸਾਰੀਆਂ ਪ੍ਰੀਖਿਆਵਾਂ ਲਈ ਮਹੀਨੇਵਾਰ ਅਪਡੇਟ — ਪੰਜਾਬੀ ਵਿੱਚ 📚</div>
+    </div>
+    <div class="sec-grid">
+      ${Object.keys(CA_SECTIONS).map(k => `
+        <div class="card" onclick="openSection('${k}')">
+          <div style="font-size:2rem;">${CA_SECTIONS[k].icon}</div>
+          <div style="font-weight:800; font-size:0.9rem; margin-top:4px; color:#1c7ed6;">${CA_SECTIONS[k].name}</div>
+          <div style="font-size:0.78rem; color:#868e96; margin-top:2px;">${CA_SECTIONS[k].pun}</div>
+        </div>`).join("")}
+    </div>`;
+  document.getElementById("mainWrap").innerHTML = html;
+}
+
+/* ═══════════ VIEW 2: MONTHS ═══════════ */
+async function openSection(secKey) {
+  currentSection = secKey;
+  currentView = "months";
+  document.getElementById("backBtn").style.display = "block";
+  document.getElementById("pageTitle").innerText = CA_SECTIONS[secKey].name;
+  document.getElementById("mainWrap").innerHTML = `<div style="text-align:center; padding:40px; color:#888;">⏳ ਮਹੀਨੇ ਲੋਡ ਹੋ ਰਹੇ ਹਨ...</div>`;
+
+  try {
+    const snap = await db.ref(`caIndex/${secKey}`).once("value");
+    const months = snap.val() || {};
+    const keys = Object.keys(months).sort().reverse(); // nava mahina pehle
+    if (keys.length === 0) {
+      document.getElementById("mainWrap").innerHTML = `
+        <div class="lockbox">
+          <div style="font-size:2.6rem;">🗞️</div>
+          <p style="color:#777; margin-top:8px; font-weight:700;">ਹਾਲੇ ਕੋਈ ਮਹੀਨਾ ਅਪਲੋਡ ਨਹੀਂ ਹੋਇਆ। ਛੇਤੀ ਆਵੇਗਾ! 🙂</p>
+        </div>`;
+      return;
+    }
+    const html = keys.map(k => {
+      const m = months[k] || {};
+      const isDemo = m.demo === true;
+      return `
+        <div class="month-row" onclick="openMonth('${k}', ${isDemo})">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:1.5rem;">🗓️</div>
+            <div>
+              <div style="font-weight:800; font-size:0.98rem;">${escapeHtml(m.title || k)}</div>
+              <div style="font-size:0.75rem; color:#868e96;">${CA_SECTIONS[secKey].pun}</div>
+            </div>
+          </div>
+          ${isDemo
+            ? `<span class="badge" style="background:#d3f9d8; color:#2b8a3e;">🎁 FREE</span>`
+            : (hasValidPass
+                ? `<span class="badge" style="background:#e7f5ff; color:#1971c2;">✅ ਖੁੱਲ੍ਹਾ</span>`
+                : `<span class="badge" style="background:#ffe3e3; color:#e03131;">🔒 Pass</span>`)}
+        </div>`;
+    }).join("");
+    document.getElementById("mainWrap").innerHTML = html;
+  } catch (e) {
+    document.getElementById("mainWrap").innerHTML = `
+      <div class="lockbox"><p style="color:#e03131; font-weight:700;">⚠️ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p></div>`;
+  }
+}
+
+/* ═══════════ VIEW 3: CONTENT ═══════════ */
+async function openMonth(monthKey, isDemo) {
+  currentMonth = monthKey;
+  currentView = "content";
+  document.getElementById("backBtn").style.display = "block";
+  document.getElementById("mainWrap").innerHTML = `<div style="text-align:center; padding:40px; color:#888;">⏳ ਖੁੱਲ੍ਹ ਰਿਹਾ ਹੈ...</div>`;
+
+  const u = currentUser();
+  if (!u) { showLoginPrompt(); return; }
+  try {
+    const authUser = firebase.auth().currentUser;
+    const idToken = authUser ? await authUser.getIdToken() : null;
+    const r = await fetch("/api/get-ca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: currentSection, month: monthKey, phone: u.phone, idToken: idToken })
+    });
+    const d = await r.json();
+
+    if (!d || !d.success) {
+      if (d && d.passRequired) {
+        showLockedScreen(d.message);
+      } else {
+        document.getElementById("mainWrap").innerHTML = `
+          <div class="lockbox"><p style="color:#e03131; font-weight:700;">⚠️ ${escapeHtml((d && d.message) || "ਸਮੱਸਿਆ ਆਈ")}</p>
+          <button class="btn btn-primary" style="margin-top:12px;" onclick="openMonth('${monthKey}', ${isDemo})">🔄 ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼</button></div>`;
+      }
+      return;
+    }
+    renderContent(d.title, d.content, isDemo);
+  } catch (e) {
+    document.getElementById("mainWrap").innerHTML = `
+      <div class="lockbox"><p style="color:#e03131; font-weight:700;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p></div>`;
+  }
+}
+
+function renderContent(title, content, isDemo) {
+  document.getElementById("pageTitle").innerText = title;
+  const lines = String(content).split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  let html = `
+    <div style="background:#fff; border:2px solid #ffe8cc; border-radius:14px; padding:14px; margin-top:12px; text-align:center;">
+      <div style="font-size:1.8rem;">${CA_SECTIONS[currentSection].icon}</div>
+      <div style="font-weight:800; font-size:1.15rem; color:#e8590c;">${escapeHtml(title)}</div>
+      ${isDemo ? '<span class="badge" style="background:#d3f9d8; color:#2b8a3e; display:inline-block; margin-top:6px;">🎁 FREE DEMO</span>' : ""}
+    </div>
+    <div style="margin-top:12px;">`;
+  let n = 0;
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      n = 0;
+      html += `<div class="ca-head">📌 ${escapeHtml(line.slice(3))}</div>`;
+    } else {
+      n++;
+      html += `<div class="ca-bullet"><div class="ca-num">${n}</div><div style="font-size:0.95rem; line-height:1.5; padding-top:2px;">${escapeHtml(line)}</div></div>`;
+    }
+  }
+  html += `</div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn btn-primary" style="padding:10px 26px;" onclick="renderSections()">📚 ਹੋਰ ਸੈਕਸ਼ਨ ਵੇਖੋ</button>
+    </div>`;
+  document.getElementById("mainWrap").innerHTML = html;
+  window.scrollTo(0, 0);
+}
+
+function showLockedScreen(msg) {
+  document.getElementById("mainWrap").innerHTML = `
+    <div class="lockbox">
+      <div style="font-size:3rem;">🔒</div>
+      <h2 style="margin:10px 0 6px; color:#e03131;">Pass ਚਾਹੀਦਾ ਹੈ</h2>
+      <p style="color:#777; font-size:0.9rem;">${escapeHtml(msg || "ਇਹ ਮਹੀਨਾ ਵੇਖਣ ਲਈ Current Affairs Pass ਖ਼ਰੀਦੋ")}</p>
+      <div style="background:#fff4e6; border-radius:10px; padding:10px; margin:12px 0; font-size:0.85rem; color:#d9480f; font-weight:700;">
+        💎 ਇੱਕ Pass = ਸਾਰੇ 8 ਸੈਕਸ਼ਨ + ਸਾਰੇ ਮਹੀਨੇ ਅਨਲੌਕ!
+      </div>
+      <button class="btn btn-green" style="width:100%; margin-bottom:8px;" onclick="openPassModal()">💎 Pass ਖ਼ਰੀਦੋ</button>
+      <p style="font-size:0.75rem; color:#999;">🎁 ਹਰ ਸੈਕਸ਼ਨ ਵਿੱਚ ਇੱਕ ਮਹੀਨਾ FREE ਡੈਮੋ ਹੈ — ਵੇਖ ਕੇ ਫ਼ੈਸਲਾ ਕਰੋ!</p>
+    </div>`;
+}
+
+/* ═══════════ NAVIGATION ═══════════ */
+function goBack() {
+  if (currentView === "content") { openSection(currentSection); }
+  else { renderSections(); }
+}
+
+/* ═══════════ PASS PURCHASE (secure: order+verify dono server te) ═══════════ */
+function openPassModal() { document.getElementById("passModal").style.display = "flex"; }
+function closePassModal() { document.getElementById("passModal").style.display = "none"; }
+
+function loadPassPricing() {
+  db.ref(`siteSettings/passPricing/${CA_PASS_CAT}`).once("value", snap => {
+    const val = snap.val();
+    if (val) {
+      categoryPassPricing = {
+        day: val.day || 9, week: val.week || 39, month: val.month || 99,
+        sixMonths: val.sixMonths || 399, year: val.year || 649
+      };
+      categoryCouponData = val.coupon || null;
+      document.getElementById("planPrice_day").innerText = "₹" + categoryPassPricing.day;
+      document.getElementById("planPrice_week").innerText = "₹" + categoryPassPricing.week;
+      document.getElementById("planPrice_month").innerText = "₹" + categoryPassPricing.month;
+      document.getElementById("planPrice_sixMonths").innerText = "₹" + categoryPassPricing.sixMonths;
+      document.getElementById("planPrice_year").innerText = "₹" + categoryPassPricing.year;
+      updatePayButtonText();
+    }
+  });
+}
+
+function selectPlan(type, el) {
+  selectedPlanType = type;
+  document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  updatePayButtonText();
+}
+
+function updatePayButtonText() {
+  let basePrice = categoryPassPricing[selectedPlanType] || 39;
+  let finalPrice = Math.max(1, basePrice - appliedDiscount);
+  const payBtn = document.getElementById("payPassBtn");
+  if (payBtn) payBtn.innerText = `⚡ Pay ₹${finalPrice} via Razorpay`;
+}
+
+function applyCoupon() {
+  const codeInp = (document.getElementById("couponInput").value || "").trim().toUpperCase();
+  const msgEl = document.getElementById("couponMsg");
+  if (!codeInp) { msgEl.innerHTML = `<span style="color:#e03131;">ਕੂਪਨ ਕੋਡ ਲਿਖੋ</span>`; return; }
+  if (categoryCouponData && categoryCouponData.active &&
+      String(categoryCouponData.code).toUpperCase() === codeInp) {
+    const limit = parseInt(categoryCouponData.limit) || 0;
+    const used = parseInt(categoryCouponData.usedCount) || 0;
+    if (limit > 0 && used >= limit) {
+      msgEl.innerHTML = `<span style="color:#e03131;">⚠️ ਇਹ ਕੂਪਨ ਆਪਣੀ ਲਿਮਿਟ ਪੂਰੀ ਕਰ ਚੁੱਕਾ ਹੈ!</span>`;
+      appliedDiscount = 0; appliedCouponCode = ""; updatePayButtonText(); return;
+    }
+    const discountPct = parseInt(categoryCouponData.discount) || 0;
+    const basePrice = categoryPassPricing[selectedPlanType] || 39;
+    appliedDiscount = Math.round((basePrice * discountPct) / 100);
+    appliedCouponCode = codeInp;
+    msgEl.innerHTML = `<span style="color:#2b8a3e; font-weight:bold;">🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹${appliedDiscount} ਦੀ ਛੋਟ (${discountPct}% Off)</span>`;
+    updatePayButtonText();
+  } else {
+    msgEl.innerHTML = `<span style="color:#e03131;">⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>`;
+    appliedDiscount = 0; appliedCouponCode = ""; updatePayButtonText();
+  }
+}
+
+async function checkoutSelectedPass() {
+  const u = currentUser();
+  if (!u) { alert("ਪਾਸ ਖ਼ਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਇਨ ਕਰੋ!"); window.location.href = "login.html"; return; }
+  const payBtn = document.getElementById("payPassBtn");
+  const originalBtnText = payBtn ? payBtn.innerText : "";
+  if (payBtn) { payBtn.disabled = true; payBtn.innerText = "⏳ ਆਰਡਰ ਬਣ ਰਿਹਾ ਹੈ..."; }
+  try {
+    const orderRes = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "pass", planId: selectedPlanType, category: CA_PASS_CAT, couponCode: appliedCouponCode || "" })
+    });
+    const orderData = await orderRes.json();
+    if (!orderData.success) {
+      alert("⚠️ " + (orderData.message || "ਆਰਡਰ ਨਹੀਂ ਬਣ ਸਕਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"));
+      return;
+    }
+    var options = {
+      "key": orderData.keyId,
+      "amount": orderData.amount,
+      "currency": orderData.currency,
+      "order_id": orderData.orderId,
+      "name": "Aman Study Point",
+      "description": `${selectedPlanType.toUpperCase()} Pass (Current Affairs)`,
+      "image": "assets/icon-192.png",
+      "handler": async function (response) {
+        try {
+          const verifyRes = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              type: "pass",
+              planId: selectedPlanType,
+              category: CA_PASS_CAT,
+              phone: u.phone,
+              name: u.name,
+              couponCode: appliedCouponCode || ""
+            })
+          });
+          const data = await verifyRes.json();
+          if (data.success) {
+            const authUser = (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) || null;
+            if (!authUser) {
+              alert("🎉 ਪੇਮੈਂਟ ਸਫ਼ਲ! ਪਾਸ ਐਕਟਿਵ ਹੋ ਗਿਆ।\n\n(ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ ਸੀ — ਦੁਬਾਰਾ ਲੌਗਇਨ ਕਰੋ, ਪਾਸ ਦਿਖ ਜਾਵੇਗਾ। ਪੈਸਾ 100% ਸੁਰੱਖਿਅਤ! 💯)");
+              location.href = "login.html";
+            } else {
+              alert("🎉 ਮੁਬਾਰਕਾਂ! ਪੇਮੈਂਟ ਸਫ਼ਲ — Current Affairs Pass ਐਕਟਿਵ ਹੋ ਗਿਆ!");
+              closePassModal();
+              location.reload();
+            }
+          } else {
+            alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ! WhatsApp: 90413-21843"));
+          }
+        } catch (e) {
+          alert("⚠️ ਵੈਰੀਫਿਕੇਸ਼ਨ ਵਿੱਚ ਸਮੱਸਿਆ — ਪੈਸਾ ਕੱਟਿਆ ਹੈ ਤਾਂ WhatsApp ਕਰੋ: 90413-21843");
+        }
+      },
+      "prefill": { "name": u.name, "contact": u.phone },
+      "theme": { "color": "#e8590c" }
+    };
+    var rzp = new Razorpay(options);
+    rzp.on("payment.failed", function () {
+      alert("⚠️ ਪੇਮੈਂਟ ਪੂਰੀ ਨਹੀਂ ਹੋਈ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    });
+    rzp.open();
+  } catch (e) {
+    alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ");
+  } finally {
+    if (payBtn) { payBtn.disabled = false; payBtn.innerText = originalBtnText || "⚡ Pay via Razorpay"; }
+  }
+}
+</script>
+
+</body>
+</html>

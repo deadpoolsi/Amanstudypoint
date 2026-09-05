@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>🛠️ CA Admin — Aman Study Point</title>
+  <link rel="icon" href="assets/favicon.ico">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Gurmukhi", sans-serif; background:#f4f6f8; min-height:100vh; }
+    .wrap { max-width:640px; margin:0 auto; padding:12px; padding-bottom:60px; }
+    .topbar { background:#343a40; color:#fff; padding:14px 12px; position:sticky; top:0; z-index:50; }
+    .topbar .inner { max-width:640px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
+    .card { background:#fff; border:1.5px solid #e9ecef; border-radius:12px; padding:14px; margin-top:12px; }
+    label { font-size:0.82rem; font-weight:800; color:#495057; display:block; margin:10px 0 4px; }
+    input, select, textarea { width:100%; padding:10px; border:1.5px solid #dee2e6; border-radius:8px; font-size:0.95rem; background:#fff; }
+    textarea { min-height:220px; line-height:1.6; }
+    .btn { border:none; border-radius:10px; font-weight:800; cursor:pointer; padding:12px; font-size:0.95rem; width:100%; }
+    .btn-orange { background:#e8590c; color:#fff; }
+    .btn-blue { background:#1971c2; color:#fff; }
+    .btn-red { background:#e03131; color:#fff; }
+    .btn-grey { background:#495057; color:#fff; }
+    .row { display:flex; gap:8px; }
+    .month-item { display:flex; justify-content:space-between; align-items:center; border:1.5px solid #e9ecef; border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff; }
+    .demo-tag { background:#d3f9d8; color:#2b8a3e; font-size:0.68rem; font-weight:800; padding:2px 8px; border-radius:10px; }
+    .paid-tag { background:#ffe3e3; color:#e03131; font-size:0.68rem; font-weight:800; padding:2px 8px; border-radius:10px; }
+    .ok { color:#2b8a3e; font-weight:800; }
+    .warn { color:#e03131; font-weight:800; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <div style="font-weight:800;">🛠️ Current Affairs — Admin Panel</div>
+    <button onclick="logout()" style="background:rgba(255,255,255,0.15); border:none; color:#fff; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:bold;">Logout</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="card" style="margin-top:30px;">
+    <h2 style="color:#e8590c; margin-bottom:6px;">🔐 Admin Login</h2>
+    <p style="color:#777; font-size:0.85rem; margin-bottom:8px;">ਸਿਰਫ਼ Admin (deadpool73503@gmail.com) ਲਈ</p>
+    <label>Admin Email</label>
+    <input id="adminEmail" type="email" placeholder="admin email">
+    <label>Password</label>
+    <input id="adminPass" type="password" placeholder="password">
+    <div id="loginMsg" style="margin-top:8px; font-size:0.85rem;"></div>
+    <button class="btn btn-orange" style="margin-top:12px;" onclick="adminLogin()">🚀 Login karo</button>
+  </div>
+
+  <!-- MAIN (login ton baad) -->
+  <div id="mainBox" style="display:none;">
+
+    <div class="card">
+      <h2 style="color:#e8590c;">📤 ਮਹੀਨਾ ਅੱਪਲੋਡ ਕਰੋ</h2>
+      <label>1️⃣ Section ਚੁਣੋ</label>
+      <select id="secSelect" onchange="loadMonths()"></select>
+
+      <label>2️⃣ ਮਹੀਨਾ ਚੁਣੋ</label>
+      <input type="month" id="monthInput" onchange="autoTitle()">
+
+      <label>3️⃣ Title (ਆਪੇ ਭਰ ਜਾਂਦਾ — ਬਦਲ ਵੀ ਸਕਦੇ ਹੋ)</label>
+      <input id="titleInput" placeholder="ਜਿਵੇਂ: ਸਤੰਬਰ 2026">
+
+      <label>4️⃣ Content — ਹਰ ਲਾਈਨ = ਇੱਕ ਪੁਆਇੰਟ ✍️</label>
+      <textarea id="contentInput" placeholder="ਜਿਵੇਂ:
+ਪੰਜਾਬ ਦੇ ਨਵੇਂ ਮੁੱਖ ਮੰਤਰੀ — ਨਾਂ
+ਵਿਸ਼ਵ ਕੁਸ਼ਤੀ ਜੇਤੂ — ਨਾਂ
+
+ਸੁਨੇਹੇ ਵਿੱਚ ## ਲਾ ਕੇ ਹੈੱਡਿੰਗ ਵੀ ਪਾ ਸਕਦੇ ਹੋ:
+## ਮਹੱਤਵਪੂਰਨ ਦਿਨ"></textarea>
+      <button class="btn btn-grey" style="margin-top:8px;" onclick="fillSample()">🧪 Sample ਭਰੋ (ਟੈਸਟ ਲਈ)</button>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:14px; font-size:0.9rem;">
+        <input type="checkbox" id="demoToggle" style="width:20px; height:20px;">
+        🎁 ਇਹ ਮਹੀਨਾ FREE ਡੈਮੋ ਬਣਾਓ (ਹੋਰਨਾਂ ਦਾ ਡੈਮੋ ਆਪੇ ਹਟ ਜਾਵੇਗਾ)
+      </label>
+
+      <div id="saveMsg" style="margin-top:8px; font-size:0.85rem;"></div>
+      <button class="btn btn-orange" style="margin-top:10px;" onclick="saveMonth()">💾 Save / Upload ਕਰੋ</button>
+    </div>
+
+    <div class="card">
+      <h2 style="color:#1971c2;">🗂️ ਇਸ Section ਦੇ ਮਹੀਨੇ</h2>
+      <div style="font-size:0.75rem; color:#888; margin-top:2px;">ਹੇਠਾਂ ਸਾਰੇ ਅੱਪਲੋਡ ਕੀਤੇ ਮਹੀਨੇ ਦਿਖਦੇ ਹਨ</div>
+      <div id="monthsList" style="margin-top:10px;">—</div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:#2b8a3e;">💎 Current Affairs Pass ਦੀਆਂ ਕੀਮਤਾਂ</h2>
+      <div style="font-size:0.75rem; color:#888; margin-top:2px;">ਹੋਰ ਕੈਟਾਗਰੀਆਂ ਦੀਆਂ ਕੀਮਤਾਂ ਪੁਰਾਣੇ admin panel ਤੋਂ ਹੀ ਰਹਿਣਗੀਆਂ</div>
+      <div class="row" style="margin-top:10px;">
+        <div style="flex:1;"><label>1 Day (₹)</label><input id="price_day" type="number" inputmode="numeric" value="9"></div>
+        <div style="flex:1;"><label>1 Week (₹)</label><input id="price_week" type="number" inputmode="numeric" value="39"></div>
+      </div>
+      <div class="row">
+        <div style="flex:1;"><label>1 Month (₹)</label><input id="price_month" type="number" inputmode="numeric" value="99"></div>
+        <div style="flex:1;"><label>6 Months (₹)</label><input id="price_sixMonths" type="number" inputmode="numeric" value="399"></div>
+      </div>
+      <div class="row">
+        <div style="flex:1;"><label>1 Year (₹)</label><input id="price_year" type="number" inputmode="numeric" value="649"></div>
+      </div>
+      <div id="priceMsg" style="margin-top:8px; font-size:0.85rem;"></div>
+      <button class="btn btn-blue" style="margin-top:10px;" onclick="savePricing()">💾 ਕੀਮਤਾਂ Save ਕਰੋ</button>
+    </div>
+
+    <div class="card" style="background:#fff9db; border-color:#ffe066;">
+      <b>📋 ਵੇਰਵਾ:</b>
+      <ul style="font-size:0.82rem; color:#5c4400; margin:8px 0 0 18px; line-height:1.7;">
+        <li>ਹਰ ਲਾਈਨ = ਇੱਕ ਨੰਬਰ ਵਾਲਾ ਪੁਆਇੰਟ</li>
+        <li><b>## </b> ਲਾ ਕੇ ਹੈੱਡਿੰਗ ਪਾਓ (ਜਿਵੇਂ: ## ਮਹੱਤਵਪੂਰਨ ਦਿਨ)</li>
+        <li>ਇੱਕੋ ਮਹੀਨਾ ਦੁਬਾਰਾ save ਕਰੋ → ਪੁਰਾਣਾ ਬਦਲ ਜਾਵੇਗਾ (update)</li>
+        <li>ਹਰ Section ਵਿੱਚ ਸਿਰਫ਼ 1 ਮਹੀਨਾ ਡੈਮੋ ਰੱਖ ਸਕਦੇ ਹੋ</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  storageBucket: "aman-study-point.firebasestorage.app",
+  messagingSenderId: "1059866846804",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1",
+  measurementId: "G-2V2R173QC3"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+const CA_SECTIONS = {
+  daysThemes:   "📅 Days & Themes",
+  gkBytes:      "💡 G.K Bytes",
+  appointments: "👔 Appointments",
+  awards:       "🏅 Awards",
+  govtSchemes:  "🏛️ Govt. Schemes",
+  sports:       "🏏 Sports",
+  events:       "🌍 Events",
+  reports:      "📊 Reports & Rankings"
+};
+const PUN_MONTHS = ["","ਜਨਵਰੀ","ਫ਼ਰਵਰੀ","ਮਾਰਚ","ਅਪ੍ਰੈਲ","ਮਈ","ਜੂਨ","ਜੁਲਾਈ","ਅਗਸਤ","ਸਤੰਬਰ","ਅਕਤੂਬਰ","ਨਵੰਬਰ","ਦਸੰਬਰ"];
+
+let editingMonth = null;
+
+/* ─── LOGIN ─── */
+function adminLogin() {
+  const email = document.getElementById("adminEmail").value.trim();
+  const pass = document.getElementById("adminPass").value;
+  const msg = document.getElementById("loginMsg");
+  if (!email || !pass) { msg.innerHTML = '<span class="warn">Email ਤੇ password ਦੋਵੇਂ ਲਿਖੋ</span>'; return; }
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(() => { /* onAuthStateChanged sambhalega */ })
+    .catch(e => {
+      msg.innerHTML = '<span class="warn">Login fail: ' + (e.message || "ghalat details") + '</span>';
+    });
+}
+function logout() { firebase.auth().signOut(); }
+
+firebase.auth().onAuthStateChanged(user => {
+  if (user && user.email === ADMIN_EMAIL) {
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("mainBox").style.display = "block";
+    initAdmin();
+  } else {
+    if (user) firebase.auth().signOut();
+    document.getElementById("loginBox").style.display = "block";
+    document.getElementById("mainBox").style.display = "none";
+  }
+});
+
+/* ─── INIT ─── */
+function initAdmin() {
+  const sel = document.getElementById("secSelect");
+  sel.innerHTML = Object.keys(CA_SECTIONS).map(k => `<option value="${k}">${CA_SECTIONS[k]}</option>`).join("");
+  loadMonths();
+  loadPricing();
+}
+
+function autoTitle() {
+  const ym = document.getElementById("monthInput").value;
+  if (!ym) return;
+  const [y, m] = ym.split("-");
+  document.getElementById("titleInput").value = `${PUN_MONTHS[parseInt(m)]} ${y}`;
+}
+
+/* ─── SAVE MONTH ─── */
+async function saveMonth() {
+  const msg = document.getElementById("saveMsg");
+  const sec = document.getElementById("secSelect").value;
+  const ym = document.getElementById("monthInput").value;
+  const title = document.getElementById("titleInput").value.trim();
+  const content = document.getElementById("contentInput").value.trim();
+  const demo = document.getElementById("demoToggle").checked;
+
+  if (!ym) { msg.innerHTML = '<span class="warn">⚠️ ਮਹੀਨਾ ਚੁਣੋ</span>'; return; }
+  if (!/^\d{4}-\d{2}$/.test(ym)) { msg.innerHTML = '<span class="warn">⚠️ ਮਹੀਨਾ ਗ਼ਲਤ ਹੈ</span>'; return; }
+  if (!content) { msg.innerHTML = '<span class="warn">⚠️ Content ਲਿਖੋ</span>'; return; }
+
+  msg.innerHTML = "⏳ Save ਹੋ ਰਿਹਾ ਹੈ...";
+  try {
+    await db.ref(`currentAffairs/${sec}/${ym}`).set({
+      title: title || ym,
+      demo: demo,
+      content: content,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    await db.ref(`caIndex/${sec}/${ym}`).set({ title: title || ym, demo: demo });
+
+    // 🎁 Demo toggle on → is section de dusre months da demo hatao
+    if (demo) {
+      const snap = await db.ref(`caIndex/${sec}`).once("value");
+      const others = [];
+      snap.forEach(ch => { if (ch.key !== ym && ch.val() && ch.val().demo === true) others.push(ch.key); });
+      for (const k of others) {
+        await db.ref(`caIndex/${sec}/${k}/demo`).set(false);
+        await db.ref(`currentAffairs/${sec}/${k}/demo`).set(false);
+      }
+    }
+    msg.innerHTML = `<span class="ok">✅ Save ho gaya! (${title || ym} — ${demo ? "🎁 DEMO" : "🔒 PAID"})</span>`;
+    document.getElementById("contentInput").value = "";
+    document.getElementById("demoToggle").checked = false;
+    editingMonth = null;
+    loadMonths();
+  } catch (e) {
+    msg.innerHTML = '<span class="warn">🚨 Save fail: ' + (e.message || "permission") + '</span>';
+  }
+}
+
+/* ─── MONTHS LIST (edit/delete) ─── */
+async function loadMonths() {
+  const sec = document.getElementById("secSelect").value;
+  const box = document.getElementById("monthsList");
+  if (!sec) return;
+  box.innerHTML = "⏳...";
+  try {
+    const snap = await db.ref(`caIndex/${sec}`).once("value");
+    const months = snap.val() || {};
+    const keys = Object.keys(months).sort().reverse();
+    if (keys.length === 0) { box.innerHTML = '<div style="color:#999; font-size:0.85rem;">ਹਾਲੇ ਕੁਝ ਨਹੀਂ — ਉੱਪਰੋਂ ਪਹਿਲਾਂ ਮਹੀਨਾ ਅੱਪਲੋਡ ਕਰੋ</div>'; return; }
+    box.innerHTML = keys.map(k => {
+      const m = months[k] || {};
+      return `
+        <div class="month-item">
+          <div>
+            <b style="font-size:0.92rem;">${m.title || k}</b>
+            ${m.demo === true ? '<span class="demo-tag">🎁 DEMO</span>' : '<span class="paid-tag">🔒 PAID</span>'}
+          </div>
+          <div class="row" style="width:auto;">
+            <button class="btn btn-blue" style="width:auto; padding:6px 12px; font-size:0.8rem;" onclick="editMonth('${k}')">✏️ Edit</button>
+            <button class="btn btn-red" style="width:auto; padding:6px 12px; font-size:0.8rem;" onclick="deleteMonth('${k}')">🗑️</button>
+          </div>
+        </div>`;
+    }).join("");
+  } catch (e) {
+    box.innerHTML = '<span class="warn">List load fail</span>';
+  }
+}
+
+async function editMonth(ym) {
+  const sec = document.getElementById("secSelect").value;
+  try {
+    const snap = await db.ref(`currentAffairs/${sec}/${ym}`).once("value");
+    const d = snap.val();
+    if (!d) { alert("Data nahi mila!"); return; }
+    document.getElementById("monthInput").value = ym;
+    document.getElementById("titleInput").value = d.title || ym;
+    document.getElementById("contentInput").value = d.content || "";
+    document.getElementById("demoToggle").checked = (d.demo === true);
+    editingMonth = ym;
+    window.scrollTo(0, 0);
+    document.getElementById("saveMsg").innerHTML = "✏️ Edit mode — badal k dobara Save karo";
+  } catch (e) { alert("Load fail!"); }
+}
+
+async function deleteMonth(ym) {
+  const sec = document.getElementById("secSelect").value;
+  const title = ym;
+  if (!confirm(`'${title}' mahina DELETE karna hai? Wapas nahi aayega!`)) return;
+  try {
+    await db.ref(`currentAffairs/${sec}/${ym}`).remove();
+    await db.ref(`caIndex/${sec}/${ym}`).remove();
+    loadMonths();
+  } catch (e) { alert("Delete fail!"); }
+}
+
+/* ─── PRICING ─── */
+async function loadPricing() {
+  try {
+    const snap = await db.ref("siteSettings/passPricing/ca").once("value");
+    const v = snap.val();
+    if (v) {
+      if (v.day) document.getElementById("price_day").value = v.day;
+      if (v.week) document.getElementById("price_week").value = v.week;
+      if (v.month) document.getElementById("price_month").value = v.month;
+      if (v.sixMonths) document.getElementById("price_sixMonths").value = v.sixMonths;
+      if (v.year) document.getElementById("price_year").value = v.year;
+    }
+  } catch (e) {}
+}
+
+async function savePricing() {
+  const msg = document.getElementById("priceMsg");
+  const data = {
+    day: Math.max(1, parseInt(document.getElementById("price_day").value) || 9),
+    week: Math.max(1, parseInt(document.getElementById("price_week").value) || 39),
+    month: Math.max(1, parseInt(document.getElementById("price_month").value) || 99),
+    sixMonths: Math.max(1, parseInt(document.getElementById("price_sixMonths").value) || 399),
+    year: Math.max(1, parseInt(document.getElementById("price_year").value) || 649)
+  };
+  msg.innerHTML = "⏳...";
+  try {
+    await db.ref("siteSettings/passPricing/ca").update(data);
+    msg.innerHTML = `<span class="ok">✅ Kematan save: Day ₹${data.day} | Week ₹${data.week} | Month ₹${data.month} | 6M ₹${data.sixMonths} | Year ₹${data.year}</span>`;
+  } catch (e) {
+    msg.innerHTML = '<span class="warn">🚨 Save fail</span>';
+  }
+}
+
+/* ─── SAMPLE (pehli var test karan layi) ─── */
+function fillSample() {
+  document.getElementById("contentInput").value =
+`## ਮਹੱਤਵਪੂਰਨ ਦਿਨ
+ਵਿਸ਼ਵ ਸਿਹਤ ਦਿਵਸ — 7 ਅਪ੍ਰੈਲ
+ਅੰਤਰਰਾਸ਼ਟਰੀ ਯੋਗ ਦਿਵਸ — 21 ਜੂਨ
+
+## ਮੁੱਖ ਨਿਯੁਕਤੀਆਂ
+ਪੰਜਾਬ ਦੇ ਨਵੇਂ ਡੀ.ਜੀ.ਪੀ. — ਨਾਂ
+ਨਵੇਂ ਮੁੱਖ ਸਕੱਤਰ — ਨਾਂ
+
+## ਖੇਡਾਂ
+ਭਾਰਤ ਨੇ ਕ੍ਰਿਕਟ ਸੀਰੀਜ਼ ਜਿੱਤੀ`;
+}
+</script>
+
+</body>
+</html>

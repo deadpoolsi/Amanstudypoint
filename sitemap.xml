@@ -9,6 +9,10 @@
     <priority>0.90</priority>
   </url>
   <url>
+    <loc>https://amanstudypoint.vercel.app/current-affairs.html</loc>
+    <priority>0.90</priority>
+  </url>
+  <url>
     <loc>https://amanstudypoint.vercel.app/login.html</loc>
     <priority>0.80</priority>
   </url>

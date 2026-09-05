@@ -251,6 +251,7 @@ Ans: B"></textarea>
       <!-- Search & Dynamic Scroll List -->
       <div class="sec-title" style="font-size:0.95rem; margin-top:18px;">
         <span>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਮੌਜੂਦ ਟੈਸਟ (<span id="adminTestCount">0</span>):</span>
+        <button onclick="loadCategoryTestsAdmin(true)" title="List refresh karo" style="background:#1971c2; color:#fff; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:0.8rem; font-weight:bold;">🔄 Refresh</button>
       </div>
 
       <input type="text" id="adminTestSearchInput" oninput="filterAdminTestsList()" placeholder="🔍 ਟੈਸਟ ਲੱਭੋ (ਜਿਵੇਂ: Paid - 1)..." style="width:100%; padding:8px 10px; margin-bottom:8px; border:1px solid #ced4da; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
@@ -541,8 +542,18 @@ const firebaseConfig = {
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
+
+/* 🔧 FIX 1 — "Admin login karde hi student logout ho janda si":
+   PURANA SYSTEM: setPersistence(SESSION) await-ton-bina call hunda si —
+   kabhi-kabhi page khuldan ton pehlan student da session dikh janda si
+   ate auth.signOut() use student nu bhi logout kar dinda si.
+   NAYA SYSTEM: Admin da login ALAG app-instance ("adminPanelAuth") vich —
+   vakhri storage key → student da session KADHI nahi chherda! */
+let adminPanelApp;
+try { adminPanelApp = firebase.app("adminPanelAuth"); }
+catch (e) { adminPanelApp = firebase.initializeApp(firebaseConfig, "adminPanelAuth"); }
+const db = firebase.database(adminPanelApp); // likhai admin-de token naal
+const auth = firebase.auth(adminPanelApp);
 
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
 let currentResultsData = [];
@@ -550,12 +561,19 @@ let cachedCatCouponUsed = 0;
 let cachedBookCouponUsed = 0;
 let currentCategoryTestsRaw = [];
 let loadedFileJsonData = null;
+let categoryTestsCache = {}; // 🚀 FIX 2: har category da data 1 var hi download
 
 function isAdminUser(user) {
   return !!(user && user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase());
 }
 
-try { auth.setPersistence(firebase.auth.Auth.Persistence.SESSION); } catch(e) {}
+/* 🔧 REPAIR: jeh DEFAULT app (student pages) vich kabhi admin session
+   phas gaya ho — ik var saaf karo (student da session kade nahi chherda) */
+firebase.auth().onAuthStateChanged((u) => {
+  if (u && u.email && u.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    firebase.auth().signOut();
+  }
+});
 
 auth.onAuthStateChanged(user => {
   const authBox = document.getElementById("adminAuthBox");
@@ -574,8 +592,9 @@ auth.onAuthStateChanged(user => {
   authBox.style.display = "block";
   dashboard.style.display = "none";
   if (user) {
+    // 🔧 NOTE: signOut NAHI karan — eh isolated instance hai,
+    // ghalat login da sirf error message kafi hai (student safe)
     if (err) { err.textContent = "⛔ Access Denied! Only Admin can access this panel."; err.style.display = "block"; }
-    auth.signOut().catch(() => {});
   }
 });
 
@@ -771,7 +790,7 @@ function publishCategoryTest() {
       alert("🎉 ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਲਾਈਵ ਹੋ ਗਿਆ!");
       document.getElementById("catTestTitle").value = "";
       document.getElementById("catTestQuestionsInput").value = "";
-      loadCategoryTestsAdmin();
+      loadCategoryTestsAdmin(true);
     });
   }
 }
@@ -782,7 +801,7 @@ function deleteAllCategoryTests() {
   if (confirm(`⚠️ ਕੀ ਤੁਸੀਂ "${cat.toUpperCase()}" ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਇਕੱਠੇ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?`)) {
     db.ref(`categoryTests/${cat}`).remove().then(() => {
       alert("✅ ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਸਾਰੇ ਟੈਸਟ ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਏ ਹਨ!");
-      loadCategoryTestsAdmin();
+      loadCategoryTestsAdmin(true);
     }).catch(err => {
       alert("⚠️ ਡਿਲੀਟ ਕਰਨ ਵਿੱਚ ਐਰਰ ਆਇਆ: " + err.message);
     });
@@ -872,7 +891,7 @@ async function uploadBulkJsonTests() {
     document.getElementById("fileStatusInfo").innerText = "";
     document.getElementById("bulkJsonInput").value = "";
     document.getElementById("catTestSelect").value = cat;
-    loadCategoryTestsAdmin();
+    loadCategoryTestsAdmin(true);
   } catch (err) {
     console.error("Bulk Upload Error:", err);
     alert("⚠️ ਅੱਪਲੋਡ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + err.message);
@@ -882,25 +901,43 @@ async function uploadBulkJsonTests() {
   }
 }
 
-function loadCategoryTestsAdmin() {
+/* 🚀 FIX 2 — INTERNET BACHAT:
+   PURANA: .on("value") — har upload/delete batch te POORI category
+   dobara download hundi si (police = 7,131 tests = MBs!)
+   NAYA: .once + cache — category 1 var hi aundi hai,
+   Refresh button nalo dobara lai jandi hai */
+function loadCategoryTestsAdmin(force) {
   const cat = document.getElementById("catTestSelect").value;
   const listEl = document.getElementById("adminCategoryTestsList");
   const countEl = document.getElementById("adminTestCount");
   const searchEl = document.getElementById("adminTestSearchInput");
   if (searchEl) searchEl.value = "";
 
-  db.ref(`categoryTests/${cat}`).on("value", snap => {
-    const data = snap.val();
+  const renderData = (data) => {
     if (!data) {
       if (countEl) countEl.innerText = "0";
       listEl.innerHTML = "<small style='color:#777; display:block; padding:10px;'>ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੈ।</small>";
       currentCategoryTestsRaw = [];
       return;
     }
-
     currentCategoryTestsRaw = Object.entries(data).map(([key, t]) => ({ key, ...t })).reverse();
     if (countEl) countEl.innerText = currentCategoryTestsRaw.length;
     renderAdminTestsList(currentCategoryTestsRaw, cat);
+  };
+
+  // Cache vich hai te force nahi → dobara internet na laao
+  if (!force && categoryTestsCache[cat]) {
+    renderData(categoryTestsCache[cat]);
+    return;
+  }
+
+  listEl.innerHTML = "<small style='color:#777; display:block; padding:10px;'>⏳ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...</small>";
+  db.ref(`categoryTests/${cat}`).once("value", snap => {
+    const data = snap.val();
+    categoryTestsCache[cat] = data; // cache save
+    renderData(data);
+  }, (err) => {
+    listEl.innerHTML = "<small style='color:#c92a2a; display:block; padding:10px;'>⚠️ ਲੋਡ ਫੇਲ੍ਹ: " + err.message + "</small>";
   });
 }
 
@@ -932,7 +969,10 @@ function filterAdminTestsList() {
 
 function deleteCategoryTest(cat, key) {
   if (confirm("ਕੀ ਤੁਸੀਂ ਇਸ ਟੈਸਟ ਨੂੰ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")) {
-    db.ref(`categoryTests/${cat}/${key}`).remove();
+    db.ref(`categoryTests/${cat}/${key}`).remove().then(() => {
+      delete categoryTestsCache[cat]; // 🚀 cache invalidate
+      loadCategoryTestsAdmin(true);
+    }).catch(err => alert("⚠️ Delete fail: " + err.message));
   }
 }
 
@@ -1116,7 +1156,7 @@ function loadFirebaseData() {
     }).join("");
   });
 
-  db.ref("accounts").on("value", snap => {
+  db.ref("accounts").once("value", snap => {
     const uList = document.getElementById("usersList"), countSpan = document.getElementById("userCount");
     const users = snap.val();
     if (!users) { uList.innerHTML = "<p>No users yet.</p>"; countSpan.textContent = "0"; return; }

@@ -75,6 +75,9 @@ async function fb(method, path, body) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
+  if (!res.ok) {
+    throw new Error("Firebase " + method + " " + path + " fail: " + text.slice(0, 120));
+  }
   try { return JSON.parse(text); } catch (e) { return text; }
 }
 
@@ -121,20 +124,22 @@ module.exports = async (req, res) => {
     const qr = await fb("GET", "quizResults");
     let phonesStripped = 0, junkEntries = 0;
     if (qr && typeof qr === "object" && !qr.error) {
-      const patch = {};
       for (const [key, val] of Object.entries(qr)) {
         if (val && typeof val === "object") {
           if (val.name === "AuditTest") {
-            patch[key] = null; // junk entry — puri delete
+            // 🔧 FIX: PATCH-null kaam nahi karda — PUT null (puri entry delete)
+            await fb("PUT", "quizResults/" + encodeURIComponent(key), null);
             junkEntries++;
           } else if ("phone" in val) {
-            patch[key] = { phone: null }; // sirf phone field delete
+            // 🔧 FIX: entry nu bina phone wapas LIKHO (PUT = pura replace)
+            const clean = Object.assign({}, val);
+            delete clean.phone;
+            await fb("PUT", "quizResults/" + encodeURIComponent(key), clean);
             phonesStripped++;
           }
         }
       }
-      if (Object.keys(patch).length > 0) {
-        await fb("PATCH", "quizResults", patch);
+      if (phonesStripped > 0 || junkEntries > 0) {
         results.push(`🏆 Leaderboard: ${phonesStripped} phone number hatae + ${junkEntries} junk entries delete`);
       } else {
         results.push("🏆 Leaderboard: phone number nahi mile (pehle hi saaf hai)");

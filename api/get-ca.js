@@ -19,6 +19,7 @@ const FIREBASE_DB_SECRET = process.env.FIREBASE_DB_SECRET;
 const WEB_API_KEY = "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw";
 
 const CA_PASS_CAT = "ca";
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
 const VALID_SECTIONS = [
   "daysThemes",
   "gkBytes",
@@ -30,8 +31,9 @@ const VALID_SECTIONS = [
   "reports"
 ];
 
-// Firebase idToken verify karo + email match karo
-async function verifyIdentity(idToken, expectedPhone) {
+// Firebase idToken verify karo → email wapas kao
+// (Admin da vi email chalda — taan admin bina logout ke vi preview kar sake)
+async function fetchEmail(idToken) {
   try {
     const r = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${WEB_API_KEY}`,
@@ -42,14 +44,9 @@ async function verifyIdentity(idToken, expectedPhone) {
       }
     );
     const d = await r.json();
-    const email = d && d.users && d.users[0] && d.users[0].email;
-    if (!email) return false;
-    if (expectedPhone) {
-      return email === `${expectedPhone}@amanstudypoint.student`;
-    }
-    return true;
+    return (d && d.users && d.users[0] && d.users[0].email) || null;
   } catch (e) {
-    return false;
+    return null;
   }
 }
 
@@ -88,16 +85,23 @@ module.exports = async (req, res) => {
         .json({ success: false, message: "ਇਹ ਮਹੀਨਾ ਹਾਲੇ ਉਪਲਬਧ ਨਹੀਂ ਹੈ!" });
     }
 
-    // 1) Login (identity) hamesha verify
-    const identityOk = await verifyIdentity(idToken, phone);
-    if (!identityOk) {
+    // 1) Login (identity) verify — student apne phone-email naal, Admin apne email naal
+    const email = await fetchEmail(idToken);
+    if (!email) {
+      return res
+        .status(403)
+        .json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਲੌਗਇਨ ਕਰੋ" });
+    }
+    const isAdmin = (email === ADMIN_EMAIL);
+    if (!isAdmin && email !== `${phone}@amanstudypoint.student`) {
       return res
         .status(403)
         .json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਲੌਗਇਨ ਕਰੋ" });
     }
 
     // 2) Demo month nahi → PASS check (server-side)
-    if (data.demo !== true) {
+    //    👑 Admin nu pass-check ton mukt — preview kar sakda hai
+    if (data.demo !== true && !isAdmin) {
       const pr = await fetch(
         `${FIREBASE_DB_URL}/users/${encodeURIComponent(phone)}/passes/${CA_PASS_CAT}.json?auth=${FIREBASE_DB_SECRET}`
       );

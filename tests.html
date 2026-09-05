@@ -264,6 +264,7 @@
   let searchDebounceTimer = null;
 
   let currentActiveQuiz = [];
+  let currentTestId = "default_test_01"; // 🔐 server scoring layi yad rakhi jandi hai
   let userSelections = {};
   let visitedQuestions = {};
   let currentQIdx = 0;
@@ -573,13 +574,18 @@
   /* 2. ਸੁਪਰ ਫਾਸਟ ਲਾਈਟਵੇਟ ਟੈਸਟ ਲੋਡਰ */
   async function fetchCategoryTestsFast() {
     const listEl = document.getElementById("testItemsContainer");
-    const shallowUrl = `https://aman-study-point-default-rtdb.firebaseio.com/categoryTests/${curCat}.json?shallow=true`;
-
     try {
-      const res = await fetch(shallowUrl);
-      const keysObj = await res.json();
+      // 🔐 SECURITY FIX: test list hun secure API ton aundi hai —
+      // Firebase to direct read band (jawab leak hona band)
+      const res = await fetch("/api/get-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "list", cat: curCat })
+      });
+      const data = await res.json();
+      const keys = (data && data.success && Array.isArray(data.keys)) ? data.keys : [];
 
-      if (!keysObj) {
+      if (!keys || keys.length === 0) {
         listEl.innerHTML = `
           <div class="test-card">
             <div>
@@ -595,7 +601,6 @@
         return;
       }
 
-      const keys = Object.keys(keysObj);
       allParsedSortedTests = keys.map((key, idx) => {
         return {
           key: key,
@@ -613,20 +618,8 @@
 
       renderTestCardsList(allParsedSortedTests, true);
     } catch (e) {
-      console.warn("Fast load failed, falling back to RTDB...", e);
-      db.ref("categoryTests/" + curCat).once("value").then(snap => {
-        const data = snap.val();
-        if (!data) return;
-        const keys = Object.keys(data);
-        allParsedSortedTests = keys.map((k, idx) => ({
-          key: k,
-          title: data[k].title || `Paid - ${idx + 1}`,
-          qCount: data[k].qCount || (data[k].questions ? data[k].questions.length : 100),
-          timeMinutes: data[k].timeMinutes || 100,
-          isFreeDemo: (idx === 0)
-        }));
-        renderTestCardsList(allParsedSortedTests, true);
-      });
+      console.warn("Test list load failed:", e);
+      listEl.innerHTML = `<div class="test-card"><div><h3>⚠️ ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ</h3><p style="margin:0; color:#777; font-size:0.8rem;">ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ ਤੇ page refresh ਕਰੋ</p></div></div>`;
     }
   }
 
@@ -719,12 +712,37 @@
     listEl.innerHTML = `<div style="text-align:center; padding:50px;"><h2>⏳ ਸਵਾਲ ਲੋਡ ਹੋ ਰਹੇ ਹਨ, ਕਿਰਪਾ ਕਰਕੇ ਉਡੀਕ ਕਰੋ...</h2></div>`;
 
     try {
+      // 🔐 SECURITY FIX: sawaal hun secure API ton — jawab (answer) server
+      // hi kadhi dinda hai ate paid test layi pass-check VI server karda hai
+      currentTestId = testId;
       if (testId === "default_test_01") {
-        const s = await db.ref("dailyQuiz").once("value");
-        currentActiveQuiz = (s.exists() && Array.isArray(s.val())) ? s.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
+        const r = await fetch("/api/get-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "daily" })
+        });
+        const d = await r.json();
+        currentActiveQuiz = (d && d.success && Array.isArray(d.questions)) ? d.questions : [];
       } else {
-        const s = await db.ref(`categoryTests/${curCat}/${testId}/questions`).once("value");
-        currentActiveQuiz = s.val() || [];
+        const authUser = (typeof firebase !== "undefined" && firebase.auth) ? firebase.auth().currentUser : null;
+        if (!authUser) {
+          alert("ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ ਹੈ — ਦੁਬਾਰਾ ਲੌਗਿਨ ਕਰੋ!");
+          window.location.href = "login.html";
+          return;
+        }
+        const idToken = await authUser.getIdToken();
+        const r = await fetch("/api/get-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cat: curCat, id: testId, phone: u.phone, idToken: idToken })
+        });
+        const d = await r.json();
+        if (!d || !d.success) {
+          alert("⚠️ " + (d && d.message ? d.message : "ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ"));
+          listEl.innerHTML = originalContent;
+          return;
+        }
+        currentActiveQuiz = d.questions || [];
       }
 
       if (!currentActiveQuiz || currentActiveQuiz.length === 0) {
@@ -843,17 +861,44 @@
     }
   }
 
-  function finishTest() {
+  async function finishTest() {
     clearInterval(qTimer);
-    let score = 0;
-    currentActiveQuiz.forEach((q, i) => {
-      if (userSelections[i] === q.answer) score++;
-    });
-    const total = currentActiveQuiz.length;
-    const pct = Math.round((score / total) * 100);
-
+    const u = currentUser();
     const box = document.getElementById("quizBox");
-    box.innerHTML = `
+    if (!u || !box) return;
+
+    box.innerHTML = `<div style="text-align:center; padding:50px;"><div style="font-size:2.5rem;">⏳</div><h2>ਨਤੀਜਾ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ...</h2></div>`;
+
+    // 🔐 SECURITY FIX: score hun SERVER calculate karda hai —
+    // jawab browser tak aunde hi nahi (fake score namumkin)
+    const finalAnswers = currentActiveQuiz.map((_, i) => {
+      return userSelections[i] !== undefined ? userSelections[i] : -1;
+    });
+
+    try {
+      const authUser = (typeof firebase !== "undefined" && firebase.auth) ? firebase.auth().currentUser : null;
+      const idToken = authUser ? await authUser.getIdToken() : null;
+      const payload = (currentTestId === "default_test_01")
+        ? { type: "daily", phone: u.phone, userAnswers: finalAnswers, idToken: idToken }
+        : { cat: curCat, id: currentTestId, phone: u.phone, name: u.name, userAnswers: finalAnswers, idToken: idToken };
+
+      const r = await fetch("/api/submit-cat-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+
+      if (!d || !d.success) {
+        box.innerHTML = `<div style="text-align:center; padding:30px; color:#c92a2a;"><h3>⚠️ ${(d && d.message) ? d.message : "ਨਤੀਜਾ ਨਹੀਂ ਮਿਲਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ"}</h3></div>`;
+        return;
+      }
+
+      const score = d.score;
+      const total = d.total;
+      const pct = d.percentage;
+
+      box.innerHTML = `
       <div style="text-align:center; padding:25px;">
         <div style="font-size:3rem;">🎉</div>
         <h2>Test Completed!</h2>
@@ -865,6 +910,9 @@
         </div>
       </div>
     `;
+    } catch (e) {
+      box.innerHTML = `<div style="text-align:center; padding:30px; color:#c92a2a;"><h3>⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ</h3><p style="color:#777;">ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰ ਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p></div>`;
+    }
   }
 
   function openPassPurchaseModal() {
@@ -895,5 +943,5 @@
   initPassChecking();
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a35efb0aaa76756a',t:'MTc4ODU0NTczNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

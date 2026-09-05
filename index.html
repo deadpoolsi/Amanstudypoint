@@ -429,11 +429,16 @@
       }
 
       try {
-        const res = await fetch(`https://aman-study-point-default-rtdb.firebaseio.com/categoryTests/${cat}.json?shallow=true`);
+        // 🔐 SECURITY FIX: count hun secure API ton (Firebase direct read band)
+        const res = await fetch("/api/get-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "list", cat: cat })
+        });
         const data = await res.json();
         
-        if (data && typeof data === 'object') {
-          const count = Object.keys(data).length;
+        if (data && data.success && Array.isArray(data.keys)) {
+          const count = data.keys.length;
           const formattedNum = count.toLocaleString('en-IN'); // 7,131 ਵਰਗਾ ਫਾਰਮੈਟ ਬਣਾਵੇਗਾ
           badge.innerHTML = `🎯 <b>${formattedNum}+ Tests</b>`;
           localStorage.setItem(`asp_test_count_${cat}`, count);

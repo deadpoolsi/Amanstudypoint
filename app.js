@@ -640,8 +640,14 @@ function initQuiz() {
           if (badgeEl) badgeEl.innerHTML = renderStreakBadge(streak);
         });
       } else {
-        db.ref("dailyQuiz").once("value", qSnap => {
-          activeQuiz = (qSnap.exists() && Array.isArray(qSnap.val())) ? qSnap.val() : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
+        // 🔐 SECURITY FIX: daily quiz de sawaal hun secure API ton aunde ne —
+        // jawab (answer) server kadhi dinda hai, browser tak nahi pujarda
+        fetch("/api/get-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "daily" })
+        }).then(r => r.json()).then(d => {
+          activeQuiz = (d && d.success && Array.isArray(d.questions)) ? d.questions : [{ q: "1. ਪੰਜਾਬ ਦਾ ਰਾਜ ਪੰਛੀ ਕਿਹੜਾ ਹੈ?", options: ["ਮੋਰ", "ਬਾਜ਼", "ਤੋਤਾ", "ਕਬੂਤਰ"], answer: 1 }];
           
           const savedStr = localStorage.getItem(getProgressKey());
           if (savedStr) {
@@ -893,7 +899,7 @@ function confirmCBTSubmit() {
   }
 }
 
-function finishCBTTest() {
+async function finishCBTTest() {
   clearInterval(qTimer);
   qTimer = null;
   isTimerStarted = false;
@@ -909,6 +915,17 @@ function finishCBTTest() {
     return userSelections[i] !== undefined ? userSelections[i] : -1;
   });
 
+  // 🔐 SECURITY FIX: idToken nal identity — fake leaderboard entries namumkin
+  let idToken = null;
+  try {
+    const authUser = (typeof firebase !== "undefined" && firebase.auth) ? firebase.auth().currentUser : null;
+    if (authUser) idToken = await authUser.getIdToken();
+  } catch (e) { idToken = null; }
+  if (!idToken) {
+    box.innerHTML = `<div style="text-align:center; padding:25px; color:#e03131;"><h3>⚠️ ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ — ਦੁਬਾਰਾ ਲੌਗਿਨ ਕਰੋ</h3></div>`;
+    return;
+  }
+
   fetch("/api/submit-quiz", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -916,7 +933,8 @@ function finishCBTTest() {
       phone: u.phone,
       name: u.name,
       userAnswers: finalAnswersArray,
-      version: quizVersion
+      version: quizVersion,
+      idToken: idToken
     })
   })
   .then(res => res.json())

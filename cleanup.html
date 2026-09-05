@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>🧹 One-Click Cleanup — Aman Study Point</title>
+  <meta name="theme-color" content="#2b8a3e">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #212529; font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .card {
+      background: #fff; border-radius: 16px; padding: 28px 22px; max-width: 440px; width: 100%;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+    .card h1 { font-size: 1.25rem; margin: 0 0 4px; color: #2b8a3e; text-align: center; }
+    .card .sub { text-align: center; color: #868e96; font-size: 0.82rem; margin: 0 0 18px; }
+    .info-box { background: #ebfbee; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .info-box p { margin: 4px 0; font-size: 0.85rem; color: #2b8a3e; }
+    label { display: block; font-size: 0.82rem; font-weight: bold; color: #495057; margin: 12px 0 4px; }
+    input {
+      width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 10px;
+      font-size: 1rem; outline: none; background: #f8f9fa;
+    }
+    input:focus { border-color: #2b8a3e; background: #fff; }
+    button {
+      width: 100%; margin-top: 16px; padding: 14px; background: #2b8a3e; color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer;
+    }
+    button:disabled { background: #adb5bd; cursor: not-allowed; }
+    .msg { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 0.88rem; display: none; }
+    .msg.ok { background: #ebfbee; color: #2b8a3e; display: block; }
+    .msg.err { background: #ffe3e3; color: #c92a2a; display: block; }
+    .msg ul { margin: 6px 0 0; padding-left: 18px; }
+    .hidden { display: none; }
+    .hint { font-size: 0.75rem; color: #adb5bd; text-align: center; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧹 One-Click Cleanup</h1>
+    <p class="sub">Privacy leak fix + junk data safai — sirf Admin layi</p>
+
+    <div id="loginBox">
+      <div class="info-box">
+        <p>👑 <b>Admin Login</b> (deadpool73503@gmail.com)</p>
+      </div>
+      <label>Admin Email</label>
+      <input type="email" id="adminEmail" placeholder="deadpool73503@gmail.com" autocomplete="username">
+      <label>Admin Password</label>
+      <input type="password" id="adminPass" placeholder="••••••••" autocomplete="current-password">
+      <button id="adminLoginBtn" onclick="adminLogin()">👑 Admin Login ਕਰੋ</button>
+    </div>
+
+    <div id="cleanBox" class="hidden">
+      <div class="info-box">
+        <p>✅ <b id="whoAmI"></b> ਵਜੋਂ login ਹੈ</p>
+      </div>
+      <div class="info-box" style="background:#fff3bf;">
+        <p>🛡️ <b>ਇੱਕ ਬਟਨ ਨਾਲ ਹੋਵੇਗਾ:</b></p>
+        <p>1. Leaderboard ਦੇ ਸਾਰੇ phone numbers ਹਟਾਏ ਜਾਣਗੇ (ਪੁਰਾਣੀਆਂ entries ਤੋਂ)</p>
+        <p>2. Junk test data delete ਹੋਵੇਗਾ (AuditTest entries, test nodes)</p>
+        <p>⚠️ ਨਵੀਆਂ entries ਵਿੱਚ phone ਪਹਿਲਾਂ ਹੀ ਨਹੀਂ ਜਾਂਦਾ — ਇਹ ਸਿਰਫ਼ ਪੁਰਾਣਾ ਸਾਫ਼ ਕਰਦਾ ਹੈ</p>
+      </div>
+      <button id="cleanBtn" onclick="doCleanup()">🧹 Safai Karo (One-Click)</button>
+    </div>
+
+    <div id="msgBox" class="msg"></div>
+    <p class="hint">⚠️ ਸਿਰਫ਼ Admin — ਹਰ attempt server ਤੇ verify ਹੁੰਦਾ ਹੈ</p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script>
+    const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
+    firebase.initializeApp({
+      apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+      authDomain: "aman-study-point.firebaseapp.com",
+      databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+      projectId: "aman-study-point",
+      storageBucket: "aman-study-point.firebasestorage.app",
+      messagingSenderId: "1059866846804",
+      appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
+    });
+    const auth = firebase.auth();
+
+    const msgBox = document.getElementById("msgBox");
+    function showMsg(html, ok) {
+      msgBox.innerHTML = html;
+      msgBox.className = "msg " + (ok ? "ok" : "err");
+    }
+    function busy(btn, on) {
+      btn.disabled = on;
+      btn.textContent = on ? "⏳ ਉਡੀਕ ਕਰੋ..." : "🧹 Safai Karo (One-Click)";
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (user && user.email === ADMIN_EMAIL) showCleanForm(user.email);
+    });
+
+    async function adminLogin() {
+      const btn = document.getElementById("adminLoginBtn");
+      const email = document.getElementById("adminEmail").value.trim();
+      const pass = document.getElementById("adminPass").value;
+      if (!email || !pass) return showMsg("Email ਤੇ password ਭਰੋ", false);
+      btn.disabled = true; btn.textContent = "⏳ ...";
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        if (cred.user.email !== ADMIN_EMAIL) {
+          await auth.signOut();
+          return showMsg("❌ ਇਹ Admin ਖਾਤਾ ਨਹੀਂ ਹੈ!", false);
+        }
+        showCleanForm(cred.user.email);
+      } catch (e) {
+        showMsg("❌ Login fail: " + (e.code || e.message), false);
+      } finally {
+        btn.disabled = false; btn.textContent = "👑 Admin Login ਕਰੋ";
+      }
+    }
+
+    function showCleanForm(email) {
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("cleanBox").classList.remove("hidden");
+      document.getElementById("whoAmI").textContent = email;
+      msgBox.className = "msg";
+    }
+
+    async function doCleanup() {
+      const btn = document.getElementById("cleanBtn");
+      busy(btn, true);
+      try {
+        const user = auth.currentUser;
+        if (!user || user.email !== ADMIN_EMAIL) {
+          return showMsg("Admin session ਖ਼ਤਮ — page reload karo", false);
+        }
+        const adminIdToken = await user.getIdToken();
+
+        const r = await fetch("/api/admin-cleanup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminIdToken })
+        });
+        const d = await r.json();
+        if (d.success) {
+          showMsg("✅ <b>ਸਫ਼ਾਈ ਮੁਕੰਮਲ!</b><ul>" + d.results.map(x => "<li>" + x + "</li>").join("") + "</ul>", true);
+        } else {
+          showMsg("❌ " + (d.message || "Cleanup fail"), false);
+        }
+      } catch (e) {
+        showMsg("❌ Server error: " + e.message, false);
+      } finally {
+        busy(btn, false);
+      }
+    }
+  </script>
+</body>
+</html>

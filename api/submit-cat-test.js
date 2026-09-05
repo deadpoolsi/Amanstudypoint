@@ -103,6 +103,13 @@ module.exports = async (req, res) => {
     const total = questions.length;
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
+    /* ---- 📋 ANSWER REVIEW DATA (SECURE: sirf submit ton BAAD janda hai —
+       test den ton pehle jawab kabhi nahi milde, fake score namumkin hi rehnda) ---- */
+    const review = questions.map((q, i) => ({
+      correct: (q && typeof q.answer === "number") ? q.answer : -1,
+      user: (userAnswers && typeof userAnswers[i] === "number") ? userAnswers[i] : -1
+    }));
+
     /* ---- Attempt record save (server = rules bypass, fake impossible) ---- */
     if (attemptKey && phone) {
       await fetch(
@@ -125,6 +132,7 @@ module.exports = async (req, res) => {
       score: score,
       total: total,
       percentage: percentage,
+      review: review, // 📋 client is nalo review screen banau
     });
   } catch (e) {
     return res.status(500).json({ success: false, message: "Server error" });

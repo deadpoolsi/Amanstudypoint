@@ -136,9 +136,28 @@ const firebaseConfig = {
   measurementId: "G-2V2R173QC3"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+
+/* 🔧 BUG FIX — "CA vich change karan nal student logout ho janda si":
+   Firebase ik hi browser vich IK session rakhdan si — admin login
+   student da session kadhh dinda si.
+   HALL: Admin da login ALAG app-instance ("caAdminAuth") vich hunda hai —
+   usda session vakhri storage key te store hunda hai, jeh student
+   pages (DEFAULT app) use kardiyan, nu KADHI chherda nahi! */
+let adminApp;
+try { adminApp = firebase.app("caAdminAuth"); }
+catch (e) { adminApp = firebase.initializeApp(firebaseConfig, "caAdminAuth"); }
+const adminAuth = firebase.auth(adminApp);
+const db = firebase.database(adminApp); // likhai admin-de token naal (rules pass)
 
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
+/* 🔧 REPAIR: purane bug naal DEFAULT app vich admin session phas
+   gaya si — ik var saaf karo (STUDENT da session kade nahi chherda,
+   sirf admin email ho ta hi signOut) */
+firebase.auth().onAuthStateChanged((u) => {
+  if (u && u.email === ADMIN_EMAIL) firebase.auth().signOut();
+});
+
 const CA_SECTIONS = {
   daysThemes:   "📅 Days & Themes",
   gkBytes:      "💡 G.K Bytes",
@@ -153,27 +172,27 @@ const PUN_MONTHS = ["","ਜਨਵਰੀ","ਫ਼ਰਵਰੀ","ਮਾਰਚ","�
 
 let editingMonth = null;
 
-/* ─── LOGIN ─── */
+/* ─── LOGIN (isolated admin session — student nu kadhi logout nahi karda) ─── */
 function adminLogin() {
   const email = document.getElementById("adminEmail").value.trim();
   const pass = document.getElementById("adminPass").value;
   const msg = document.getElementById("loginMsg");
   if (!email || !pass) { msg.innerHTML = '<span class="warn">Email ਤੇ password ਦੋਵੇਂ ਲਿਖੋ</span>'; return; }
-  firebase.auth().signInWithEmailAndPassword(email, pass)
+  msg.innerHTML = "⏳ Login ਹੋ ਰਿਹਾ ਹੈ...";
+  adminAuth.signInWithEmailAndPassword(email, pass)
     .then(() => { /* onAuthStateChanged sambhalega */ })
     .catch(e => {
       msg.innerHTML = '<span class="warn">Login fail: ' + (e.message || "ghalat details") + '</span>';
     });
 }
-function logout() { firebase.auth().signOut(); }
+function logout() { adminAuth.signOut(); }
 
-firebase.auth().onAuthStateChanged(user => {
+adminAuth.onAuthStateChanged(user => {
   if (user && user.email === ADMIN_EMAIL) {
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("mainBox").style.display = "block";
     initAdmin();
   } else {
-    if (user) firebase.auth().signOut();
     document.getElementById("loginBox").style.display = "block";
     document.getElementById("mainBox").style.display = "none";
   }

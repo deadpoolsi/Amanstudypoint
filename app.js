@@ -389,7 +389,14 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
     const orderRes = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "book", bookId: bookId, couponCode: couponCode || "" })
+      body: JSON.stringify({
+        type: "book",
+        bookId: bookId,
+        couponCode: couponCode || "",
+        phone: u.phone,
+        // 🔒 v2: order asli buyer nal bind hunda hai (server verify karda)
+        idToken: (firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "")
+      })
     });
 
     const orderData = await orderRes.json();

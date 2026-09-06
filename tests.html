@@ -382,7 +382,10 @@
           type: "pass",
           planId: selectedPlanType,
           category: curCat,
-          couponCode: appliedCouponCode || ""
+          couponCode: appliedCouponCode || "",
+          phone: u.phone,
+          // 🔒 v2: order asli buyer nal bind hunda hai (server verify karda)
+          idToken: (firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "")
         })
       });
       const orderData = await orderRes.json();

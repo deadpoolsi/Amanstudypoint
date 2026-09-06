@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>📊 ਮੇਰੀ ਪ੍ਰਗਤੀ — Aman Study Point</title>
+<!-- WhatsApp Preview Tags -->
+<meta property="og:title" content="ਮੇਰੀ ਪ੍ਰਗਤੀ — Aman Study Point">
+<meta property="og:description" content="ਆਪਣੀ ਤਿਆਰੀ ਦਾ ਪੂਰਾ ਵਿਸ਼ਲੇਸ਼ਣ — ਸਕੋਰ ਗ੍ਰਾਫ਼, ਮਜ਼ਬੂਤ/ਕਮਜ਼ੋਰ ਵਿਸ਼ੇ, ਬੈਜ 🏆">
+<meta property="og:image" content="https://amanstudypoint.vercel.app/assets/og-banner.jpg">
+<meta property="og:url" content="https://amanstudypoint.vercel.app/progress.html">
+<meta property="og:type" content="website">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f5f7; color: #222; padding-bottom: 40px; }
+  .topbar { background: linear-gradient(135deg, #e8590c, #c92a0d); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+  .topbar a { color: #fff; text-decoration: none; font-weight: 700; font-size: 0.85rem; background: rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 20px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 14px 12px; }
+  .greet { background: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 5px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+  .greet .av { width: 46px; height: 46px; border-radius: 50%; background: #ffe8cc; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+  .statgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stat { background: #fff; border-radius: 14px; padding: 14px; text-align: center; box-shadow: 0 1px 5px rgba(0,0,0,0.06); }
+  .stat .n { font-size: 1.6rem; font-weight: 800; }
+  .stat .l { font-size: 0.75rem; color: #868e96; font-weight: 700; margin-top: 2px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 5px rgba(0,0,0,0.06); }
+  .card h3 { font-size: 0.95rem; margin-bottom: 10px; color: #343a40; }
+  .bar { margin-bottom: 10px; }
+  .bar .t { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; margin-bottom: 3px; }
+  .bar .track { background: #e9ecef; border-radius: 8px; height: 10px; overflow: hidden; }
+  .bar .fill { height: 100%; border-radius: 8px; }
+  .att { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.85rem; }
+  .att:last-child { border-bottom: none; }
+  .att .sc { font-weight: 800; flex-shrink: 0; min-width: 64px; text-align: right; }
+  .badge { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; width: 88px; padding: 10px 4px; border-radius: 12px; background: #f8f9fa; margin: 4px; text-align: center; }
+  .badge .e { font-size: 1.6rem; }
+  .badge .t { font-size: 0.65rem; font-weight: 700; color: #495057; line-height: 1.3; }
+  .badge.locked { filter: grayscale(1); opacity: 0.45; }
+  .btn { display: block; text-align: center; background: #1971c2; color: #fff; text-decoration: none; font-weight: 800; padding: 12px; border-radius: 10px; margin-top: 10px; }
+  .loginbox { text-align: center; padding: 50px 16px; }
+  .loginbox .big { font-size: 3rem; }
+  .spin { text-align: center; padding: 50px; color: #888; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <b style="font-size:1.05rem;">📊 ਮੇਰੀ ਪ੍ਰਗਤੀ</b>
+  <a href="index.html">🏠 ਹੋਮ</a>
+</div>
+
+<div class="wrap" id="main">
+  <div class="spin">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   📊 SMART PROGRESS DASHBOARD (Testbook-style analysis)
+   Data: userAttempts/{phone} (sirf apna — rules vich secure)
+   + users/{phone}/streakData
+   ═══════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const catMeta = {
+  police: { icon: "👮", name: "Punjab Police" },
+  patwari: { icon: "🌾", name: "PSSSB Board" },
+  clerk: { icon: "🎖️", name: "Agniveer GD" },
+  ssc: { icon: "🏛️", name: "SSC & Railway" },
+  ptet1: { icon: "📚", name: "PTET Paper 1" },
+  ptet2: { icon: "📖", name: "PTET Paper 2" },
+  banking: { icon: "🏦", name: "Banking" },
+  current: { icon: "⚡", name: "Current Affairs" },
+  ca: { icon: "🌍", name: "CA Tests" }
+};
+
+const phone = localStorage.getItem("pp_session");
+const main = document.getElementById("main");
+
+if (!phone) {
+  main.innerHTML = `
+    <div class="loginbox">
+      <div class="big">🔐</div>
+      <h2>ਪਹਿਲਾਂ ਲੌਗਿਨ ਕਰੋ</h2>
+      <p style="color:#868e96; margin:8px 0 4px; font-size:0.9rem;">ਆਪਣੀ ਪ੍ਰਗਤੀ ਵੇਖਣ ਲਈ ਲੌਗਿਨ ਕਰੋ ਜੀ</p>
+      <a class="btn" href="login.html" style="max-width:240px; margin:14px auto 0;">🔑 ਲੌਗਿਨ ਕਰੋ</a>
+    </div>`;
+} else {
+  loadProgress();
+}
+
+async function loadProgress() {
+  try {
+    const [attSnap, streakSnap] = await Promise.all([
+      db.ref("userAttempts/" + phone).once("value"),
+      db.ref("users/" + phone + "/streakData").once("value")
+    ]);
+    const attemptsRaw = attSnap.val() || {};
+    const streakData = streakSnap.val() || {};
+    render(attemptsRaw, streakData.streak || 0);
+  } catch (e) {
+    main.innerHTML = `<div class="loginbox"><div class="big">⚠️</div><h2>ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ</h2><p style="color:#868e96;">ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜੀ</p></div>`;
+  }
+}
+
+function render(raw, streak) {
+  const name = localStorage.getItem("pp_name") || "Student";
+
+  /* ---- attempts vikhed ---- */
+  const all = [];
+  Object.entries(raw).forEach(([key, v]) => {
+    if (!v || typeof v.percentage !== "number") return;
+    if (key.includes("__")) {
+      const [cat] = key.split("__");
+      all.push({ cat, isDaily: false, pct: v.percentage, score: v.score, total: v.total, at: v.at || 0 });
+    } else {
+      all.push({ cat: "daily", isDaily: true, pct: v.percentage, score: v.score, total: v.total, at: v.at || 0 });
+    }
+  });
+  all.sort((a, b) => (b.at || 0) - (a.at || 0));
+
+  const mockTests = all.filter(a => !a.isDaily);
+  const dailyCount = all.length - mockTests.length;
+  const totalTests = all.length;
+  const avgPct = totalTests ? Math.round(all.reduce((s, a) => s + a.pct, 0) / totalTests) : 0;
+  const bestPct = totalTests ? Math.max(...all.map(a => a.pct)) : 0;
+
+  /* ---- category strength ---- */
+  const byCat = {};
+  mockTests.forEach(a => {
+    if (!byCat[a.cat]) byCat[a.cat] = [];
+    byCat[a.cat].push(a.pct);
+  });
+  const catRows = Object.entries(byCat).map(([cat, arr]) => ({
+    cat,
+    avg: Math.round(arr.reduce((s, x) => s + x, 0) / arr.length),
+    n: arr.length
+  })).sort((a, b) => b.avg - a.avg);
+
+  /* ---- trend chart (pichle 15, purane ton nave) ---- */
+  const trend = all.slice(0, 15).slice().reverse();
+  const chart = trend.length >= 2 ? svgChart(trend) : "";
+
+  /* ---- badges ---- */
+  const badges = [
+    { e: "🎯", t: "ਪਹਿਲਾ ਟੈਸਟ", got: totalTests >= 1 },
+    { e: "🔥", t: "5 ਟੈਸਟ ਪੂਰੇ", got: totalTests >= 5 },
+    { e: "💪", t: "15 ਟੈਸਟ ਪੂਰੇ", got: totalTests >= 15 },
+    { e: "🏆", t: "30 ਟੈਸਟ ਪੂਰੇ", got: totalTests >= 30 },
+    { e: "⭐", t: "ਔਸਤ 60%+", got: avgPct >= 60 },
+    { e: "🌟", t: "ਔਸਤ 80%+", got: avgPct >= 80 },
+    { e: "🚀", t: "ਵਧੀਆ 90%+", got: bestPct >= 90 },
+    { e: "📅", t: "3 ਦਿਨ ਲਗਾਤਾਰ", got: streak >= 3 },
+    { e: "💎", t: "7 ਦਿਨ ਲਗਾਤਾਰ", got: streak >= 7 }
+  ];
+
+  main.innerHTML = `
+    <div class="greet">
+      <div class="av">🎓</div>
+      <div>
+        <div style="font-weight:800; font-size:1.05rem;">${escapeHtml(name)}</div>
+        <div style="color:#868e96; font-size:0.8rem;">+91 ${escapeHtml(phone)} • ਤੇਰੀ ਤਿਆਰੀ ਦਾ ਪੂਰਾ ਹਿਸਾਬ</div>
+      </div>
+    </div>
+
+    <div class="statgrid">
+      <div class="stat"><div class="n" style="color:#1971c2;">${totalTests}</div><div class="l">ਕੁੱਲ ਟੈਸਟ</div></div>
+      <div class="stat"><div class="n" style="color:#2b8a3e;">${avgPct}%</div><div class="l">ਔਸਤ ਸਕੋਰ</div></div>
+      <div class="stat"><div class="n" style="color:#e8590c;">${bestPct}%</div><div class="l">ਵਧੀਆ ਸਕੋਰ</div></div>
+      <div class="stat"><div class="n" style="color:#c2255c;">🔥 ${streak}</div><div class="l">ਲਗਾਤਾਰ ਦਿਨ</div></div>
+    </div>
+
+    ${chart ? `<div class="card"><h3>📈 ਸਕੋਰ ਦਾ ਰੁਝਾਨ (ਪਿਛਲੇ ${trend.length} ਟੈਸਟ)</h3>${chart}</div>` : ""}
+
+    ${catRows.length ? `<div class="card"><h3>💪 ਮਜ਼ਬੂਤ / ਕਮਜ਼ੋਰ ਵਿਸ਼ੇ</h3>
+      ${catRows.map(r => {
+        const meta = catMeta[r.cat] || { icon: "📝", name: r.cat };
+        const col = r.avg >= 70 ? "#2b8a3e" : (r.avg >= 40 ? "#e8590c" : "#e03131");
+        return `<div class="bar">
+          <div class="t"><span>${meta.icon} ${meta.name} <small style="color:#adb5bd;">(${r.n})</small></span><span style="color:${col};">${r.avg}%</span></div>
+          <div class="track"><div class="fill" style="width:${Math.max(3, r.avg)}%; background:${col};"></div></div>
+        </div>`;
+      }).join("")}
+      <div style="font-size:0.72rem; color:#adb5bd; margin-top:6px;">🟢 70%+ ਮਜ਼ਬੂਤ • 🟠 40-69% ਸੁਧਾਰ ਲੋੜੀਂਦਾ • 🔴 40% ਤੋਂ ਘੱਟ ਕਮਜ਼ੋਰ — ਹੋਰ ਟੈਸਟ ਦੇਕੇ ਸੁਧਾਰੋ!</div>
+    </div>` : ""}
+
+    <div class="card"><h3>🏅 ਤੇਰੇ ਬੈਜ (${badges.filter(b => b.got).length}/${badges.length})</h3>
+      <div style="display:flex; flex-wrap:wrap; justify-content:center;">
+        ${badges.map(b => `<div class="badge ${b.got ? "" : "locked"}"><span class="e">${b.e}</span><span class="t">${b.t}</span></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="card"><h3>🕘 ਹਾਲੀਆ ਟੈਸਟ</h3>
+      ${all.length ? all.slice(0, 10).map(a => {
+        const meta = a.isDaily ? { icon: "🎯", name: "Daily Quiz" } : (catMeta[a.cat] || { icon: "📝", name: a.cat });
+        const col = a.pct >= 60 ? "#2b8a3e" : (a.pct >= 40 ? "#e8590c" : "#e03131");
+        const dt = a.at ? new Date(a.at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        return `<div class="att">
+          <span>${meta.icon}</span>
+          <span style="flex:1; font-weight:700;">${meta.name} <small style="color:#adb5bd; font-weight:400;">${dt}</small></span>
+          <span class="sc" style="color:${col};">${a.score}/${a.total} • ${a.pct}%</span>
+        </div>`;
+      }).join("") : `<p style="text-align:center; color:#868e96; padding:12px;">ਅਜੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਦਿੱਤਾ — ਪਹਿਲਾ ਟੈਸਟ ਦੇਕੇ ਸ਼ੁਰੂਆਤ ਕਰੋ! 🚀</p>`}
+    </div>
+
+    <a class="btn" href="tests.html" style="background:#2b8a3e;">📝 ਹੋਰ ਟੈਸਟ ਦਿਓ</a>
+  `;
+}
+
+/* ---- SVG line chart (koi library nahi — halka phulka) ---- */
+function svgChart(items) {
+  const W = 560, H = 180, PAD = 28;
+  const n = items.length;
+  const xs = i => PAD + (i * (W - PAD * 2)) / Math.max(1, n - 1);
+  const ys = p => H - PAD - (p / 100) * (H - PAD * 2);
+  const pts = items.map((a, i) => `${xs(i)},${ys(a.pct)}`).join(" ");
+  const area = `${PAD},${H - PAD} ${pts} ${xs(n - 1)},${H - PAD}`;
+  const avg = Math.round(items.reduce((s, a) => s + a.pct, 0) / n);
+  const last = items[n - 1].pct;
+  const first = items[0].pct;
+  const delta = last - first;
+  const trendTxt = delta > 0 ? `<span style="color:#2b8a3e;">▲ +${delta}% ਸੁਧਾਰ</span>` : (delta < 0 ? `<span style="color:#e03131;">▼ ${delta}% ਗਿਰਾਵਟ</span>` : `<span style="color:#868e96;">— ਸਥਿਰ</span>`);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">
+      <rect x="${PAD}" y="${ys(100)}" width="${W - PAD * 2}" height="${ys(0) - ys(100)}" fill="#f8f9fa" rx="6"/>
+      <line x1="${PAD}" y1="${ys(avg)}" x2="${W - PAD}" y2="${ys(avg)}" stroke="#74c0fc" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="${W - PAD - 4}" y="${ys(avg) - 5}" font-size="11" fill="#1971c2" text-anchor="end">ਔਸਤ ${avg}%</text>
+      <polygon points="${area}" fill="rgba(232,89,12,0.12)"/>
+      <polyline points="${pts}" fill="none" stroke="#e8590c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      ${items.map((a, i) => `<circle cx="${xs(i)}" cy="${ys(a.pct)}" r="4" fill="#fff" stroke="#e8590c" stroke-width="2.5"/>`).join("")}
+      <text x="${PAD}" y="16" font-size="12" font-weight="bold" fill="#495057">100%</text>
+      <text x="${PAD}" y="${H - 8}" font-size="12" font-weight="bold" fill="#495057">0%</text>
+    </svg>
+    <div style="text-align:center; font-size:0.8rem; font-weight:700; margin-top:4px;">${trendTxt}</div>`;
+}
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+</script>
+</body>
+</html>

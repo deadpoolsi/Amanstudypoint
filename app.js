@@ -1062,21 +1062,24 @@ function loadBoard() {
       const items = Object.values(data)
         .filter(r => r.version === curVer)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+        .slice(0, 10); // 🏆 upgrade: 5 → 10 (Testbook-style rank feel)
 
       if (items.length === 0) {
         list.innerHTML = "<p style='text-align:center;padding:12px;color:#777;'>ਅਜੇ ਤੱਕ ਨਵੇਂ ਟੈਸਟ ਦਾ ਕੋਈ ਰੈਂਕ ਨਹੀਂ ਹੈ। ਪਹਿਲੇ ਨੰਬਰ 'ਤੇ ਆਉਣ ਲਈ ਹੁਣੇ ਟੈਸਟ ਦਿਓ! 🚀</p>";
         return;
       }
 
-      const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
-      list.innerHTML = items.map((r, i) => `
-        <div class="rank-row">
+      const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+      const myName = (localStorage.getItem("pp_name") || "").trim(); // 🏆 apna rank highlight
+      list.innerHTML = items.map((r, i) => {
+        const mine = myName && String(r.name || "").trim() === myName;
+        return `
+        <div class="rank-row" style="${mine ? "background:#fff4e6; border-radius:8px; outline:2px solid #ffa94d;" : ""}">
           <span class="rank-badge">${medals[i] || (i + 1)}</span>
-          <span class="rank-name">${escapeHtml(r.name)}</span>
+          <span class="rank-name">${escapeHtml(r.name)}${mine ? " ⬅️ ਤੁਸੀਂ" : ""}</span>
           <span class="rank-score">${r.score} / ${r.total}</span>
-        </div>
-      `).join("");
+        </div>`;
+      }).join("");
     });
   });
 }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts) — Aman Study Point</title>
+<meta name="description" content="ਪੰਜਾਬ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੀਆਂ ਤਾਜ਼ਾ ਖ਼ਬਰਾਂ — ਅਸਾਮੀਆਂ, ਆਖ਼ਰੀ ਮਿਤੀ ਤੇ ਸਿੱਧਾ ਲਿੰਕ। ਰੋਜ਼ ਅੱਪਡੇਟ!">
+<!-- WhatsApp Preview Tags -->
+<meta property="og:title" content="🔔 ਪੰਜਾਬ ਸਰਕਾਰੀ ਨੌਕਰੀ ਖ਼ਬਰਾਂ — Aman Study Point">
+<meta property="og:description" content="ਤਾਜ਼ਾ ਅਸਾਮੀਆਂ, ਆਖ਼ਰੀ ਮਿਤੀ ਤੇ ਸਿੱਧਾ ਅਪਲਾਈ ਲਿੰਕ — ਰੋਜ਼ ਅੱਪਡੇਟ!">
+<meta property="og:image" content="https://amanstudypoint.vercel.app/assets/og-banner.jpg">
+<meta property="og:url" content="https://amanstudypoint.vercel.app/jobs.html">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f5f7; color: #222; padding-bottom: 40px; }
+  .topbar { background: linear-gradient(135deg, #e8590c, #c92a0d); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+  .topbar h1 { font-size: 1.15rem; }
+  .topbar .sub { font-size: 0.78rem; opacity: 0.9; margin-top: 2px; }
+  .topbar a { color: #fff; text-decoration: none; font-weight: 700; font-size: 0.85rem; background: rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 20px; float: right; margin-top: -32px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 14px 12px; }
+  .job { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 5px rgba(0,0,0,0.06); border-left: 5px solid #e8590c; }
+  .job h2 { font-size: 1rem; line-height: 1.4; margin-bottom: 8px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; }
+  .chip.vac { background: #e7f5ff; color: #1971c2; }
+  .chip.date { background: #fff4e6; color: #d9480f; }
+  .chip.new { background: #d3f9d8; color: #2b7a2b; }
+  .apply { display: block; text-align: center; background: #2b8a3e; color: #fff; text-decoration: none; font-weight: 800; padding: 11px; border-radius: 9px; font-size: 0.9rem; }
+  .note { font-size: 0.8rem; color: #666; line-height: 1.5; margin-top: 8px; background: #f8f9fa; padding: 8px 10px; border-radius: 8px; }
+  .posted { font-size: 0.7rem; color: #adb5bd; text-align: right; margin-top: 6px; }
+  .empty { text-align: center; padding: 50px 16px; }
+  .empty .big { font-size: 3rem; }
+  .btn { display: block; text-align: center; background: #1971c2; color: #fff; text-decoration: none; font-weight: 800; padding: 12px; border-radius: 10px; margin-top: 14px; }
+  .spin { text-align: center; padding: 50px; color: #888; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts)</h1>
+  <div class="sub">ਪੰਜਾਬ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ — ਅਸਾਮੀਆਂ, ਆਖ਼ਰੀ ਮਿਤੀ, ਸਿੱਧਾ ਲਿੰਕ</div>
+  <a href="index.html">🏠 ਹੋਮ</a>
+</div>
+
+<div class="wrap" id="list">
+  <div class="spin">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   🔔 JOB ALERTS — public page (login ki lod nahi)
+   Data: jobAlerts (public read — rules vich set)
+   Testbook vagon — roz di visit di vajah!
+   ═══════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const listEl = document.getElementById("list");
+
+db.ref("jobAlerts").on("value", snap => {
+  const data = snap.val();
+  if (!data) {
+    listEl.innerHTML = `
+      <div class="empty">
+        <div class="big">📢</div>
+        <h2>ਅਜੇ ਕੋਈ ਖ਼ਬਰ ਨਹੀਂ ਆਈ</h2>
+        <p style="color:#868e96; margin-top:8px; font-size:0.9rem;">ਨਵੀਆਂ ਨੌਕਰੀ ਖ਼ਬਰਾਂ ਰੋਜ਼ ਇੱਥੇ ਆਉਂਦੀਆਂ ਰਹਿੰਦੀਆਂ ਹਨ — ਵਾਰ-ਵਾਰ ਵੇਖਦੇ ਰਹੋ! 🔔</p>
+        <a class="btn" href="index.html">🎓 ਟੈਸਟ ਤਿਆਰੀ ਸ਼ੁਰੂ ਕਰੋ</a>
+      </div>`;
+    return;
+  }
+
+  const items = Object.entries(data)
+    .map(([key, j]) => ({ key, ...j }))
+    .filter(j => j.active !== false && j.title)
+    .sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0));
+
+  if (!items.length) {
+    listEl.innerHTML = `<div class="empty"><div class="big">📢</div><h2>ਅਜੇ ਕੋਈ ਖ਼ਬਰ ਨਹੀਂ ਆਈ</h2></div>`;
+    return;
+  }
+
+  const isNew = (j) => j.postedAt && (Date.now() - j.postedAt) < 3 * 24 * 60 * 60 * 1000;
+
+  listEl.innerHTML = items.map(j => `
+    <div class="job">
+      <h2>${escapeHtml(j.title)}</h2>
+      <div class="meta">
+        ${isNew(j) ? `<span class="chip new">🆕 ਨਵੀਂ</span>` : ""}
+        ${j.vacancies ? `<span class="chip vac">👥 ${escapeHtml(j.vacancies)}</span>` : ""}
+        ${j.lastDate ? `<span class="chip date">⏰ ਆਖ਼ਰੀ ਮਿਤੀ: ${escapeHtml(j.lastDate)}</span>` : ""}
+      </div>
+      ${j.link ? `<a class="apply" href="${escapeAttr(j.link)}" target="_blank" rel="noopener">🔗 ਪੂਰੀ ਜਾਣਕਾਰੀ / ਅਪਲਾਈ ਕਰੋ</a>` : ""}
+      ${j.note ? `<div class="note">📋 ${escapeHtml(j.note)}</div>` : ""}
+      ${j.postedAt ? `<div class="posted">📅 ${new Date(j.postedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</div>` : ""}
+    </div>
+  `).join("") + `
+  <a class="btn" href="tests.html" style="background:#e8590c;">📝 ਨੌਕਰੀ ਦੀ ਤਿਆਰੀ — ਟੈਸਟ ਦਿਓ</a>
+  <div style="text-align:center; color:#adb5bd; font-size:0.75rem; margin-top:12px;">⚠️ ਅਪਲਾਈ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਅਧਿਕਾਰਿਕ ਨੋਟੀਫਿਕੇਸ਼ਨ ਜ਼ਰੂਰ ਵੇਖੋ</div>`;
+}, err => {
+  listEl.innerHTML = `<div class="empty"><div class="big">⚠️</div><h2>ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ</h2><p style="color:#868e96;">ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p></div>`;
+});
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function escapeAttr(s) {
+  return escapeHtml(s);
+}
+</script>
+</body>
+</html>

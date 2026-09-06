@@ -471,6 +471,36 @@ Ans: B"></textarea>
 
   <!-- TAB 5: ⚙️ SETTINGS & PYQ (Notice, Poster, Today's Day, PYQ) -->
   <div id="tab_settings" class="tab-content-panel">
+    <!-- 🔔 Job Alerts Manager (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) -->
+    <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
+      <h3 style="color:#e8590c; margin-top:0;">🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts)</h3>
+      <div style="font-size:0.78rem; color:#868e96; margin-bottom:8px;">ਹਰ ਨਵੀਂ ਸਰਕਾਰੀ ਨੌਕਰੀ ਇੱਥੋਂ ਜੋੜੋ — jobs.html 'ਤੇ ਤੁਰੰਤ ਦਿਖੇਗੀ। ਵਿਦਿਆਰਥੀ ਰੋਜ਼ ਵੇਖਣ ਆਉਣਗੇ! 🔥</div>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+        <div style="grid-column: span 2;">
+          <label style="font-size:0.75rem; font-weight:600;">ਨੌਕਰੀ ਦਾ ਨਾਮ / ਖ਼ਬਰ: *</label>
+          <input type="text" id="jobTitleInput" placeholder="ਜਿਵੇਂ: Punjab Police Constable ਭਰਤੀ" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਕੁੱਲ ਅਸਾਮੀਆਂ:</label>
+          <input type="text" id="jobVacInput" placeholder="1,746" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਆਖ਼ਰੀ ਮਿਤੀ:</label>
+          <input type="text" id="jobLastDateInput" placeholder="20 Sep 2026" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size:0.75rem; font-weight:600;">ਲਿੰਕ (Apply / Notification URL):</label>
+          <input type="text" id="jobLinkInput" placeholder="https://punjabpolice.gov.in/..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size:0.75rem; font-weight:600;">ਵੇਰਵਾ (optional — ਯੋਗਤਾ, ਉਮਰ ਆਦਿ):</label>
+          <input type="text" id="jobNoteInput" placeholder="ਯੋਗਤਾ: 10+2 | ਉਮਰ: 18-28 | ਫ਼ੀਸ: ₹500" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+      </div>
+      <button onclick="addJobAlert()" style="background:#e8590c; color:#fff; width:100%; padding:11px; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">➕ ਖ਼ਬਰ ਪ੍ਰਕਾਸ਼ਿਤ ਕਰੋ</button>
+      <div id="jobAlertsList" style="margin-top:10px;"></div>
+    </div>
+
     <!-- Notice Bar -->
     <div class="card-admin">
       <h3 style="margin-top:0;">📢 Top Announcement Bar</h3>
@@ -642,7 +672,53 @@ function switchAdminTab(panelId, btnEl) {
   if (btnEl) btnEl.classList.add("active");
 }
 
+/* ═══ 🔔 Job Alerts (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) — jobs.html da data ═══ */
+function loadJobAlerts() {
+  db.ref("jobAlerts").once("value", snap => {
+    const data = snap.val() || {};
+    const items = Object.entries(data).map(([k, v]) => ({ k, ...v })).sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0));
+    const el = document.getElementById("jobAlertsList");
+    if (!el) return;
+    el.innerHTML = items.length ? items.map(j => `
+      <div style="display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #f1f3f5; border-radius:8px; margin-bottom:6px; background:#fff;">
+        <div style="flex:1; font-size:0.8rem;">
+          <b>${(j.title || "").slice(0, 70)}</b><br>
+          <small style="color:#888;">${j.vacancies ? "👥 " + j.vacancies + "   " : ""}${j.lastDate ? "⏰ " + j.lastDate : ""}</small>
+        </div>
+        <button onclick="deleteJobAlert('${j.k}')" style="background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-weight:bold;">🗑️</button>
+      </div>`).join("") : "<small style='color:#888;'>ਅਜੇ ਕੋਈ ਖ਼ਬਰ ਨਹੀਂ — ਉੱਪਰੋਂ ਜੋੜੋ।</small>";
+  });
+}
+
+function addJobAlert() {
+  const title = (document.getElementById("jobTitleInput").value || "").trim();
+  if (!title) return alert("ਨੌਕਰੀ ਦਾ ਨਾਮ ਲਿਖੋ!");
+  const link = (document.getElementById("jobLinkInput").value || "").trim();
+  if (link && !/^https?:\/\//i.test(link)) return alert("ਲਿੰਕ http:// ਜਾਂ https:// ਨਾਲ ਸ਼ੁਰੂ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ!");
+  db.ref("jobAlerts").push({
+    title: title,
+    vacancies: (document.getElementById("jobVacInput").value || "").trim(),
+    lastDate: (document.getElementById("jobLastDateInput").value || "").trim(),
+    link: link,
+    note: (document.getElementById("jobNoteInput").value || "").trim(),
+    postedAt: Date.now(),
+    active: true
+  }).then(() => {
+    alert("✅ ਖ਼ਬਰ ਪ੍ਰਕਾਸ਼ਿਤ! jobs.html 'ਤੇ ਹੁਣੇ ਦਿਖੇਗੀ।");
+    ["jobTitleInput", "jobVacInput", "jobLastDateInput", "jobLinkInput", "jobNoteInput"].forEach(id => {
+      const e = document.getElementById(id); if (e) e.value = "";
+    });
+    loadJobAlerts();
+  }).catch(err => alert("⚠️ " + err.message));
+}
+
+function deleteJobAlert(key) {
+  if (!confirm("ਇਹ ਖ਼ਬਰ ਡਿਲੀਟ ਕਰੀਏ?")) return;
+  db.ref("jobAlerts/" + key).remove().then(loadJobAlerts);
+}
+
 function loadAllAdminModules() {
+  loadJobAlerts();
   loadCategoryPassPricing();
   loadBooksCouponConfig();
   loadCategoryTestsAdmin();

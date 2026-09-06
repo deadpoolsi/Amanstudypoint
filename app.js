@@ -335,6 +335,9 @@ function showModal(title, price, id, name) {
       <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${price})" style="background:#1971c2; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
         ⚡ Pay ₹${price} via Razorpay (GPay/PhonePe/Cards)
       </button>
+      <button class="btn btn-block" onclick="openBookQrPay('${id}', '${name}', ${price}, '')" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:11px; border-radius:8px; width:100%; border:none; font-size:0.92rem; cursor:pointer; margin-top:8px;">
+        📷 QR ਨਾਲ ਭੁਗਤਾਨ (ਕਿਸੇ ਵੀ ਫ਼ੋਨ ਤੋਂ)
+      </button>
     </div>
   `;
 
@@ -371,6 +374,9 @@ function applyCoupon(originalPrice, id, name) {
     btnBox.innerHTML = `
       <button class="btn btn-block" onclick="payWithRazorpay('${id}', '${name}', ${finalPrice}, '${inp}')" style="background:#2b8a3e; color:#fff; font-weight:bold; padding:12px; border-radius:8px; width:100%; border:none; font-size:1rem; cursor:pointer;">
         ⚡ Pay ₹${finalPrice} via Razorpay (Discount Applied)
+      </button>
+      <button class="btn btn-block" onclick="openBookQrPay('${id}', '${name}', ${finalPrice}, '${inp}')" style="background:#7048e8; color:#fff; font-weight:bold; padding:11px; border-radius:8px; width:100%; border:none; font-size:0.92rem; cursor:pointer; margin-top:8px;">
+        📷 QR ਨਾਲ ਭੁਗਤਾਨ (ਕਿਸੇ ਵੀ ਫ਼ੋਨ ਤੋਂ)
       </button>
     `;
   }
@@ -1519,3 +1525,100 @@ function syncPurchasedBooks() {
 document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });
+
+/* ═══════ 📷 QR PAYMENT — kise vi phone ton, FULLY AUTOMATIC ═══════
+   Flow: QR scan (maa-pya de phone ton vi) → pay.html → Razorpay →
+   server verify (HMAC + amount + phone-binding) → book unlock →
+   eh page har 4-second check karke "🎉 ਸਫ਼ਲ" apne aap dikhundi hai. */
+let _qrPollTimer = null;
+function stopQrPolling() { if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; } }
+
+function renderQrInto(box, text) {
+  if (!box) return;
+  if (window.QRCode) {
+    try {
+      box.innerHTML = "";
+      new QRCode(box, { text: text, width: 210, height: 210, correctLevel: QRCode.CorrectLevel.M });
+      return;
+    } catch (e) {}
+  }
+  box.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(text) + '" alt="QR" style="width:220px; height:220px;" onerror="this.alt=\'QR load nahi hoya\'">';
+}
+
+function showQrOverlay(rupees, label, payUrl, watchPath, watchMode) {
+  stopQrPolling();
+  let ov = document.getElementById("aspQrOverlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "aspQrOverlay";
+    ov.style.cssText = "display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:99999; overflow-y:auto;";
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `
+    <div style="background:#fff; border-radius:16px; max-width:350px; margin:30px auto; padding:20px 16px; position:relative; font-family:sans-serif;">
+      <button onclick="stopQrPolling(); document.getElementById('aspQrOverlay').style.display='none';" style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#888;">✕</button>
+      <div style="text-align:center; font-weight:800; font-size:1.05rem; color:#222;">📷 QR ਨਾਲ ਭੁਗਤਾਨ</div>
+      <div id="aspQrStatus" style="margin-top:10px;">
+        <div style="font-size:1.5rem; font-weight:800; color:#2b8a3e;">₹${rupees}</div>
+        <div style="color:#666; font-size:0.85rem; margin-bottom:8px;">${label}</div>
+        <div id="aspQrBox" style="background:#f8f9fa; border:2px dashed #ccc; border-radius:12px; padding:10px; display:flex; align-items:center; justify-content:center; min-height:230px;">
+          <div style="color:#888; font-size:0.85rem;">QR ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+        </div>
+        <a href="${payUrl}" style="display:block; margin-top:10px; background:#7048e8; color:#fff; text-decoration:none; font-weight:700; padding:11px; border-radius:8px; font-size:0.9rem;">📲 ਇਸ ਫ਼ੋਨ ਵਿੱਚ ਖੋਲ੍ਹ ਕੇ ਭੁਗਤਾਨ ਕਰੋ</a>
+        <a href="https://wa.me/?text=${encodeURIComponent('💳 ਭੁਗਤਾਨ ਲਿੰਕ (Aman Study Point): ' + payUrl)}" target="_blank" style="display:block; margin-top:8px; background:#25D366; color:#fff; text-decoration:none; font-weight:700; padding:11px; border-radius:8px; font-size:0.9rem;">📲 WhatsApp 'ਤੇ ਲਿੰਕ ਭੇਜੋ</a>
+        <div style="color:#888; font-size:0.78rem; margin-top:10px; line-height:1.6; text-align:left;">
+          👇 <b>ਕਿਸੇ ਵੀ ਫ਼ੋਨ</b> ਤੋਂ (ਮਾਪਿਆਂ ਦੇ ਫ਼ੋਨ ਤੋਂ ਵੀ) ਇਹ QR ਸਕੈਨ ਕਰੋ।<br>
+          ⏳ ਭੁਗਤਾਨ ਹੁੰਦੇ ਹੀ ਕਿਤਾਬ <b>ਆਪਣੇ-ਆਪ</b> unlock ਹੋ ਜਾਵੇਗੀ — ਇਹ ਸਕਰੀਨ ਖੁੱਲ੍ਹੀ ਰਹਿਣ ਦਿਓ।
+        </div>
+        <div style="margin-top:10px; color:#1971c2; font-weight:700; font-size:0.85rem;">⏳ ਭੁਗਤਾਨ ਦੀ ਉਡੀਕ ਹੈ...</div>
+      </div>
+    </div>`;
+  ov.style.display = "block";
+  renderQrInto(document.getElementById("aspQrBox"), payUrl);
+  // 🔁 AUTO-POLL — book/pass active hoi apne aap pakad lan
+  _qrPollTimer = setInterval(async () => {
+    try {
+      const u = currentUser();
+      if (!u) return stopQrPolling();
+      const s = await db.ref(watchPath).once("value");
+      const v = s.val();
+      const hit = (watchMode === "book") ? (v === true) : (typeof v === "number" && v > Date.now());
+      if (hit) {
+        stopQrPolling();
+        document.getElementById("aspQrStatus").innerHTML = `
+          <div style="font-size:3.2rem;">🎉</div>
+          <h2 style="color:#2b8a3e; margin:6px 0;">ਭੁਗਤਾਨ ਸਫ਼ਲ!</h2>
+          <p style="color:#555; font-weight:700;">ਕਿਤਾਬ unlock ਹੋ ਗਈ ਹੈ ✅</p>`;
+        setTimeout(() => { location.reload(); }, 2200);
+      }
+    } catch (e) {}
+  }, 4000);
+}
+
+async function openBookQrPay(bookId, itemName, price, couponCode) {
+  const u = currentUser();
+  if (!u) {
+    if (typeof toast === "function") toast("Please login first 🔐");
+    setTimeout(() => { location.href = "login.html"; }, 800);
+    return;
+  }
+  try {
+    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+    const r = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "book", bookId: bookId, couponCode: couponCode || "",
+        phone: u.phone, idToken: idToken
+      })
+    });
+    const d = await r.json();
+    if (!d.success) { alert("⚠️ " + (d.message || "Order ਨਹੀਂ ਬਣਿਆ")); return; }
+    const payUrl = location.origin + "/pay.html?order=" + encodeURIComponent(d.orderId) + "&key=" + encodeURIComponent(d.keyId) + "&amount=" + d.amount;
+    showQrOverlay(Math.round(d.amount / 100), "ਕਿਤਾਬ: " + itemName, payUrl,
+      "users/" + u.phone + "/books/" + bookId, "book");
+  } catch (e) {
+    alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋਇਆ");
+  }
+}
+/* ═══════ END QR PAYMENT ═══════ */

@@ -122,6 +122,7 @@ module.exports = async (req, res) => {
             total: total,
             percentage: percentage,
             at: Date.now(),
+            title: (typeof body.title === "string") ? body.title.slice(0, 120) : "", // 📊 progress dashboard layi
           }),
         }
       );

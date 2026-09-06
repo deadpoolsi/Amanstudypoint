@@ -99,6 +99,7 @@ module.exports = async (req, res) => {
         total: total,
         time: timeStr,
         version: ver,
+        at: Date.now(), // 🏆 weekly rank / badges layi (PII nahi — sirf time)
       }),
     });
 

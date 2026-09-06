@@ -132,9 +132,7 @@ module.exports = async (req, res) => {
   if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature)
     return fail(res, 400, "ਅਧੂਰੀ ਜਾਣਕਾਰੀ (Missing required payment tokens)");
 
-  const phone = String(body.phone || "").trim();
-  if (!sanitizeUserKey(phone))
-    return fail(res, 400, "ਗ਼ਲਤ ਯੂਜ਼ਰ (phone) ਜਾਣਕਾਰੀ।");
+  const bodyPhone = String(body.phone || "").trim(); // 🔒 v2: sirf FALLBACK (purane orders layi)
 
   try {
     /* STEP 1 — Signature check (HMAC SHA256) */
@@ -160,6 +158,16 @@ module.exports = async (req, res) => {
     const expectedAmount = parseInt(notes.expected_amount) || 0;
     if (!expectedAmount || order.amount !== expectedAmount)
       return fail(res, 400, "ਆਰਡਰ ਦੀ ਰਕਮ ਮੇਲ ਨਹੀਂ ਖਾਂਦੀ (Amount mismatch)।");
+
+    /* 🔒 SECURITY v2 — PAYMENT→USER BINDING:
+       Grant di phone hun ORDER NOTES ton aundi hai (create-order ne
+       idToken verify karke dali si). Client da phone sirf tab jado
+       order purana ho (binding ton pehla bana). Is nal koi vi doosre
+       vidiarathi de account vich pass/book nahi bhijva sakda. */
+    const notesPhone = String(notes.phone || "").trim();
+    const phone = sanitizeUserKey(notesPhone) ? notesPhone : bodyPhone;
+    if (!sanitizeUserKey(phone))
+      return fail(res, 400, "ਗ਼ਲਤ ਯੂਜ਼ਰ (phone) ਜਾਣਕਾਰੀ।");
 
     /* STEP 3 — Payment check (captured + sahi amount) */
     const payRes = await fetch(

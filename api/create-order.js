@@ -14,6 +14,32 @@ const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const FIREBASE_DB_URL =
   process.env.FIREBASE_DB_URL ||
   "https://aman-study-point-default-rtdb.firebaseio.com";
+const WEB_API_KEY = "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw";
+
+/* 🔒 SECURITY v2 — BUYER BINDING:
+   idToken verify karke ASLI vidiarathi da phone derive kardo han.
+   Client da bheja phone kabhi base nahi benda — order notes vich
+   sirf token-ton-derived phone janda hai, jehri verify-payment
+   vich grant layi use hundi hai (payment→user binding). */
+async function fetchBuyerPhone(idToken) {
+  try {
+    const r = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${WEB_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: idToken }),
+      }
+    );
+    const d = await r.json();
+    const email = d && d.users && d.users[0] && d.users[0].email;
+    if (!email) return null;
+    const m = email.match(/^(\d{10})@amanstudypoint\.student$/);
+    return m ? m[1] : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 // Plan di miaad (milliseconds)
 const PASS_DURATIONS = {
@@ -120,6 +146,13 @@ module.exports = async (req, res) => {
   if (body.phone && !sanitizeKey(String(body.phone).trim()))
     return fail(res, 400, "ਗ਼ਲਤ phone format।");
 
+  // 🔒 SECURITY v2 — BUYER BINDING: order sirf asli (token-verified)
+  // vidiarathi de naam ban sakda hai. Client da phone base NAHI.
+  const buyerPhone = await fetchBuyerPhone(String(body.idToken || ""));
+  if (!buyerPhone) {
+    return fail(res, 401, "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰ ਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+  }
+
   try {
     // 1) ASLI PRICE sirf server-side Firebase ton (client amount ignore!)
     const settings = await fetchSiteSettings();
@@ -138,6 +171,7 @@ module.exports = async (req, res) => {
       base_price: String(pricing.basePrice),
       discount_pct: String(pricing.discountPct),
       coupon_code: item.couponCode || "",
+      phone: buyerPhone, // 🔒 v2: token-verified buyer — grant ISSI phone nu milega
     };
     if (type === "pass") {
       notes.plan_id = item.planId;

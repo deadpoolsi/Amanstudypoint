@@ -87,16 +87,37 @@ const catMeta = {
 const phone = localStorage.getItem("pp_session");
 const main = document.getElementById("main");
 
-if (!phone) {
+function showLoginBox(title, sub) {
   main.innerHTML = `
     <div class="loginbox">
       <div class="big">🔐</div>
-      <h2>ਪਹਿਲਾਂ ਲੌਗਿਨ ਕਰੋ</h2>
-      <p style="color:#868e96; margin:8px 0 4px; font-size:0.9rem;">ਆਪਣੀ ਪ੍ਰਗਤੀ ਵੇਖਣ ਲਈ ਲੌਗਿਨ ਕਰੋ ਜੀ</p>
+      <h2>${title}</h2>
+      <p style="color:#868e96; margin:8px 0 4px; font-size:0.9rem;">${sub}</p>
       <a class="btn" href="login.html" style="max-width:240px; margin:14px auto 0;">🔑 ਲੌਗਿਨ ਕਰੋ</a>
     </div>`;
+}
+
+if (!phone) {
+  showLoginBox("ਪਹਿਲਾਂ ਲੌਗਿਨ ਕਰੋ", "ਆਪਣੀ ਪ੍ਰਗਤੀ ਵੇਖਣ ਲਈ ਲੌਗਿਨ ਕਰੋ ਜੀ");
 } else {
-  loadProgress();
+  /* 🔐 SESSION-CHECK: purana login-session expire ho jande si ta read permission_denied
+     hundi si → ulleha error. Hun pehla Firebase auth check — saaf message + login button */
+  main.innerHTML = `<div class="loginbox"><div class="big">⏳</div><h2>ਲੋਡ ਹੋ ਰਿਹਆ...</h2></div>`;
+  let authDecided = false;
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (authDecided) return;
+    authDecided = true;
+    const expected = phone + "@amanstudypoint.student";
+    if (user && (user.email === expected || user.email === "deadpool73503@gmail.com")) {
+      loadProgress();
+    } else {
+      showLoginBox("ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ ਹੋ ਗਿਆ", "ਸੁਰੱਖਿਆ ਲਈ ਮੁੜ ਲੌਗਿਨ ਕਰੋ — ਤੁਹਾਡੀ ਸਾਰੀ ਪ੍ਰਗਤੀ ਸੁਰੱਖਿਅਤ ਹੈ");
+    }
+  });
+  /* safety: auth state na aave (network masle) ta 6 sek baad phir koshish */
+  setTimeout(function () {
+    if (!authDecided) { authDecided = true; loadProgress(); }
+  }, 6000);
 }
 
 async function loadProgress() {
@@ -109,7 +130,12 @@ async function loadProgress() {
     const streakData = streakSnap.val() || {};
     render(attemptsRaw, streakData.streak || 0);
   } catch (e) {
-    main.innerHTML = `<div class="loginbox"><div class="big">⚠️</div><h2>ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ</h2><p style="color:#868e96;">ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜੀ</p></div>`;
+    const denied = e && (e.code === "permission_denied" || String(e.message || "").toLowerCase().includes("permission"));
+    if (denied) {
+      showLoginBox("ਲੌਗਿਨ ਸੈਸ਼ਨ ਖ਼ਤਮ ਹੋ ਗਿਆ", "ਸੁਰੱਖਿਆ ਲਈ ਮੁੜ ਲੌਗਿਨ ਕਰੋ — ਤੁਹਾਡੀ ਸਾਰੀ ਪ੍ਰਗਤੀ ਸੁਰੱਖਿਅਤ ਹੈ");
+    } else {
+      main.innerHTML = `<div class="loginbox"><div class="big">⚠️</div><h2>ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ</h2><p style="color:#868e96;">ਇੰਟਰਨੈੱਟ ਜਾਂਚ ਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</p><button class="btn" onclick="location.reload()" style="max-width:240px; margin:14px auto 0; border:none; cursor:pointer;">🔄 ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼</button></div>`;
+    }
   }
 }
 

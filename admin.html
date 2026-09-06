@@ -353,6 +353,11 @@ Ans: B"></textarea>
         </div>
       </div>
 
+      <!-- 🔄 FIX: limit reset button -->
+      <button class="btn btn-block" onclick="resetCatCouponLimit()" style="background:#e8590c; color:#fff; width:100%; padding:10px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-bottom:8px;">
+        🔄 ਕੂਪਨ ਲਿਮਿਟ ਰੀਸੈੱਟ ਕਰੋ (ਵਰਤੀ ਹੋਈ ਗਿਣਤੀ 0)
+      </button>
+
       <button class="btn btn-primary btn-block" onclick="saveCategoryPassPricing()" style="background:#2b8a3e; width:100%; padding:12px; font-weight:bold; border-radius:6px;">
         💾 Save Exam Pass Prices & Coupon
       </button>
@@ -393,6 +398,11 @@ Ans: B"></textarea>
           </select>
         </div>
       </div>
+
+      <!-- 🔄 FIX: limit reset button -->
+      <button class="btn btn-block" onclick="resetBookCouponLimit()" style="background:#e8590c; color:#fff; width:100%; padding:10px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-bottom:8px;">
+        🔄 ਕੂਪਨ ਲਿਮਿਟ ਰੀਸੈੱਟ ਕਰੋ (ਵਰਤੀ ਹੋਈ ਗਿਣਤੀ 0)
+      </button>
 
       <button class="btn btn-primary btn-block" onclick="saveBooksCouponConfig()" style="background:#1971c2; width:100%; padding:11px; font-weight:bold; border-radius:6px;">
         💾 Save Books Coupon
@@ -560,6 +570,8 @@ const ADMIN_EMAIL = "deadpool73503@gmail.com";
 let currentResultsData = [];
 let cachedCatCouponUsed = 0;
 let cachedBookCouponUsed = 0;
+let cachedCatCouponCode = ""; // 🔄 FIX: purana coupon code yaad — naya code = limit 0 ton start
+let cachedBookCouponCode = "";
 let currentCategoryTestsRaw = [];
 let loadedFileJsonData = null;
 let categoryTestsCache = {}; // 🚀 FIX 2: har category da data 1 var hi download
@@ -663,6 +675,7 @@ function loadCategoryPassPricing() {
 
     const c = p.coupon || {};
     cachedCatCouponUsed = c.usedCount || 0;
+    cachedCatCouponCode = (c.code || "").toUpperCase(); // 🔄 yaad rakho
     document.getElementById("catCouponCode").value = c.code || "";
     document.getElementById("catCouponDiscount").value = c.discount || 0;
     document.getElementById("catCouponLimit").value = c.limit || "";
@@ -686,6 +699,10 @@ function saveCategoryPassPricing() {
   const limitVal = parseInt(document.getElementById("catCouponLimit").value) || 0;
   const active = document.getElementById("catCouponActive").value === "true";
 
+  /* 🔄 FIX: naya coupon code = LIMIT FRESH (usedCount 0) —
+     purana code hi hai taan purana usedCount (students di ginti khoti na hove) */
+  const isNewCatCoupon = (code !== cachedCatCouponCode) && code !== "";
+
   db.ref(`siteSettings/passPricing/${cat}`).set({
     day,
     week,
@@ -697,13 +714,26 @@ function saveCategoryPassPricing() {
       discount,
       active,
       limit: limitVal,
-      usedCount: cachedCatCouponUsed
+      usedCount: isNewCatCoupon ? 0 : cachedCatCouponUsed
     }
   }).then(() => {
-    alert(`✅ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!`);
+    if (isNewCatCoupon) cachedCatCouponUsed = 0;
+    cachedCatCouponCode = code;
+    alert(`✅ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!` + (isNewCatCoupon ? `\n🆕 ਨਵਾਂ ਕੂਪਨ — ਲਿਮਿਟ 0 ਤੋਂ ਤਾਜ਼ਾ ਸ਼ੁਰੂ!` : ``));
   }).catch((err) => {
     alert("⚠️ ਸੇਵ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ: " + err.message);
   });
+}
+
+/* 🔄 Reset — ihna coupon di limit 0 ton chalu (code same rakh ke) */
+function resetCatCouponLimit() {
+  const cat = document.getElementById("pricingCatSelect").value;
+  if (!confirm("ਇਸ ਕੈਟਾਗਰੀ ਦੇ ਕੂਪਨ ਦੀ ਲਿਮਿਟ 0 ਤੋਂ ਰੀਸੈੱਟ ਕਰੀਏ?")) return;
+  db.ref(`siteSettings/passPricing/${cat}/coupon/usedCount`).set(0).then(() => {
+    cachedCatCouponUsed = 0;
+    alert("✅ ਕੂਪਨ ਲਿਮਿਟ ਰੀਸੈੱਟ — ਹੁਣ ਫਿਰ ਵਰਤੋਂ ਹੋ ਸਕਦੀ ਹੈ!");
+    loadCategoryPassPricing();
+  }).catch(err => alert("⚠️ " + err.message));
 }
 
 /* 🏷️ Books Coupon Handler */
@@ -711,6 +741,7 @@ function loadBooksCouponConfig() {
   db.ref("siteSettings/coupon").once("value", snap => {
     const c = snap.val() || { code: "", discount: 0, active: false, limit: 0, usedCount: 0 };
     cachedBookCouponUsed = c.usedCount || 0;
+    cachedBookCouponCode = (c.code || "").toUpperCase(); // 🔄 yaad rakho
     document.getElementById("bookCouponCode").value = c.code || "";
     document.getElementById("bookCouponDiscount").value = c.discount || 0;
     document.getElementById("bookCouponLimit").value = c.limit || "";
@@ -727,16 +758,31 @@ function saveBooksCouponConfig() {
   const limitVal = parseInt(document.getElementById("bookCouponLimit").value) || 0;
   const active = document.getElementById("bookCouponActive").value === "true";
 
+  /* 🔄 FIX: naya coupon code = LIMIT FRESH (usedCount 0) */
+  const isNewBookCoupon = (code !== cachedBookCouponCode) && code !== "";
+
   db.ref("siteSettings/coupon").set({
     code,
     discount,
     active,
     limit: limitVal,
-    usedCount: cachedBookCouponUsed
+    usedCount: isNewBookCoupon ? 0 : cachedBookCouponUsed
   }).then(() => {
-    alert("✅ Books Discount Coupon Saved!");
+    if (isNewBookCoupon) cachedBookCouponUsed = 0;
+    cachedBookCouponCode = code;
+    alert("✅ Books Discount Coupon Saved!" + (isNewBookCoupon ? "\n🆕 ਨਵਾਂ ਕੂਪਨ — ਲਿਮਿਟ 0 ਤੋਂ ਤਾਜ਼ਾ ਸ਼ੁਰੂ!" : ""));
     loadBooksCouponConfig();
   });
+}
+
+/* 🔄 Reset — books coupon di limit 0 ton chalu */
+function resetBookCouponLimit() {
+  if (!confirm("ਕਿਤਾਬਾਂ ਦੇ ਕੂਪਨ ਦੀ ਲਿਮਿਟ 0 ਤੋਂ ਰੀਸੈੱਟ ਕਰੀਏ?")) return;
+  db.ref("siteSettings/coupon/usedCount").set(0).then(() => {
+    cachedBookCouponUsed = 0;
+    alert("✅ ਕੂਪਨ ਲਿਮਿਟ ਰੀਸੈੱਟ — ਹੁਣ ਫਿਰ ਵਰਤੋਂ ਹੋ ਸਕਦੀ ਹੈ!");
+    loadBooksCouponConfig();
+  }).catch(err => alert("⚠️ " + err.message));
 }
 
 /* 🎯 Category Test Series Manager (Single & Bulk) */

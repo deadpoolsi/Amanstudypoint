@@ -470,7 +470,30 @@ function closeModal() {
   if (m) { m.hidden = true; m.style.display = "none"; }
 }
 
-/* 5. Free PYQ Loader */
+/* 5. Free PYQ Loader — 🏆 PROFESSIONAL (parikha mutabik group + rangin cards) */
+const PYQ_THEMES = {
+  police:  { label: "🚔 Punjab Police",  color: "#1971c2", bg: "#e7f5ff", key: "police" },
+  patwari: { label: "🗺️ Patwari",        color: "#2b8a3e", bg: "#ebfbee", key: "patwari" },
+  clerk:   { label: "📋 Clerk (PSSSB)",   color: "#e8590c", bg: "#fff4e6", key: "clerk" },
+  ssc:     { label: "🏛️ SSC",            color: "#7048e8", bg: "#f3f0ff", key: "ssc" },
+  ptet:    { label: "🎓 PTET",            color: "#d6336c", bg: "#ffdeeb", key: "ptet" },
+  bank:    { label: "🏦 Banking",         color: "#0ca678", bg: "#e6fcf5", key: "bank" },
+  current: { label: "📰 GK / Current",    color: "#f08c00", bg: "#fff9db", key: "current" },
+  other:   { label: "📄 ਹੋਰ ਪ੍ਰੀਖਿਆਵਾਂ",   color: "#495057", bg: "#f1f3f5", key: "other" }
+};
+
+function pyqThemeFor(exam) {
+  const e = String(exam || "").toLowerCase();
+  if (e.includes("police")) return PYQ_THEMES.police;
+  if (e.includes("patwari")) return PYQ_THEMES.patwari;
+  if (e.includes("clerk")) return PYQ_THEMES.clerk;
+  if (e.includes("ssc")) return PYQ_THEMES.ssc;
+  if (e.includes("ptet") || e.includes("tet")) return PYQ_THEMES.ptet;
+  if (e.includes("bank")) return PYQ_THEMES.bank;
+  if (e.includes("current") || e.includes("gk")) return PYQ_THEMES.current;
+  return PYQ_THEMES.other;
+}
+
 function loadPublicPYQs() {
   const container = document.getElementById("pyqListContainer") || document.getElementById("pyqList");
   if (!container) return;
@@ -482,23 +505,57 @@ function loadPublicPYQs() {
       return;
     }
 
-    const keys = Object.keys(data);
-    container.innerHTML = keys.map(key => {
-      const p = data[key];
-      const views = (p.views || 0).toLocaleString();
-      return `
-        <div style="background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; margin:0 auto 10px auto; max-width:550px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+    const items = Object.entries(data).map(([key, p]) => ({ key, ...p }));
+
+    // parikha mutabik group banao (theme key nal)
+    const groups = {};
+    items.forEach(p => {
+      const t = pyqThemeFor(p.exam);
+      (groups[t.key] = groups[t.key] || { theme: t, items: [] }).items.push(p);
+    });
+
+    // order: site categories pehlan, baaki count nal
+    const order = ["police", "patwari", "clerk", "ssc", "ptet", "bank", "current", "other"];
+    const groupKeys = Object.keys(groups).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return groups[b].items.length - groups[a].items.length;
+    });
+
+    container.innerHTML = groupKeys.map(gk => {
+      const g = groups[gk];
+      const t = g.theme;
+      const cards = g.items.map(p => {
+        const views = (p.views || 0).toLocaleString();
+        const hot = (p.views || 0) >= 100;
+        return `
+        <div style="background:#fff; border:1px solid #e9ecef; border-left:4px solid ${t.color}; border-radius:12px; padding:12px 14px; margin-bottom:10px; max-width:550px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="background:#e7f5ff; color:#1971c2; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:8px;">${p.exam || 'Exam'}</span>
-            <span style="font-size:0.8rem; color:#e8590c; font-weight:700;">👁️ ${views}+ Views</span>
+            <div>
+              <span style="background:${t.bg}; color:${t.color}; font-size:0.72rem; font-weight:800; padding:3px 9px; border-radius:8px;">${t.label}</span>
+              ${p.year ? `<span style="background:#f8f9fa; color:#495057; font-size:0.72rem; font-weight:800; padding:3px 9px; border-radius:8px; margin-left:4px;">📅 ${p.year}</span>` : ""}
+            </div>
+            <span style="font-size:0.78rem; color:#e8590c; font-weight:700;">${hot ? "🔥" : "👁️"} ${views}${hot ? "+" : " Views"}</span>
           </div>
           <h3 style="font-size:1rem; font-weight:700; margin:4px 0 3px 0; color:#222; line-height:1.3;">${p.title}</h3>
           <div style="color:#777; font-size:0.78rem; margin-bottom:10px;">📅 Added: ${p.date || 'Recently'}</div>
-          <button type="button" onclick="openSecurePYQ('${key}')" class="btn btn-primary" style="background:#1971c2; color:#fff; border:none; cursor:pointer; font-weight:bold; border-radius:8px; padding:8px 12px; font-size:0.85rem; width:100%; display:block; text-align:center;">
+          <button type="button" onclick="openSecurePYQ('${p.key}')" class="btn btn-primary" style="background:${t.color}; color:#fff; border:none; cursor:pointer; font-weight:bold; border-radius:8px; padding:9px 12px; font-size:0.85rem; width:100%; display:block; text-align:center;">
             📖 View & Read Paper
           </button>
-        </div>
-      `;
+        </div>`;
+      }).join("");
+
+      return `
+        <div style="margin-bottom:22px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; max-width:550px; margin-left:auto; margin-right:auto;">
+            <span style="background:${t.bg}; color:${t.color}; font-size:0.85rem; font-weight:800; padding:5px 12px; border-radius:10px;">${t.label}</span>
+            <span style="color:#868e96; font-size:0.78rem; font-weight:700;">${g.items.length} ਪੇਪਰ</span>
+            <div style="flex:1; height:2px; background:${t.bg}; border-radius:2px;"></div>
+          </div>
+          ${cards}
+        </div>`;
     }).join("");
   });
 }

@@ -75,8 +75,8 @@
     <nav id="navLinks">
       <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
       <a href="#quiz" onclick="toggleNavMenu()">🎯 Daily Test</a>
-      <a href="#books" onclick="toggleNavMenu()">📚 All Books</a>
-      <a href="javascript:void(0)" onclick="openStudentTab('books'); toggleNavMenu();">🎒 My Books</a>
+      <a href="#books" onclick="toggleNavMenu()" class="books-ui">📚 All Books</a>
+      <a href="javascript:void(0)" onclick="openStudentTab('books'); toggleNavMenu();" class="books-ui">🎒 My Books</a>
       <a href="javascript:void(0)" id="analyticsNav" onclick="openStudentTab('progress'); toggleNavMenu();">📊 My Progress</a>
       <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
       <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
@@ -93,7 +93,7 @@
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
       <a href="#quiz" class="btn btn-primary" style="background:#e8590c; box-shadow:0 4px 14px rgba(232,89,12,0.35);">🎯 Start Daily Mock Test</a>
-      <a href="#books" class="btn btn-ghost">📚 View Books</a>
+      <a href="#books" class="btn btn-ghost books-ui">📚 View Books</a>
       <a href="#pyq" class="btn btn-ghost" style="text-decoration:none;" onclick="document.getElementById('pyq')?.scrollIntoView({behavior:'smooth'}); return false;">
         📑 Free PYQs
       </a>
@@ -282,7 +282,7 @@
 </section>
 
 <!-- Books Section -->
-<section id="books" class="section">
+<section id="books" class="section books-ui">
   <div class="container">
     <h2>📚 Our Books & Notes</h2>
     <p class="section-sub">Affordable high quality notes in Punjabi</p>
@@ -438,6 +438,16 @@
         bar.innerText = '📢 ' + val;
         bar.style.display = 'block';
         localStorage.setItem('asp_announcement', '📢 ' + val);
+      }
+    });
+  }
+
+  // 2.5 📚 Books Section ON/OFF — admin toggle (default: OFF)
+  // siteSettings/booksSection === true ho hi ON hoga, nahin ta sab books-ui hidden
+  if (typeof db !== 'undefined') {
+    db.ref('siteSettings/booksSection').once('value', (snap) => {
+      if (snap.val() !== true) {
+        document.querySelectorAll('.books-ui').forEach(el => { el.style.display = 'none'; });
       }
     });
   }

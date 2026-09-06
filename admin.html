@@ -502,6 +502,19 @@ Ans: B"></textarea>
       <div id="jobAlertsList" style="margin-top:10px;"></div>
     </div>
 
+    <!-- 📚 Books Section Toggle -->
+    <div class="card-admin" style="border: 2px solid #7048e8; background: #f8f7ff;">
+      <h3 style="color:#7048e8; margin-top:0;">📚 Books Section (ਕਿਤਾਬਾਂ) — ON/OFF</h3>
+      <div style="font-size:0.78rem; color:#868e96; margin-bottom:10px;">OFF = index 'ਤੇ ਕਿਤਾਬਾਂ ਦਾ section, nav links ਤੇ My Books ਸਭ ਲੁਕ ਜਾਣਗੇ (ਟੈਸਟ/PYQ ਵੱਖਰੇ ਚਲਣਗੇ)। ਲੋੜ ਪੈਣ 'ਤੇ ਇੱਕ ਬਟਨ ਨਾਲ ON ਕਰੋ।</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:#fff; padding:12px; border-radius:10px; border:1px solid #e9ecef;">
+        <div>
+          <div id="booksToggleState" style="font-weight:800; font-size:0.95rem;">⏳ …</div>
+          <small style="color:#868e96;">ਹਾਲਤ ਬਦਲਣ ਲਈ ਬਟਨ ਦਬਾਓ — ਤੁਰੰਤ ਲਾਗੂ</small>
+        </div>
+        <button id="booksToggleBtn" onclick="toggleBooksSection()" style="padding:11px 18px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; font-size:0.9rem;">⏳</button>
+      </div>
+    </div>
+
     <!-- Notice Bar -->
     <div class="card-admin">
       <h3 style="margin-top:0;">📢 Top Announcement Bar</h3>
@@ -540,17 +553,42 @@ Ans: B"></textarea>
       </div>
     </div>
 
-    <!-- PYQ Papers -->
-    <div class="card-admin">
-      <h3 style="margin-top:0;">📑 Free PYQ Papers</h3>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-        <input type="text" id="pyqTitle" placeholder="Paper Name" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
-        <input type="text" id="pyqExam" placeholder="Exam Category" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+    <!-- 📑 PYQ Papers Manager (Professional) -->
+    <div class="card-admin" style="border: 2px solid #2b8a3e; background: #f4fbf5;">
+      <h3 style="color:#2b8a3e; margin-top:0;">📑 Previous Year Papers (PYQ)</h3>
+      <div id="pyqFormHint" style="font-size:0.78rem; color:#868e96; margin-bottom:8px;">ਪੇਪਰ ਜੋੜੋ — ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ index 'ਤੇ ਪ੍ਰੀਖਿਆ ਮੁਤਾਬਕ ਗਰੁੱਪ ਵਿੱਚ ਸੋਹਣੇ cards ਦਿਖਣਗੇ।</div>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:8px;">
+        <div style="grid-column: span 2;">
+          <label style="font-size:0.75rem; font-weight:600;">ਪੇਪਰ ਦਾ ਨਾਮ: *</label>
+          <input type="text" id="pyqTitle" placeholder="ਜਿਵੇਂ: Punjab Police Constable — Full Paper" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਪ੍ਰੀਖਿਆ: *</label>
+          <select id="pyqExam" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; background:#fff;">
+            <option value="Punjab Police">🚔 Punjab Police</option>
+            <option value="Patwari">🗺️ Patwari</option>
+            <option value="Clerk">📋 Clerk (PSSSB)</option>
+            <option value="SSC">🏛️ SSC</option>
+            <option value="PTET">🎓 PTET</option>
+            <option value="Banking">🏦 Banking</option>
+            <option value="Other">📦 ਹੋਰ</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:600;">ਸਾਲ (Year):</label>
+          <select id="pyqYear" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; background:#fff;">
+            <option value="">— ਚੁਣੋ —</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size:0.75rem; font-weight:600;">PDF ਲਿੰਕ (Direct URL): *</label>
+          <input type="text" id="pyqUrl" placeholder="https://... .pdf (ਜਾਂ Google Drive link)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
       </div>
-      <div style="display:flex; gap:8px;">
-        <input type="url" id="pyqUrl" placeholder="Direct PDF Link" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
-        <button class="btn btn-primary" onclick="addPYQPaper()">➕ Add</button>
-      </div>
+      <button id="pyqSaveBtn" onclick="savePYQPaper()" style="background:#2b8a3e; color:#fff; width:100%; padding:11px; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">➕ ਪੇਪਰ ਪ੍ਰਕਾਸ਼ਿਤ ਕਰੋ</button>
+      <button id="pyqCancelBtn" onclick="resetPYQForm()" style="display:none; background:#f1f3f5; color:#495057; width:100%; padding:10px; font-weight:bold; border:1.5px solid #dee2e6; border-radius:6px; cursor:pointer; margin-top:8px;">✖️ ਰੱਦ ਕਰੋ (ਨਵਾਂ ਪੇਪਰ ਜੋੜਨਾ ਹੈ)</button>
       <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">ਅੱਪਲੋਡ ਕੀਤੇ ਪੇਪਰ:</div>
       <div id="adminPyqList">Loading papers...</div>
     </div>
@@ -787,6 +825,7 @@ function deleteJobAlert(key) {
 
 function loadAllAdminModules() {
   loadJobAlerts();
+  loadBooksSectionState();
   loadCategoryPassPricing();
   loadBooksCouponConfig();
   loadCategoryTestsAdmin();
@@ -1263,37 +1302,146 @@ function saveTodayDayConfig() {
     .then(() => alert("✅ ਅੱਜ ਦਾ ਦਿਨ ਅੱਪਡੇਟ ਹੋ ਗਿਆ!"));
 }
 
-function loadAdminPYQs() {
-  const list = document.getElementById("adminPyqList");
-  db.ref("pyqList").on("value", snap => {
-    const data = snap.val();
-    if (!data) { list.innerHTML = "<small style='color:#777;'>ਕੋਈ ਪੇਪਰ ਨਹੀਂ ਹੈ।</small>"; return; }
-    list.innerHTML = Object.entries(data).map(([key, val]) => `
-      <div class="pyq-item-admin">
-        <div>
-          <b>${val.title}</b> <small style="background:#e7f5ff; padding:2px 6px; border-radius:4px;">${val.exam}</small>
-          <div style="font-size:0.8rem; color:#666;"><a href="${val.url}" target="_blank">PDF Link ↗</a> • ${val.date}</div>
-        </div>
-        <button class="btn-del-icon" onclick="deletePYQ('${key}')">🗑️</button>
-      </div>
-    `).join("");
+/* ═══ 📚 Books Section Toggle (ON/OFF) ═══ */
+function loadBooksSectionState() {
+  db.ref("siteSettings/booksSection").once("value", snap => {
+    const on = snap.val() === true;
+    const st = document.getElementById("booksToggleState");
+    const btn = document.getElementById("booksToggleBtn");
+    if (!st || !btn) return;
+    st.textContent = on ? "🟢 ON — ਕਿਤਾਬਾਂ ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ ਦਿਖ ਰਹੀਆਂ ਹਨ" : "🔴 OFF — ਕਿਤਾਬਾਂ ਹੁਣ ਲੁਕੀਆਂ ਹਨ";
+    st.style.color = on ? "#2b8a3e" : "#c92a2a";
+    btn.textContent = on ? "🔴 OFF ਕਰੋ" : "🟢 ON ਕਰੋ";
+    btn.style.background = on ? "#ffe3e3" : "#d3f9d8";
+    btn.style.color = on ? "#c92a2a" : "#2b7a2b";
   });
 }
 
-function addPYQPaper() {
-  const title = document.getElementById("pyqTitle").value.trim();
-  const exam = document.getElementById("pyqExam").value.trim() || "Exam";
-  const url = document.getElementById("pyqUrl").value.trim();
-  if (!title || !url) return alert("ਨਾਮ ਅਤੇ PDF ਲਿੰਕ ਭਰੋ!");
-  db.ref("pyqList").push({ title, exam, url, date: new Date().toLocaleDateString('en-GB') }).then(() => {
-    document.getElementById("pyqTitle").value = "";
-    document.getElementById("pyqUrl").value = "";
-    alert("✅ ਪੇਪਰ ਜੁੜ ਗਿਆ!");
+function toggleBooksSection() {
+  const btn = document.getElementById("booksToggleBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ …"; }
+  db.ref("siteSettings/booksSection").once("value", snap => {
+    const newVal = snap.val() !== true; // default OFF → pehli vaar dabao ta ON
+    db.ref("siteSettings/booksSection").set(newVal).then(() => {
+      alert(newVal ? "✅ Books section ON — index 'ਤੇ ਕਿਤਾਬਾਂ ਦਿਖਣਗੀਆਂ।" : "✅ Books section OFF — ਕਿਤਾਬਾਂ ਹੁਣ ਲੁਕ ਗਈਆਂ।");
+      loadBooksSectionState();
+      if (btn) btn.disabled = false;
+    }).catch(err => { alert("⚠️ " + err.message); if (btn) btn.disabled = false; });
   });
+}
+
+/* ═══ 📑 PYQ Manager — Professional (Add + ✏️ Edit + Delete) ═══ */
+let pyqCache = [];
+let editingPYQKey = null;
+
+function loadAdminPYQs() {
+  db.ref("pyqList").on("value", snap => {
+    const data = snap.val() || {};
+    pyqCache = Object.entries(data).map(([k, v]) => ({ k, ...v }));
+    renderAdminPYQs();
+  });
+}
+
+function renderAdminPYQs() {
+  const list = document.getElementById("adminPyqList");
+  if (!list) return;
+  if (!pyqCache.length) { list.innerHTML = "<small style='color:#777;'>ਕੋਈ ਪੇਪਰ ਨਹੀਂ ਹੈ — ਉੱਪਰੋਂ ਜੋੜੋ।</small>"; return; }
+  list.innerHTML = pyqCache.map(p => {
+    const isEditing = editingPYQKey === p.k;
+    return `
+      <div style="display:flex; align-items:center; gap:6px; padding:8px; border:${isEditing ? "2px solid #2b8a3e" : "1px solid #f1f3f5"}; border-radius:8px; margin-bottom:6px; background:${isEditing ? "#ebfbee" : "#fff"};">
+        <div style="flex:1; font-size:0.8rem;">
+          <b>${(p.title || "").slice(0, 60)}</b>
+          <small style="background:#e7f5ff; color:#1971c2; padding:2px 8px; border-radius:4px; font-weight:bold;">${p.exam || "Exam"}</small>
+          ${p.year ? `<small style="background:#fff4e6; color:#d9480f; padding:2px 8px; border-radius:4px; font-weight:bold;">${p.year}</small>` : ""}
+          <div style="font-size:0.75rem; color:#888; margin-top:2px;">👁️ ${(p.views || 0).toLocaleString()} views • ${p.date || ""} • <a href="${p.url || "#"}" target="_blank" rel="noopener">PDF ↗</a></div>
+        </div>
+        <button onclick="editPYQPaper('${p.k}')" title="ਸੋਧੋ" style="background:#e7f5ff; color:#1971c2; border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-weight:bold;">✏️</button>
+        <button onclick="deletePYQ('${p.k}')" title="ਡਿਲੀਟ" style="background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-weight:bold;">🗑️</button>
+      </div>`;
+  }).join("");
+}
+
+function editPYQPaper(key) {
+  const p = pyqCache.find(x => x.k === key);
+  if (!p) return;
+  editingPYQKey = key;
+  document.getElementById("pyqTitle").value = p.title || "";
+  const examSel = document.getElementById("pyqExam");
+  const ex = p.exam || "Other";
+  if (![...examSel.options].some(o => o.value === ex)) {
+    const o = document.createElement("option"); o.value = ex; o.textContent = ex; examSel.appendChild(o);
+  }
+  examSel.value = ex;
+  const yearSel = document.getElementById("pyqYear");
+  const yr = String(p.year || "");
+  if (yr && ![...yearSel.options].some(o => o.value === yr)) {
+    const o = document.createElement("option"); o.value = yr; o.textContent = yr; yearSel.appendChild(o);
+  }
+  yearSel.value = yr;
+  document.getElementById("pyqUrl").value = p.url || "";
+  setPYQFormMode(true);
+  renderAdminPYQs();
+  document.getElementById("pyqTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function setPYQFormMode(editing) {
+  const saveBtn = document.getElementById("pyqSaveBtn");
+  const cancelBtn = document.getElementById("pyqCancelBtn");
+  const hint = document.getElementById("pyqFormHint");
+  if (!saveBtn || !cancelBtn || !hint) return;
+  if (editing) {
+    saveBtn.textContent = "💾 ਅੱਪਡੇਟ ਕਰੋ (ਪੇਪਰ ਸੋਧੋ)";
+    saveBtn.style.background = "#1971c2";
+    cancelBtn.style.display = "block";
+    hint.textContent = "✏️ ਪੇਪਰ ਸੋਧਿਆ ਜਾ ਰਿਹਾ ਹੈ — ਬਦਲਾਵ ਕਰਕੇ 💾 ਅੱਪਡੇਟ ਦਬਾਓ";
+    hint.style.color = "#1971c2"; hint.style.fontWeight = "bold";
+  } else {
+    saveBtn.textContent = "➕ ਪੇਪਰ ਪ੍ਰਕਾਸ਼ਿਤ ਕਰੋ";
+    saveBtn.style.background = "#2b8a3e";
+    cancelBtn.style.display = "none";
+    hint.textContent = "ਪੇਪਰ ਜੋੜੋ — ਵਿਦਿਆਰਥੀਆਂ ਨੂੰ index 'ਤੇ ਪ੍ਰੀਖਿਆ ਮੁਤਾਬਕ ਗਰੁੱਪ ਵਿੱਚ ਸੋਹਣੇ cards ਦਿਖਣਗੇ।";
+    hint.style.color = "#868e96"; hint.style.fontWeight = "normal";
+  }
+}
+
+function resetPYQForm() {
+  document.getElementById("pyqTitle").value = "";
+  document.getElementById("pyqExam").value = "Punjab Police";
+  document.getElementById("pyqYear").value = "";
+  document.getElementById("pyqUrl").value = "";
+  editingPYQKey = null;
+  setPYQFormMode(false);
+  renderAdminPYQs();
+}
+
+function savePYQPaper() {
+  const title = document.getElementById("pyqTitle").value.trim();
+  const exam = document.getElementById("pyqExam").value || "Other";
+  const year = document.getElementById("pyqYear").value || "";
+  const url = document.getElementById("pyqUrl").value.trim();
+  if (!title) return alert("ਪੇਪਰ ਦਾ ਨਾਮ ਲਿਖੋ!");
+  if (!url) return alert("PDF ਲਿੰਕ ਭਰੋ!");
+  if (!/^https?:\/\//i.test(url)) return alert("ਲਿੰਕ http:// ਜਾਂ https:// ਨਾਲ ਸ਼ੁਰੂ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ!");
+  const values = { title: title, exam: exam, year: year, url: url };
+  if (editingPYQKey) {
+    db.ref("pyqList/" + editingPYQKey).update(values).then(() => {
+      alert("✅ ਪੇਪਰ ਅੱਪਡੇਟ ਹੋ ਗਿਆ!");
+      resetPYQForm();
+    }).catch(err => alert("⚠️ " + err.message));
+  } else {
+    db.ref("pyqList").push({ ...values, date: new Date().toLocaleDateString('en-GB'), views: 0 }).then(() => {
+      alert("✅ ਪੇਪਰ ਪ੍ਰਕਾਸ਼ਿਤ! index 'ਤੇ ਹੁਣੇ ਦਿਖੇਗਾ।");
+      resetPYQForm();
+    }).catch(err => alert("⚠️ " + err.message));
+  }
 }
 
 function deletePYQ(key) {
-  if (confirm("ਕੀ ਇਹ ਪੇਪਰ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?")) db.ref("pyqList/" + key).remove();
+  if (!confirm("ਕੀ ਇਹ ਪੇਪਰ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?")) return;
+  db.ref("pyqList/" + key).remove().then(() => {
+    if (editingPYQKey === key) resetPYQForm();
+  });
 }
 
 /* User Requests, Results & Accounts */

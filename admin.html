@@ -279,6 +279,63 @@ Ans: B"></textarea>
 
   <!-- TAB 2: 💎 PASSES & PRICING (Pass Rates + Category Coupon) -->
   <div id="tab_passes" class="tab-content-panel">
+
+    <!-- 🎁 FREE PASS — manual unlock tool -->
+    <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
+      <h3 style="color:#e8590c; margin-top:0;">🎁 Free Pass ਦੇਣਾ (Manual Unlock)</h3>
+      <p style="font-size:0.85rem; color:#666; margin:6px 0 12px;">ਕਿਸੇ ਵੀ student ਨੂੰ ਮੁਫ਼ਤ pass — 1 ਦਿਨ ਤੋਂ ਲੈ ਕੇ ਕਿੰਨੇ ਵੀ ਦਿਨ। (ਪੈਸੇ ਵਾਲੀ ਗੱਲ ਨਹੀਂ, ਸਿੱਧਾ unlock!)</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:0.85rem; font-weight:bold;">📱 ਫ਼ੋਨ ਨੰਬਰ (10 ਅੰਕ):</label>
+          <input id="freePassPhone" type="tel" maxlength="10" inputmode="numeric" placeholder="9876543210" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; font-weight:bold;">📚 Pass / ਕੈਟਾਗਰੀ:</label>
+          <select id="freePassCat" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px;">
+            <option value="police">👮‍♂️ Punjab Police</option>
+            <option value="patwari">🌾 PSSSB Board</option>
+            <option value="clerk">🎖️ Agniveer GD</option>
+            <option value="ssc">🏛️ SSC & Railway</option>
+            <option value="ptet1">📚 PTET Paper 1</option>
+            <option value="ptet2">📖 PTET Paper 2</option>
+            <option value="banking">🏦 Banking</option>
+            <option value="current">⚡ CA ਟੈਸਟ ਸੀਰੀਜ਼</option>
+            <option value="ca">🌍 CA ਪੜ੍ਹਾਈ ਵਾਲਾ ਪੰਨਾ</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.85rem; font-weight:bold;">📅 ਕਿੰਨੇ ਦਿਨ ਦਾ?:</label>
+          <select id="freePassDays" onchange="freePassCustomToggle()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px;">
+            <option value="1">1 ਦਿਨ</option>
+            <option value="2">2 ਦਿਨ</option>
+            <option value="3">3 ਦਿਨ</option>
+            <option value="7" selected>7 ਦਿਨ (ਹਫ਼ਤਾ)</option>
+            <option value="15">15 ਦਿਨ</option>
+            <option value="30">1 ਮਹੀਨਾ</option>
+            <option value="90">3 ਮਹੀਨੇ</option>
+            <option value="180">6 ਮਹੀਨੇ</option>
+            <option value="365">1 ਸਾਲ</option>
+            <option value="custom">✏️ ਹੋਰ ਦਿਨ ਲਿਖੋ…</option>
+          </select>
+        </div>
+        <div id="freePassCustomWrap" style="display:none;">
+          <label style="font-size:0.85rem; font-weight:bold;">✏️ ਦਿਨ ਗਿਣਤੀ (1-999):</label>
+          <input id="freePassCustomDays" type="number" min="1" max="999" value="1" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px; box-sizing:border-box;">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button onclick="checkFreePassStatus()" style="flex:1; padding:11px; border:none; border-radius:8px; background:#e7f5ff; color:#1971c2; font-weight:800; cursor:pointer; font-size:0.9rem;">📊 ਸਥਿਤੀ ਵੇਖੋ</button>
+        <button onclick="grantFreePass()" style="flex:1.4; padding:11px; border:none; border-radius:8px; background:#e8590c; color:#fff; font-weight:800; cursor:pointer; font-size:0.95rem;">🎁 Pass ਦਿਓ</button>
+        <button onclick="revokeFreePass()" style="flex:1; padding:11px; border:none; border-radius:8px; background:#ffe3e3; color:#c92a2a; font-weight:800; cursor:pointer; font-size:0.9rem;">🔒 ਬੰਦ ਕਰੋ</button>
+      </div>
+      <div id="freePassStatus" style="margin-top:10px; font-size:0.85rem; color:#333; line-height:1.6;"></div>
+    </div>
+
     <div class="card-admin" style="border: 2px solid #2b8a3e; background: #fbfdfb;">
       <h3 style="color:#2b8a3e; margin-top:0;">💎 Exam Pass Pricing & Category Coupon</h3>
       <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">ਹਰੇਕ ਪ੍ਰੀਖਿਆ ਦੇ 5 ਪਲਾਨਾਂ ਦੇ ਰੇਟ ਅਤੇ ਲਿਮਿਟ ਵਾਲਾ ਕੂਪਨ ਸੈੱਟ ਕਰੋ:</p>
@@ -293,7 +350,8 @@ Ans: B"></textarea>
           <option value="ptet1">📚 PTET Paper 1</option>
           <option value="ptet2">📖 PTET Paper 2</option>
           <option value="banking">🏦 Banking Exams</option>
-          <option value="current">⚡ Current Affairs</option>
+          <option value="current">⚡ Current Affairs (CA ਟੈਸਟ)</option>
+          <option value="ca">🌍 CA ਪੜ੍ਹਾਈ (Current Affairs ਪੰਨਾ)</option>
         </select>
       </div>
 
@@ -835,6 +893,109 @@ function loadAllAdminModules() {
   loadTodayDayConfig();
   loadSelectedBookData();
   loadFirebaseData();
+}
+
+/* ═══════ 🎁 FREE PASS — manual unlock (admin tool) ═══════ */
+const freePassCatLabels = {
+  police: "Punjab Police", patwari: "PSSSB Board", clerk: "Agniveer GD", ssc: "SSC & Railway",
+  ptet1: "PTET Paper 1", ptet2: "PTET Paper 2", banking: "Banking",
+  current: "CA ਟੈਸਟ ਸੀਰੀਜ਼", ca: "CA ਪੜ੍ਹਾਈ (ਪੰਨਾ)"
+};
+
+function freePassCustomToggle() {
+  const v = document.getElementById("freePassDays").value;
+  document.getElementById("freePassCustomWrap").style.display = (v === "custom") ? "block" : "none";
+}
+
+function freePassReadInputs() {
+  const phone = (document.getElementById("freePassPhone").value || "").trim();
+  const cat = document.getElementById("freePassCat").value;
+  let days = document.getElementById("freePassDays").value;
+  if (days === "custom") days = parseInt(document.getElementById("freePassCustomDays").value, 10) || 0;
+  else days = parseInt(days, 10) || 0;
+  return { phone: phone, cat: cat, days: days };
+}
+
+function freePassStatusBox() { return document.getElementById("freePassStatus"); }
+
+function freePassValidate(phone, needDays, days) {
+  const st = freePassStatusBox();
+  if (!/^\d{10}$/.test(phone)) {
+    st.innerHTML = "❌ ਪੂਰਾ 10 ਅੰਕਾਂ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਲਿਖੋ (ਜਿਵੇਂ: 9876543210)";
+    return false;
+  }
+  if (needDays && (days < 1 || days > 999)) {
+    st.innerHTML = "❌ ਦਿਨ 1 ਤੋਂ 999 ਦੇ ਵਿੱਚ ਹੀ ਰੱਖੋ";
+    return false;
+  }
+  return true;
+}
+
+function fpFmt(ts) {
+  return new Date(ts).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/* 📊 status: user name + pass valid/expired/none */
+function checkFreePassStatus() {
+  const inp = freePassReadInputs();
+  if (!freePassValidate(inp.phone, false, 0)) return;
+  const st = freePassStatusBox();
+  st.innerHTML = "⏳ ਚੈੱਕ ਹੋ ਰਿਹਾ ਹੈ...";
+  Promise.all([
+    db.ref("users/" + inp.phone + "/name").once("value"),
+    db.ref("users/" + inp.phone + "/passes/" + inp.cat).once("value")
+  ]).then(function (snaps) {
+    const name = snaps[0].val();
+    const expiry = snaps[1].val();
+    const label = freePassCatLabels[inp.cat] || inp.cat;
+    let html = "📱 <b>" + inp.phone + "</b>" + (name ? " (" + name + ")" : "") + " — <b>" + label + "</b>: ";
+    if (expiry && expiry > Date.now()) {
+      const dLeft = Math.ceil((expiry - Date.now()) / 86400000);
+      html += "✅ Pass ਚਾਲੂ ਹੈ — <b>" + fpFmt(expiry) + "</b> ਤੱਕ (" + dLeft + " ਦਿਨ ਬਾਕੀ)";
+    } else if (expiry) {
+      html += "⚠️ Pass ਮਿਆਦ ਪੁੱਗੀ ਸੀ — " + fpFmt(expiry) + " ਨੂੰ";
+    } else {
+      html += "🔒 ਕੋਈ pass ਨਹੀਂ";
+    }
+    if (!name) html += "<br><small style=\"color:#c92a2a;\">⚠️ ਇਸ ਨੰਬਰ ਦਾ ਕੋਈ ਨਾਂ ਨਹੀਂ ਮਿਲਿਆ — ਨੰਬਰ ਦੁਬਾਰਾ ਚੈੱਕ ਕਰੋ</small>";
+    st.innerHTML = html;
+  }).catch(function (e) {
+    st.innerHTML = "❌ Error: " + e.message;
+  });
+}
+
+/* 🎁 grant: base = max(now, jaari expiry) — purana pass extend hunda, khoti nahi */
+function grantFreePass() {
+  const inp = freePassReadInputs();
+  if (!freePassValidate(inp.phone, true, inp.days)) return;
+  const st = freePassStatusBox();
+  const label = freePassCatLabels[inp.cat] || inp.cat;
+  st.innerHTML = "⏳ Pass ਦਿੱਤਾ ਜਾ ਰਿਹਾ ਹੈ...";
+  db.ref("users/" + inp.phone + "/passes/" + inp.cat).once("value").then(function (snap) {
+    const cur = snap.val() || 0;
+    const base = Math.max(Date.now(), cur);
+    const newExpiry = base + (inp.days * 86400000);
+    return db.ref("users/" + inp.phone + "/passes/" + inp.cat).set(newExpiry).then(function () {
+      const extended = (cur > Date.now());
+      st.innerHTML = "✅ <b>" + inp.phone + "</b> ਨੂੰ <b>" + label + "</b> ਦਾ ਮੁਫ਼ਤ pass ਮਿਲ ਗਿਆ! 🎉<br>📅 ਵੈਧ: <b>" + fpFmt(newExpiry) + "</b> ਤੱਕ (" + inp.days + " ਦਿਨ)" + (extended ? " — ਪੁਰਾਣੇ pass ਦੇ ਅੱਗੇ ਜੋੜਿਆ ਗਿਆ" : "");
+    });
+  }).catch(function (e) {
+    st.innerHTML = "❌ Error: " + e.message;
+  });
+}
+
+/* 🔒 revoke: expiry bita hua number — data delete nahi hunda */
+function revokeFreePass() {
+  const inp = freePassReadInputs();
+  if (!freePassValidate(inp.phone, false, 0)) return;
+  const st = freePassStatusBox();
+  const label = freePassCatLabels[inp.cat] || inp.cat;
+  if (!confirm("ਸੱਚੀ ਇਸ ਦਾ " + label + " pass ਬੰਦ ਕਰਨਾ ਹੈ? ਨੰਬਰ: " + inp.phone)) return;
+  db.ref("users/" + inp.phone + "/passes/" + inp.cat).set(Date.now() - 1000).then(function () {
+    st.innerHTML = "🔒 <b>" + inp.phone + "</b> ਦਾ <b>" + label + "</b> pass ਬੰਦ ਕਰ ਦਿੱਤਾ ਗਿਆ।";
+  }).catch(function (e) {
+    st.innerHTML = "❌ Error: " + e.message;
+  });
 }
 
 /* 💎 Exam Pass Pricing & Coupon Handlers */

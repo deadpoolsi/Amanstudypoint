@@ -38,6 +38,8 @@
     border: 1px solid #ffa94d;
     box-shadow: 0 2px 6px rgba(232,89,12,0.2);
   }
+  /* 📚 Books toggle — default HIDDEN, ZERO flash (class <head> script ton set hundi hai) */
+  .asp-books-off .books-ui { display: none !important; }
 </style>
   
 <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
@@ -53,6 +55,15 @@
 
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css?v=2">
+<script>
+/* 📚 Books ON/OFF — zero-flash: render ton pehlan hi class laga do
+   (localStorage cache → turant sahi halat, Firebase baad vich confirm karega) */
+(function () {
+  var on = false;
+  try { on = localStorage.getItem('asp_books_on') === '1'; } catch (e) {}
+  document.documentElement.classList.add(on ? 'asp-books-on' : 'asp-books-off');
+})();
+</script>
 </head>
 <body>
 
@@ -442,14 +453,17 @@
     });
   }
 
-  // 2.5 📚 Books Section ON/OFF — admin toggle (default: OFF)
-  // siteSettings/booksSection === true ho hi ON hoga, nahin ta sab books-ui hidden
+  // 2.5 📚 Books Section ON/OFF — zero-flash version:
+  // class pehlan hi lagi hoi hai (head script) → koi udd-jana NAHI.
+  // Firebase di halat dekh ke class + cache dono theek karo.
   if (typeof db !== 'undefined') {
-    db.ref('siteSettings/booksSection').once('value', (snap) => {
-      if (snap.val() !== true) {
-        document.querySelectorAll('.books-ui').forEach(el => { el.style.display = 'none'; });
-      }
-    });
+    db.ref('siteSettings/booksSection').once('value').then((snap) => {
+      var on = snap.val() === true;
+      try { localStorage.setItem('asp_books_on', on ? '1' : '0'); } catch (e) {}
+      var root = document.documentElement;
+      root.classList.toggle('asp-books-on', on);
+      root.classList.toggle('asp-books-off', !on);
+    }).catch(function () {});
   }
 
   // 3. ⚡ ਸੁਪਰ ਫਾਸਟ ਲਾਈਵ ਟੈਸਟ ਕਾਊਂਟਰ (Formatted with Commas e.g. 7,131)

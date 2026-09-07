@@ -97,23 +97,56 @@ async function fbRequest(method, path, body) {
   return data;
 }
 
-/* 🔒 idToken verify — sirf asli admin email manna (create-order pattern) */
-async function verifyAdmin(idToken) {
+/* 🔒 JWT verify — Google de PUBLIC CERTS naal (ZERO API key).
+   FIX: identitytoolkit accounts:lookup browser-restricted key nal
+   server toh "API key not valid" dinda si. Public certs hamesha
+   kamde — kisi key di lod nahi. */
+let __certsCache = null, __certsAt = 0;
+async function verifyIdToken(idToken) {
   try {
-    const r = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${WEB_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: idToken }),
-      }
-    );
-    const d = await r.json();
-    const email = d && d.users && d.users[0] && d.users[0].email;
-    return email === ADMIN_EMAIL;
+    const tok = String(idToken || "");
+    const parts = tok.split(".");
+    if (parts.length !== 3) return null;
+    const b64d = function (x) {
+      return Buffer.from(String(x).replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    };
+    let header, payload;
+    try {
+      header = JSON.parse(b64d(parts[0]));
+      payload = JSON.parse(b64d(parts[1]));
+    } catch (e) { return null; }
+
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload.exp || payload.exp < now) return null;
+    if (payload.aud !== "aman-study-point") return null;
+    if (payload.iss !== "https://securetoken.google.com/aman-study-point") return null;
+
+    if (!__certsCache || (Date.now() - __certsAt) > 3600000) {
+      const cr = await fetch("https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com");
+      if (!cr.ok) return null;
+      __certsCache = await cr.json();
+      __certsAt = Date.now();
+    }
+    const cert = __certsCache[header.kid];
+    if (!cert) return null;
+
+    const crypto = require("crypto");
+    const verifier = crypto.createVerify("RSA-SHA256");
+    verifier.update(parts[0] + "." + parts[1]);
+    const sig = Buffer.from(String(parts[2]).replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    if (!verifier.verify(cert, sig)) return null;
+
+    return payload; /* .email, .sub hunde ne */
   } catch (e) {
-    return false;
+    return null;
   }
+}
+
+/* 🔒 sirf asli admin email manna (case-insensitive — jivein admin.html karda) */
+async function verifyAdmin(idToken) {
+  const payload = await verifyIdToken(idToken);
+  if (!payload || !payload.email) return false;
+  return String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
 }
 
 module.exports = async (req, res) => {

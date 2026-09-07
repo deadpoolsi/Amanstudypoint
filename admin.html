@@ -964,23 +964,41 @@ function checkFreePassStatus() {
   });
 }
 
-/* 🎁 grant: base = max(now, jaari expiry) — purana pass extend hunda, khoti nahi */
+/* 🎁 grant/revoke — SIRF API rahi (api/admin-grant.js — server likhda hai,
+   kyonki rules vich passes direct write band hai) */
+function freePassCallApi(action, days) {
+  const st = freePassStatusBox();
+  if (!auth.currentUser) {
+    st.innerHTML = "❌ Admin login ਨਹੀਂ ਹੈ — ਪਹਿਲਾਂ login ਕਰੋ।";
+    var err = new Error("no-login");
+    err.noLogin = true;
+    return Promise.reject(err);
+  }
+  const inp = freePassReadInputs();
+  return auth.currentUser.getIdToken().then(function (token) {
+    return fetch("/api/admin-grant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: token, action: action, phone: inp.phone, cat: inp.cat, days: days })
+    });
+  }).then(function (r) { return r.json(); });
+}
+
 function grantFreePass() {
   const inp = freePassReadInputs();
   if (!freePassValidate(inp.phone, true, inp.days)) return;
   const st = freePassStatusBox();
   const label = freePassCatLabels[inp.cat] || inp.cat;
   st.innerHTML = "⏳ Pass ਦਿੱਤਾ ਜਾ ਰਿਹਾ ਹੈ...";
-  db.ref("users/" + inp.phone + "/passes/" + inp.cat).once("value").then(function (snap) {
-    const cur = snap.val() || 0;
-    const base = Math.max(Date.now(), cur);
-    const newExpiry = base + (inp.days * 86400000);
-    return db.ref("users/" + inp.phone + "/passes/" + inp.cat).set(newExpiry).then(function () {
-      const extended = (cur > Date.now());
-      st.innerHTML = "✅ <b>" + inp.phone + "</b> ਨੂੰ <b>" + label + "</b> ਦਾ ਮੁਫ਼ਤ pass ਮਿਲ ਗਿਆ! 🎉<br>📅 ਵੈਧ: <b>" + fpFmt(newExpiry) + "</b> ਤੱਕ (" + inp.days + " ਦਿਨ)" + (extended ? " — ਪੁਰਾਣੇ pass ਦੇ ਅੱਗੇ ਜੋੜਿਆ ਗਿਆ" : "");
-    });
+  freePassCallApi("grant", inp.days).then(function (d) {
+    if (d && d.success) {
+      st.innerHTML = "✅ <b>" + inp.phone + "</b>" + (d.name ? " (" + d.name + ")" : "") + " ਨੂੰ <b>" + label + "</b> ਦਾ ਮੁਫ਼ਤ pass ਮਿਲ ਗਿਆ! 🎉<br>📅 ਵੈਧ: <b>" + fpFmt(d.expiry) + "</b> ਤੱਕ (" + inp.days + " ਦਿਨ)" + (d.extended ? " — ਪੁਰਾਣੇ pass ਦੇ ਅੱਗੇ ਜੋੜਿਆ ਗਿਆ" : "");
+    } else {
+      st.innerHTML = "❌ " + ((d && d.message) || "Error");
+    }
   }).catch(function (e) {
-    st.innerHTML = "❌ Error: " + e.message;
+    if (e && e.noLogin) return;
+    st.innerHTML = "❌ Network error — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ।";
   });
 }
 
@@ -991,10 +1009,16 @@ function revokeFreePass() {
   const st = freePassStatusBox();
   const label = freePassCatLabels[inp.cat] || inp.cat;
   if (!confirm("ਸੱਚੀ ਇਸ ਦਾ " + label + " pass ਬੰਦ ਕਰਨਾ ਹੈ? ਨੰਬਰ: " + inp.phone)) return;
-  db.ref("users/" + inp.phone + "/passes/" + inp.cat).set(Date.now() - 1000).then(function () {
-    st.innerHTML = "🔒 <b>" + inp.phone + "</b> ਦਾ <b>" + label + "</b> pass ਬੰਦ ਕਰ ਦਿੱਤਾ ਗਿਆ।";
+  st.innerHTML = "⏳ ਬੰਦ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...";
+  freePassCallApi("revoke", 0).then(function (d) {
+    if (d && d.success) {
+      st.innerHTML = "🔒 <b>" + inp.phone + "</b> ਦਾ <b>" + label + "</b> pass ਬੰਦ ਕਰ ਦਿੱਤਾ ਗਿਆ।";
+    } else {
+      st.innerHTML = "❌ " + ((d && d.message) || "Error");
+    }
   }).catch(function (e) {
-    st.innerHTML = "❌ Error: " + e.message;
+    if (e && e.noLogin) return;
+    st.innerHTML = "❌ Network error — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ।";
   });
 }
 

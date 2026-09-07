@@ -1,6 +1,7 @@
 {
   "name": "Aman Study Point",
   "short_name": "Aman Study",
+  "id": "/",
   "description": "ਪੰਜਾਬੀ ਵਿੱਚ ਸਰਕਾਰੀ ਨੌਕਰੀਆਂ ਦੀ ਤਿਆਰੀ — Mock Tests, PYQ ਅਤੇ ਨੋਟਸ",
   "lang": "pa",
   "start_url": "https://amanstudypoint.vercel.app/",

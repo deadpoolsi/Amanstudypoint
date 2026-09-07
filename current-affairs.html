@@ -57,6 +57,50 @@
 
 <div class="wrap" id="mainWrap">ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...</div>
 
+<!-- 📝 CA TEST SERIES section -->
+<div class="wrap" id="caTestWrap" style="margin-top: 16px;">
+  <div style="background:#fff; border:2px solid #ffe066; border-radius:14px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+      <span style="font-size:1.35rem;">📝</span>
+      <b style="font-size:1.02rem; color:#222;">Current Affairs ਟੈਸਟ ਸੀਰੀਜ਼</b>
+    </div>
+    <p style="color:#868e96; font-size:0.82rem; margin:0 0 12px 0;">ਹਰ ਮਹੀਨੇ ਦੇ ਕਰੰਟ ਅਫੇਅਰਜ਼ 'ਤੇ ਸਪੈਸ਼ਲ ਮੌਕ ਟੈਸਟ — ਆਪਣੀ ਤਿਆਰੀ ਪਰਖੋ! ✅</p>
+    <div id="caTestsList" style="margin-bottom:12px;"><small style="color:#868e96;">⏳ ਟੈਸਟ ਲੋਡ ਹੋ ਰਹੇ ਹਨ...</small></div>
+    <a href="tests.html?cat=current" class="btn btn-primary" style="display:block; text-align:center; text-decoration:none;">📝 CA ਟੈਸਟ ਦਿਓ →</a>
+  </div>
+</div>
+
+<script>
+/* 📝 CA Test Series — get-quiz list (no-auth, keys only) */
+async function loadCATests() {
+  var el = document.getElementById("caTestsList");
+  if (!el) return;
+  try {
+    var r = await fetch("/api/get-quiz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "list", cat: "current" })
+    });
+    var d = await r.json();
+    var keys = (d && d.success && Array.isArray(d.keys)) ? d.keys : [];
+    if (!keys.length) {
+      el.innerHTML = "<small style='color:#868e96;'>🔜 ਅਜੇ ਕੋਈ CA ਟੈਸਟ ਨਹੀਂ — ਛੇਤੀ ਆ ਰਹੇ ਹਨ!</small>";
+      return;
+    }
+    var chips = keys.slice(0, 4).map(function (k, i) {
+      var free = i === 0 ? "🎁 FREE DEMO" : "🔒 ਟੈਸਟ " + (i + 1);
+      var bg = i === 0 ? "#fff4e6; border-color:#ffc078; color:#d9480f;" : "#f8f9fa; border-color:#e9ecef; color:#495057;";
+      return "<div style='display:flex; justify-content:space-between; align-items:center; border:1.5px solid; border-radius:10px; padding:9px 12px; margin-bottom:7px; background:" + bg + "'><span style='font-size:0.85rem; font-weight:700;'>" + free + "</span><span style='font-size:0.72rem; color:#adb5bd;'>CA ਮੌਕ ਟੈਸਟ</span></div>";
+    }).join("");
+    if (keys.length > 4) chips += "<small style='color:#868e96;'>(+" + (keys.length - 4) + " ਹੋਰ ਟੈਸਟ…)</small>";
+    el.innerHTML = chips;
+  } catch (e) {
+    el.innerHTML = "<small style='color:#868e96;'>ਟੈਸਟ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ — ਇੰਟਰਨੈੱਟ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</small>";
+  }
+}
+loadCATests();
+</script>
+
 <!-- 💎 PASS MODAL -->
 <div id="passModal" class="modal-overlay">
   <div class="modal-box">

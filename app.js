@@ -1587,6 +1587,106 @@ document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });
 
+/* ═══════ 📲 APP INSTALL — sab operating systems (Android/iOS/Desktop) ═══════ */
+var _pwaDeferred = null;
+
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  _pwaDeferred = e;
+  var b = document.getElementById('pwaInstallBtn'); if (b) b.style.display = 'inline-block';
+});
+
+window.addEventListener('appinstalled', function () {
+  _pwaDeferred = null;
+  var b = document.getElementById('pwaInstallBtn'); if (b) b.style.display = 'none';
+  if (typeof toast === 'function') toast('✅ ਐਪ ਇੰਸਟਾਲ ਹੋ ਗਈ! 🎉');
+});
+
+function pwaIsStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+
+function pwaDetectOS() {
+  var ua = navigator.userAgent || '';
+  if (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+/* Button dikhau — jehda install karke nahi (sab OS) */
+(function () {
+  try {
+    if (pwaIsStandalone()) return;
+    var b = document.getElementById('pwaInstallBtn');
+    if (b) b.style.display = 'inline-block';
+  } catch (e) {}
+})();
+
+function installApp() {
+  if (pwaIsStandalone()) { alert('✅ ਤੁਸੀਂ ਐਪ ਵਿੱਚ ਹੀ ਹੋ!'); return; }
+  /* Chrome/Edge (Android + Desktop) → native install popup */
+  if (_pwaDeferred) {
+    _pwaDeferred.prompt();
+    _pwaDeferred.userChoice.then(function (c) {
+      if (c && c.outcome === 'accepted') {
+        var b = document.getElementById('pwaInstallBtn'); if (b) b.style.display = 'none';
+      }
+      _pwaDeferred = null;
+    }).catch(function () {});
+    return;
+  }
+  /* iOS Safari / hor browsers → step-by-step guide */
+  showInstallGuide();
+}
+
+function showInstallGuide() {
+  var os = pwaDetectOS();
+  var steps, title;
+  if (os === 'ios') {
+    title = '🍎 iPhone / iPad — 4 asaan steps:';
+    steps = [
+      '1️⃣ ਇਹ ਸਾਈਟ <b>Safari</b> ਬਰਾਊਜ਼ਰ ਵਿੱਚ ਖੋਲ੍ਹੋ',
+      '2️⃣ ਹੇਠਾਂ <b>Share ਬਟਨ</b> (⬆️ ਵਾਲਾ) ਦਬਾਓ',
+      '3️⃣ ਲੋੜੀਂਦੀ ਸੂਚੀ ਵਿੱਚੋਂ <b>"Add to Home Screen"</b> ਚੁਣੋ',
+      '4️⃣ <b>Add</b> ਦਬਾਓ — ਐਪ ਦਾ ਆਈਕਾਨ ਹੋਮ ਸਕਰੀਨ \'ਤੇ! 🎉'
+    ];
+  } else if (os === 'android') {
+    title = '🤖 Android — 3 asaan steps:';
+    steps = [
+      '1️⃣ <b>Chrome</b> ਦਾ menu (⋮) ਖੋਲ੍ਹੋ',
+      '2️⃣ <b>"Install app"</b> ਜਾਂ <b>"Add to Home screen"</b> ਚੁਣੋ',
+      '3️⃣ <b>Install</b> ਦਬਾਓ — ਐਪ ਤਿਆਰ! 🎉'
+    ];
+  } else {
+    title = '💻 Computer / Laptop:';
+    steps = [
+      '1️⃣ Address bar ਵਿੱਚ ਸੱਜੇ ਪਾਸੇ <b>install icon</b> (⊕/🖥️) ਦਬਾਓ',
+      '2️⃣ ਜਾਂ menu (⋮) → <b>"Install Aman Study Point"</b>',
+      '3️⃣ Install ਦਬਾਓ — ਐਪ ਆਪਣੀ ਵਿੰਡੋ ਵਿੱਚ ਖੁੱਲ੍ਹੇਗੀ! 🎉'
+    ];
+  }
+  var ov = document.getElementById('aspInstallGuide');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'aspInstallGuide';
+    ov.style.cssText = 'display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; padding:16px;';
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `
+    <div style="background:#fff; border-radius:16px; max-width:360px; width:100%; padding:20px 16px; position:relative; font-family:sans-serif;">
+      <button onclick="document.getElementById('aspInstallGuide').style.display='none';" style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#888;">✕</button>
+      <div style="text-align:center; font-size:2.4rem;">📲</div>
+      <h3 style="text-align:center; margin:6px 0 4px 0; color:#222;">ਐਪ ਇੰਸਟਾਲ ਕਰੋ</h3>
+      <p style="text-align:center; color:#2b8a3e; font-size:0.82rem; font-weight:700; margin:0 0 12px 0;">ਮੁਫ਼ਤ • ਤੇਜ਼ • ਇੰਟਰਨੈੱਟ ਬਿਨਾਂ ਵੀ ਚੱਲਦੀ</p>
+      <div style="background:#f8f9fa; border-radius:12px; padding:12px 14px; margin-bottom:12px;">
+        <div style="font-weight:800; font-size:0.9rem; color:#e8590c; margin-bottom:8px;">${title}</div>
+        ${steps.map(function (st) { return '<div style="font-size:0.86rem; color:#444; margin-bottom:7px; line-height:1.5;">' + st + '</div>'; }).join('')}
+      </div>
+      <button onclick="document.getElementById('aspInstallGuide').style.display='none';" style="width:100%; padding:12px; background:#2b8a3e; color:#fff; border:none; border-radius:10px; font-weight:800; font-size:0.95rem; cursor:pointer;">ਸਮਝ ਗਿਆ ✅</button>
+    </div>`;
+  ov.style.display = 'flex';
+}
+
 /* ⚡ SPEED: payment libraries sirf zaroorat velen load (index fast khulda) */
 function loadScriptOnce(src) {
   return new Promise(function (resolve) {

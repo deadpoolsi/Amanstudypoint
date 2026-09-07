@@ -92,6 +92,7 @@
       <a href="javascript:void(0)" onclick="openStudentTab('books'); toggleNavMenu();" class="books-ui">🎒 My Books</a>
       <a href="javascript:void(0)" id="analyticsNav" onclick="openStudentTab('progress'); toggleNavMenu();">📊 My Progress</a>
       <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
+      <a href="javascript:void(0)" onclick="installApp()" style="color:#2b8a3e; font-weight:800;">📲 ਐਪ ਇੰਸਟਾਲ ਕਰੋ</a>
       <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
       <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
       <a id="accountBtn" class="btn btn-small btn-ghost" href="login.html">🔐 Login</a>
@@ -110,6 +111,9 @@
       <a href="#pyq" class="btn btn-ghost" style="text-decoration:none;" onclick="document.getElementById('pyq')?.scrollIntoView({behavior:'smooth'}); return false;">
         📑 Free PYQs
       </a>
+      <button id="pwaInstallBtn" onclick="installApp()" style="display:none; border:2px dashed #2b8a3e; color:#2b8a3e; background:#fff; font-weight:800; padding:10px 20px; border-radius:10px; font-size:0.95rem; cursor:pointer;">
+        📲 ਐਪ ਇੰਸਟਾਲ ਕਰੋ (ਮੁਫ਼ਤ)
+      </button>
     </div>
   </div>
 </section>

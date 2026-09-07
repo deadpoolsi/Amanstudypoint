@@ -38,6 +38,8 @@
     .btn-green { background: #2b8a3e; color: #fff; }
     .lockbox { background: #fff; border: 2px solid #ffe3e3; border-radius: 14px; padding: 22px; text-align: center; margin-top: 14px; }
   </style>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -102,9 +104,19 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+/* ⚡ SPEED: payment libraries sirf zaroorat velen load (page fast khulda) */
+function loadScriptOnce(src) {
+  return new Promise(function (resolve) {
+    var existing = document.querySelector('script[data-lz="' + src + '"]');
+    if (existing) { if (existing.dataset.loaded) return resolve(); existing.addEventListener('load', function () { resolve(); }); existing.addEventListener('error', function () { resolve(); }); return; }
+    var s = document.createElement('script');
+    s.src = src; s.async = true; s.dataset.loaded = ""; s.dataset.lz = src;
+    s.onload = function () { s.dataset.loaded = "1"; resolve(); };
+    s.onerror = function () { resolve(); };
+    document.head.appendChild(s);
+  });
+}
 const firebaseConfig = {
   apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw",
   authDomain: "aman-study-point.firebaseapp.com",
@@ -433,6 +445,8 @@ async function checkoutSelectedPass() {
       alert("⚠️ " + (orderData.message || "ਆਰਡਰ ਨਹੀਂ ਬਣ ਸਕਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"));
       return;
     }
+    // ⚡ SPEED: library click te load hoi — page khulna fast
+    await loadScriptOnce("https://checkout.razorpay.com/v1/checkout.js");
     var options = {
       "key": orderData.keyId,
       "amount": orderData.amount,
@@ -577,6 +591,7 @@ async function openPassQrPay() {
     });
     const d = await r.json();
     if (!d.success) { alert("⚠️ " + (d.message || "Order ਨਹੀਂ ਬਣਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ")); return; }
+    await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"); // ⚡ QR lib v lazy
     const payUrl = location.origin + "/pay.html?order=" + encodeURIComponent(d.orderId) + "&key=" + encodeURIComponent(d.keyId) + "&amount=" + d.amount;
     const basePrice = categoryPassPricing[selectedPlanType] || 39;
     const finalPrice = Math.max(1, basePrice - appliedDiscount);
@@ -591,5 +606,9 @@ async function openPassQrPay() {
 }
 </script>
 
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 </body>
 </html>

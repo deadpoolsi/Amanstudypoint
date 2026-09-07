@@ -41,6 +41,8 @@
   .loginbox .big { font-size: 3rem; }
   .spin { text-align: center; padding: 50px; color: #888; font-weight: 700; }
 </style>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -273,6 +275,10 @@ function svgChart(items) {
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+</script>
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
 </html>

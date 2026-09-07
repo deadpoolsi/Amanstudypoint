@@ -155,6 +155,8 @@
     font-weight: 600;
   }
 </style>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -418,6 +420,10 @@ function sendForgotWhatsApp() {
   const adminWhatsApp = "9041321843";
   window.open(`https://api.whatsapp.com/send?phone=91${adminWhatsApp}&text=${msg}`, "_blank");
 }
+</script>
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
 </html>

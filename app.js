@@ -391,6 +391,7 @@ async function payWithRazorpay(bookId, itemName, finalPrice, couponCode = "") {
   }
 
   // 🔒 SECURITY: amount nahi bhejda — server khud Firebase ton asli price labhda hai
+  await loadScriptOnce("https://checkout.razorpay.com/v1/checkout.js"); // ⚡ lazy — click te load
   try {
     const orderRes = await fetch("/api/create-order", {
       method: "POST",
@@ -1586,6 +1587,19 @@ document.addEventListener("DOMContentLoaded", () => {
   syncPurchasedBooks();
 });
 
+/* ⚡ SPEED: payment libraries sirf zaroorat velen load (index fast khulda) */
+function loadScriptOnce(src) {
+  return new Promise(function (resolve) {
+    var existing = document.querySelector('script[data-lz="' + src + '"]');
+    if (existing) { if (existing.dataset.loaded) return resolve(); existing.addEventListener('load', function () { resolve(); }); existing.addEventListener('error', function () { resolve(); }); return; }
+    var s = document.createElement('script');
+    s.src = src; s.async = true; s.dataset.loaded = ""; s.dataset.lz = src;
+    s.onload = function () { s.dataset.loaded = "1"; resolve(); };
+    s.onerror = function () { resolve(); };
+    document.head.appendChild(s);
+  });
+}
+
 /* ═══════ 📷 QR PAYMENT — kise vi phone ton, FULLY AUTOMATIC ═══════
    Flow: QR scan (maa-pya de phone ton vi) → pay.html → Razorpay →
    server verify (HMAC + amount + phone-binding) → book unlock →
@@ -1674,6 +1688,7 @@ async function openBookQrPay(bookId, itemName, price, couponCode) {
     });
     const d = await r.json();
     if (!d.success) { alert("⚠️ " + (d.message || "Order ਨਹੀਂ ਬਣਿਆ")); return; }
+    await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"); // ⚡ QR lib lazy
     const payUrl = location.origin + "/pay.html?order=" + encodeURIComponent(d.orderId) + "&key=" + encodeURIComponent(d.keyId) + "&amount=" + d.amount;
     showQrOverlay(Math.round(d.amount / 100), "ਕਿਤਾਬ: " + itemName, payUrl,
       "users/" + u.phone + "/books/" + bookId, "book");

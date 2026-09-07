@@ -105,5 +105,9 @@
       <a href="index.html">🏠 Home</a> &nbsp;•&nbsp; <a href="terms.html">Terms &amp; Conditions</a>
     </div>
   </div>
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 </body>
 </html>

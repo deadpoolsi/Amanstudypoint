@@ -93,6 +93,8 @@
       background: #fff9f5;
     }
   </style>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -212,10 +214,20 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
+/* ⚡ SPEED: payment libraries sirf zaroorat velen load (page fast khulda) */
+function loadScriptOnce(src) {
+  return new Promise(function (resolve) {
+    var existing = document.querySelector('script[data-lz="' + src + '"]');
+    if (existing) { if (existing.dataset.loaded) return resolve(); existing.addEventListener('load', function () { resolve(); }); existing.addEventListener('error', function () { resolve(); }); return; }
+    var s = document.createElement('script');
+    s.src = src; s.async = true; s.dataset.loaded = ""; s.dataset.lz = src;
+    s.onload = function () { s.dataset.loaded = "1"; resolve(); };
+    s.onerror = function () { resolve(); };
+    document.head.appendChild(s);
+  });
+}
   // 🔒 Security Blockers (100% Protection)
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
@@ -1249,6 +1261,7 @@
       const d = await r.json();
       if (!d.success) { alert("⚠️ " + (d.message || "Order ਨਹੀਂ ਬਣਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ")); return; }
       const payUrl = location.origin + "/pay.html?order=" + encodeURIComponent(d.orderId) + "&key=" + encodeURIComponent(d.keyId) + "&amount=" + d.amount;
+      await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"); // ⚡ QR lib v lazy
       const basePrice = categoryPassPricing[selectedPlanType] || 39;
       const finalPrice = Math.max(1, basePrice - appliedDiscount);
       const planNames = { day: "Day", week: "Week", month: "Month", sixMonths: "6-Month", year: "Year" };
@@ -1267,5 +1280,9 @@
   initPassChecking();
 </script>
 
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 </body>
 </html>

@@ -110,6 +110,8 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
 </style>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -402,5 +404,9 @@
   });
 </script>
 
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 </body>
 </html>

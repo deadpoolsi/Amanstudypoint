@@ -413,6 +413,10 @@ function loadScriptOnce(src) {
       }
 
       // 2) Razorpay checkout (amount SERVER di hai — client badal nahi sakda)
+      // ⚡ SPEED: library click te load hoi — page khulna fast
+      // 🔧 FIX: speed-arc vich tag hati si par eh await chhut giya si —
+      //    Razorpay undefined ban ke "ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ" error dinda si
+      await loadScriptOnce("https://checkout.razorpay.com/v1/checkout.js");
       var options = {
         "key": orderData.keyId,
         "amount": orderData.amount,

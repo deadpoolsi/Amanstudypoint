@@ -243,10 +243,11 @@ async function loadNotes() {
   listEl.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...";
   try {
     const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
-    const r = await fetch("/api/get-notes", {
+    /* get-ca.js vich "notes" branch (Hobby 12-function limit — alag file nahi) */
+    const r = await fetch("/api/get-ca", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken: idToken, pass: PASS_KEY, vault: vaultKey() })
+      body: JSON.stringify({ fn: "notes", idToken: idToken, pass: PASS_KEY, vault: vaultKey() })
     });
     const d = await r.json();
     if (d && d.success) {

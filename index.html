@@ -88,8 +88,7 @@
     <nav id="navLinks">
       <div class="menu-close-btn" onclick="toggleNavMenu()">✕</div>
       <a href="#quiz" onclick="toggleNavMenu()">🎯 Daily Test</a>
-      <a href="#books" onclick="toggleNavMenu()" class="books-ui">📚 All Books</a>
-      <a href="javascript:void(0)" onclick="openStudentTab('books'); toggleNavMenu();" class="books-ui">🎒 My Books</a>
+      <a href="#books" onclick="toggleNavMenu()" class="books-ui">📝 Notes</a>
       <a href="javascript:void(0)" id="analyticsNav" onclick="openStudentTab('progress'); toggleNavMenu();">📊 My Progress</a>
       <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
       <a href="javascript:void(0)" onclick="installApp()" style="color:#2b8a3e; font-weight:800;">📲 ਐਪ ਇੰਸਟਾਲ ਕਰੋ</a>
@@ -107,7 +106,7 @@
     <p class="hero-sub">SSC, Banking, Police, Patwari, TET — Books in easy Punjabi for all competitive exams. Read instantly on mobile.</p>
     <div class="hero-btns">
       <a href="#quiz" class="btn btn-primary" style="background:#e8590c; box-shadow:0 4px 14px rgba(232,89,12,0.35);">🎯 Start Daily Mock Test</a>
-      <a href="#books" class="btn btn-ghost books-ui">📚 View Books</a>
+      <a href="#books" class="btn btn-ghost books-ui">📝 View Notes</a>
       <a href="#pyq" class="btn btn-ghost" style="text-decoration:none;" onclick="document.getElementById('pyq')?.scrollIntoView({behavior:'smooth'}); return false;">
         📑 Free PYQs
       </a>
@@ -301,33 +300,60 @@
 <!-- Books Section -->
 <section id="books" class="section books-ui">
   <div class="container">
-    <h2>📚 Our Books & Notes</h2>
-    <p class="section-sub">Affordable high quality notes in Punjabi</p>
+    <h2>📝 Study Notes</h2>
+    <p class="section-sub">ਰੋਜ਼ਾਨਾ ਨਵੇਂ notes — ਹਰ ਵਿਸ਼ੇ ਦੀ ਪੂਰੀ ਤਿਆਰੀ</p>
 
-    <!-- Mega Combo Offer -->
-    <div class="card combo-card" style="border: 2px solid #ffa94d; background: #fff9db; margin-bottom:24px;">
-      <span class="badge" style="background:#e8590c; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🔥 BEST VALUE OFFER</span>
-      <h3 style="margin-top:8px;">🎁 All-in-One Mega Combo Pack</h3>
-      <p style="color:#555; font-size:0.9rem;">Get instant access to <b>ALL 8 BOOKS</b> (Full Syllabus Covered)</p>
-      
-      <div class="price" id="combo_price_display" style="font-size:1.6rem; font-weight:bold; color:#e8590c; margin:10px 0;">
-        ₹499 <small style="font-size:0.9rem; color:#777;"><s>₹792</s> (Save ₹293)</small>
-      </div>
-
-      <button class="btn btn-buy btn-block" id="buy_btn_combo" onclick="openBuyCombo()" style="background:#e8590c; color:#fff; width:100%; padding:12px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
-        🛒 Unlock All 8 Books
-      </button>
+    <div class="grid" id="notesGrid">
+      <a href="notes.html?subject=punjab" class="book-card" style="text-decoration:none;">
+        <span class="pill">🌄 Subject</span>
+        <div class="book-emoji">🌄</div>
+        <div class="book-title">Punjab</div>
+        <div class="book-sub">ਪੰਜਾਬ ਦਾ GK — ਸੱਭਿਆਚਾਰ, ਇਤਿਹਾਸ, ਨੀਤੀਆਂ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=math" class="book-card" style="text-decoration:none;">
+        <span class="pill">➗ Subject</span>
+        <div class="book-emoji">➗</div>
+        <div class="book-title">Math</div>
+        <div class="book-sub">ਗਣਿਤ — ਸਾਰੇ ਟੌਪਿਕ + ਟਰਿਕਸ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=punjabi" class="book-card" style="text-decoration:none;">
+        <span class="pill">🗣️ Subject</span>
+        <div class="book-emoji">🗣️</div>
+        <div class="book-title">Punjabi</div>
+        <div class="book-sub">ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਤੇ ਵਿਆਕਰਨ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=english" class="book-card" style="text-decoration:none;">
+        <span class="pill">🔤 Subject</span>
+        <div class="book-emoji">🔤</div>
+        <div class="book-title">English</div>
+        <div class="book-sub">ਗਰਾਮਰ, ਵੋਕੈਬ ਤੇ ਪ੍ਰੈਕਟਿਸ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=reasoning" class="book-card" style="text-decoration:none;">
+        <span class="pill">🧠 Subject</span>
+        <div class="book-emoji">🧠</div>
+        <div class="book-title">Reasoning</div>
+        <div class="book-sub">ਤਰਕਸ਼ੀਲਤਾ — ਸਾਰੇ ਪੈਟਰਨ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=computer" class="book-card" style="text-decoration:none;">
+        <span class="pill">💻 Subject</span>
+        <div class="book-emoji">💻</div>
+        <div class="book-title">Computer</div>
+        <div class="book-sub">ਕੰਪਿਊਟਰ ਗਿਆਨ — ਬੇਸਿਕ ਤੋਂ ਐਡਵਾਂਸ</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
+      <a href="notes.html?subject=gs" class="book-card" style="text-decoration:none; grid-column: 1 / -1; border: 2px solid #ffc078; background: #fff9db;">
+        <span class="pill">🌏 GS Combo</span>
+        <div class="book-emoji">🌏</div>
+        <div class="book-title">GS (General Studies)</div>
+        <div class="book-sub">🏛️ History + ⚖️ Polity + 🗺️ Geography — ਤਿੰਨੇ ਇੱਕੋ pass ਵਿੱਚ!</div>
+        <div class="book-bottom"><span class="btn btn-read btn-small">📝 Notes ਵੇਖੋ</span></div>
+      </a>
     </div>
-
-    <!-- Category Filters -->
-    <div class="cat-filters">
-      <button class="cat-btn active" onclick="filterBooks('all', this)">All Books</button>
-      <button class="cat-btn" onclick="filterBooks('gk', this)">🏛️ GK & History</button>
-      <button class="cat-btn" onclick="filterBooks('maths', this)">🔢 Maths & Reasoning</button>
-      <button class="cat-btn" onclick="filterBooks('language', this)">📖 Punjabi & English</button>
-    </div>
-
-    <div id="bookGrid" class="grid"></div>
   </div>
 </section>
 

@@ -10,7 +10,7 @@
    5. Offline: cached page + nahin ta "internet nahi" message
    ============================================================ */
 
-const VERSION = "asp-sw-v2";
+const VERSION = "asp-sw-v3";
 const TIMEOUT_MS = 400;
 
 /* Core pages — pehli visit te background vich cache (page load ton baad) */
@@ -22,6 +22,7 @@ const CORE = [
   "/jobs.html",
   "/progress.html",
   "/current-affairs.html",
+  "/notes.html",
   "/reader.html",
   "/privacy.html",
   "/terms.html",

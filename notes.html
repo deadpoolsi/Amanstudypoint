@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📝 Study Notes — Aman Study Point</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #f8f9fa; min-height: 100vh; }
+    .topbar { background: #e8590c; color: #fff; padding: 14px 12px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(232,89,12,0.3); }
+    .topbar .inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 10px; width: 100%; }
+    .backbtn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 1.1rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; text-decoration: none; }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 14px 12px 40px 12px; }
+    .card { background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .badge { font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 14px; }
+    .modal-box { background: #fff; border-radius: 14px; padding: 18px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+    .pass-plan-card { display: flex; justify-content: space-between; align-items: center; border: 2px solid #e9ecef; border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+    .pass-plan-card.active { border-color: #e8590c; background: #fff4e6; }
+    .btn { border: none; border-radius: 10px; font-weight: 800; cursor: pointer; padding: 12px; font-size: 1rem; }
+    .btn-primary { background: #e8590c; color: #fff; }
+    .btn-green { background: #2b8a3e; color: #fff; }
+    .note-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1.5px solid #e9ecef; border-radius: 12px; padding: 13px 14px; margin-bottom: 10px; cursor: pointer; }
+    .note-row:active { transform: scale(0.98); }
+    .subtabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .subtab { background: #fff; border: 2px solid #dee2e6; border-radius: 20px; padding: 8px 14px; font-weight: 800; font-size: 0.85rem; cursor: pointer; color: #495057; }
+    .subtab.active { border-color: #e8590c; background: #fff4e6; color: #d9480f; }
+  </style>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <a class="backbtn" href="index.html">←</a>
+    <div style="font-size: 1.35rem;" id="subjectIcon">📝</div>
+    <div style="flex:1;">
+      <div style="font-weight: 800; font-size: 0.98rem;" id="pageTitle">Notes</div>
+      <div style="font-size: 0.72rem; opacity: 0.9;">ਰੋਜ਼ਾਨਾ ਨਵੇਂ notes 🔥</div>
+    </div>
+    <span id="passBadge" style="background: rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 12px;">⏳</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- GS sub-tabs (sirf GS vich) -->
+  <div class="subtabs" id="gsSubtabs" style="display:none;">
+    <button class="subtab active" id="subtab_history" onclick="switchGsSub('history')">🏛️ History</button>
+    <button class="subtab" id="subtab_polity" onclick="switchGsSub('polity')">⚖️ Polity</button>
+    <button class="subtab" id="subtab_geography" onclick="switchGsSub('geography')">🗺️ Geography</button>
+  </div>
+
+  <!-- Pass unlock banner (bina pass) -->
+  <div class="card" id="passBanner" style="display:none; border:2px solid #ffe066; background:#fff9db; text-align:center; margin-bottom:14px;">
+    <div style="font-size:2rem;">🔒</div>
+    <b style="color:#222;">Notes ਪੜ੍ਹਨ ਲਈ Pass ਲਵੋ</b>
+    <p style="color:#666; font-size:0.85rem; margin:6px 0 10px 0;">ਹਰ ਰੋਜ਼ ਨਵੇਂ notes — ਦਿਨ ਦੇ ₹9 ਤੋਂ ਸ਼ੁਰੂ!</p>
+    <button class="btn btn-primary" onclick="openPassModal()" style="width:100%;">💎 Pass ਲਵੋ</button>
+  </div>
+
+  <!-- Notes list -->
+  <div id="notesList">⏳ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...</div>
+</div>
+
+<!-- 💎 PASS MODAL -->
+<div class="modal-overlay" id="passModal">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="color:#e8590c;">💎 Notes Pass</h3>
+      <button onclick="closePassModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✕</button>
+    </div>
+    <p style="font-size:0.82rem; color:#666; margin-bottom:10px;" id="passModalSub">—</p>
+
+    <div class="pass-plan-card" onclick="selectPlan('day', this)">
+      <span>📅 1 ਦਿਨ</span><b style="color:#e8590c;" id="planPrice_day">₹9</b>
+    </div>
+    <div class="pass-plan-card" onclick="selectPlan('week', this)">
+      <span>📆 1 ਹਫ਼ਤਾ</span><b style="color:#e8590c;" id="planPrice_week">₹39</b>
+    </div>
+    <div class="pass-plan-card active" onclick="selectPlan('month', this)">
+      <span>🗓️ 1 ਮਹੀਨਾ</span><b style="color:#e8590c;" id="planPrice_month">₹99</b>
+    </div>
+    <div class="pass-plan-card" onclick="selectPlan('sixMonths', this)">
+      <span>🌗 6 ਮਹੀਨੇ</span><b style="color:#e8590c;" id="planPrice_sixMonths">₹399</b>
+    </div>
+    <div class="pass-plan-card" onclick="selectPlan('year', this)">
+      <span>🎉 1 ਸਾਲ</span><b style="color:#e8590c;" id="planPrice_year">₹649</b>
+    </div>
+
+    <div style="display:flex; gap:8px; margin:10px 0;">
+      <input type="text" id="couponInput" placeholder="ਕੂਪਨ ਕੋਡ (ਜੇ ਹੋਵੇ)" style="flex:1; padding:10px; border:1.5px solid #dee2e6; border-radius:8px; text-transform:uppercase; font-weight:bold;">
+      <button onclick="applyCoupon()" style="background:#495057; color:#fff; border:none; border-radius:8px; padding:10px 14px; font-weight:bold; cursor:pointer;">ਲਗਾਓ</button>
+    </div>
+    <div id="couponMsg" style="font-size:0.78rem; margin-bottom:8px;"></div>
+
+    <button class="btn btn-primary" id="payPassBtn" onclick="checkoutSelectedPass()" style="width:100%;">⚡ Pay ₹99 via Razorpay</button>
+    <button class="btn btn-green" id="qrPayBtn" onclick="openPassQrPay()" style="width:100%; margin-top:8px;">📷 QR ਨਾਲ ਭੁਗਤਾਨ (ਕਿਸੇ ਵੀ ਫ਼ੋਨ ਤੋਂ)</button>
+  </div>
+</div>
+
+<!-- 📄 PDF VIEWER MODAL -->
+<div class="modal-overlay" id="pdfModal">
+  <div class="modal-box" style="max-width:760px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px 10px 6px;">
+      <b id="pdfTitle" style="font-size:0.9rem; color:#222;">PDF</b>
+      <div>
+        <a id="pdfNewTab" href="#" target="_blank" style="background:#e7f5ff; color:#1971c2; text-decoration:none; font-weight:bold; font-size:0.8rem; padding:6px 10px; border-radius:6px; margin-right:6px;">↗ ਨਵੀਂ ਟੈਬ</a>
+        <button onclick="document.getElementById('pdfModal').style.display='none'" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✕</button>
+      </div>
+    </div>
+    <iframe id="pdfFrame" style="width:100%; height:70vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;"></iframe>
+  </div>
+</div>
+
+<!-- ✏️ TEXT VIEWER MODAL -->
+<div class="modal-overlay" id="textModal">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <b id="textTitle" style="font-size:1rem; color:#222;">Notes</b>
+      <button onclick="document.getElementById('textModal').style.display='none'" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✕</button>
+    </div>
+    <div id="textContent" style="white-space:pre-wrap; line-height:1.8; font-size:0.95rem; color:#222;"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// @ts-nocheck
+const firebaseConfig = {
+  apiKey: "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Eix1EzMw",
+  authDomain: "aman-study-point.firebaseapp.com",
+  databaseURL: "https://aman-study-point-default-rtdb.firebaseio.com",
+  projectId: "aman-study-point",
+  storageBucket: "aman-study-point.firebasestorage.app",
+  messagingSenderId: "1059866846804",
+  appId: "1:1059866846804:web:1a9b4b58377b815b79afc1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ═══════════ NOTES META ═══════════ */
+const NOTES_META = {
+  punjab: { icon: "🌄", title: "Punjab Notes" },
+  math: { icon: "➗", title: "Math Notes" },
+  punjabi: { icon: "🗣️", title: "Punjabi Notes" },
+  english: { icon: "🔤", title: "English Notes" },
+  reasoning: { icon: "🧠", title: "Reasoning Notes" },
+  computer: { icon: "💻", title: "Computer Notes" },
+  gs: { icon: "🌏", title: "GS Notes" }
+};
+
+const urlParams = new URLSearchParams(location.search);
+let SUBJECT = urlParams.get("subject") || "punjab";
+if (!NOTES_META[SUBJECT]) SUBJECT = "punjab";
+let GS_SUB = "history";
+
+const PASS_KEY = "note_" + SUBJECT; /* users/{phone}/passes/note_xxx */
+function vaultKey() { return SUBJECT === "gs" ? "note_gs_" + GS_SUB : "note_" + SUBJECT; }
+
+const meta = NOTES_META[SUBJECT];
+document.getElementById("subjectIcon").innerText = meta.icon;
+document.getElementById("pageTitle").innerText = meta.title;
+document.title = meta.title + " — Aman Study Point";
+if (SUBJECT === "gs") document.getElementById("gsSubtabs").style.display = "flex";
+document.getElementById("passModalSub").innerText = meta.title + " — ਸਾਰੇ notes ਪੜ੍ਹਨ ਲਈ pass";
+
+const currentUser = () => {
+  const p = localStorage.getItem("pp_session");
+  return p ? { phone: p, name: localStorage.getItem("pp_name") || "Student" } : null;
+};
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ═══════════ STATE ═══════════ */
+let hasValidPass = false;
+let selectedPlanType = "month";
+let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
+let categoryCouponData = null;
+let appliedDiscount = 0;
+let appliedCouponCode = "";
+let cachedNotes = [];
+
+/* ═══════════ INIT ═══════════ */
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    initPage();
+  } else {
+    if (localStorage.getItem("pp_session")) localStorage.removeItem("pp_session");
+    document.getElementById("notesList").innerHTML = `
+      <div class="card" style="text-align:center; padding:30px;">
+        <div style="font-size:2.4rem;">🔐</div>
+        <h3 style="margin:10px 0 6px 0;">Notes ਪੜ੍ਹਨ ਲਈ ਲੌਗਿਨ ਕਰੋ</h3>
+        <a href="login.html" class="btn btn-primary" style="display:block; text-decoration:none; margin-top:12px;">📲 ਲੌਗਿਨ ਕਰੋ</a>
+      </div>`;
+    document.getElementById("passBadge").style.display = "none";
+  }
+});
+
+function initPage() {
+  loadPassPricing();
+  watchPass();
+  loadNotes();
+}
+
+/* ═══════════ PASS WATCH (live) ═══════════ */
+let passRef = null;
+function watchPass() {
+  const u = currentUser();
+  if (!u) return;
+  if (passRef) { try { passRef.off(); } catch (e) {} }
+  passRef = db.ref("users/" + u.phone + "/passes/" + PASS_KEY);
+  passRef.on("value", snap => {
+    const expiry = snap.val();
+    const badge = document.getElementById("passBadge");
+    if (expiry && expiry > Date.now()) {
+      hasValidPass = true;
+      const daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
+      badge.innerText = "💎 " + daysLeft + "D";
+      badge.style.background = "rgba(255,255,255,0.35)";
+      document.getElementById("passBanner").style.display = "none";
+      renderNotes();
+    } else {
+      hasValidPass = false;
+      badge.innerText = "🔒 Pass";
+      badge.style.background = "rgba(0,0,0,0.15)";
+      document.getElementById("passBanner").style.display = "block";
+      renderNotes();
+    }
+  });
+}
+
+/* ═══════════ NOTES LOAD (secure API) ═══════════ */
+async function loadNotes() {
+  const u = currentUser();
+  if (!u) return;
+  const listEl = document.getElementById("notesList");
+  listEl.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...";
+  try {
+    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+    const r = await fetch("/api/get-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: idToken, pass: PASS_KEY, vault: vaultKey() })
+    });
+    const d = await r.json();
+    if (d && d.success) {
+      hasValidPass = d.hasPass;
+      cachedNotes = d.notes || [];
+      if (cachedNotes.length === 0) {
+        listEl.innerHTML = `
+          <div class="card" style="text-align:center; padding:26px;">
+            <div style="font-size:2.2rem;">🔜</div>
+            <b>ਹਾਲੇ ਕੋਈ note ਨਹੀਂ — ਛੇਤੀ ਆ ਰਹੇ ਹਨ!</b>
+          </div>`;
+        return;
+      }
+      renderNotes();
+    } else {
+      listEl.innerHTML = `<div class="card" style="text-align:center; padding:20px;"><b>⚠️ ` + escapeHtml((d && d.message) || "ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ") + `</b><br><button onclick="loadNotes()" class="btn btn-primary" style="margin-top:10px;">🔄 ਦੁਬਾਰਾ</button></div>`;
+    }
+  } catch (e) {
+    listEl.innerHTML = `<div class="card" style="text-align:center; padding:20px;"><b>⚠️ ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ</b><br><button onclick="loadNotes()" class="btn btn-primary" style="margin-top:10px;">🔄 ਦੁਬਾਰਾ</button></div>`;
+  }
+}
+
+function renderNotes() {
+  const listEl = document.getElementById("notesList");
+  if (!cachedNotes.length) return;
+  listEl.innerHTML = cachedNotes.map((n, i) => {
+    const kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ Notes";
+    if (hasValidPass) {
+      return `
+        <div class="note-row" onclick="openNote(${i})">
+          <div style="flex:1;">
+            <b style="font-size:0.95rem; color:#222;">${escapeHtml(n.t)}</b>
+            <div style="font-size:0.75rem; color:#888; margin-top:3px;">${escapeHtml(n.d || "")} • ${kindBadge}</div>
+          </div>
+          <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:8px;">ਪੜ੍ਹੋ →</span>
+        </div>`;
+    } else {
+      return `
+        <div class="note-row" onclick="openPassModal()" style="opacity:0.85;">
+          <div style="flex:1;">
+            <b style="font-size:0.95rem; color:#222;">🔒 ${escapeHtml(n.t)}</b>
+            <div style="font-size:0.75rem; color:#888; margin-top:3px;">${escapeHtml(n.d || "")} • ${kindBadge}</div>
+          </div>
+          <span style="background:#fff4e6; color:#d9480f; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:8px;">Pass ਲਵੋ</span>
+        </div>`;
+    }
+  }).join("");
+}
+
+function openNote(i) {
+  const n = cachedNotes[i];
+  if (!n || !hasValidPass) { openPassModal(); return; }
+  if (n.k === "pdf" && n.u) {
+    document.getElementById("pdfTitle").innerText = n.t;
+    const fixed = fixGoogleDriveUrl(n.u);
+    document.getElementById("pdfFrame").src = fixed;
+    document.getElementById("pdfNewTab").href = fixed;
+    document.getElementById("pdfModal").style.display = "flex";
+  } else if (n.c) {
+    document.getElementById("textTitle").innerText = n.t;
+    document.getElementById("textContent").innerText = n.c;
+    document.getElementById("textModal").style.display = "flex";
+  }
+}
+
+function fixGoogleDriveUrl(url) {
+  const m = String(url).match(/drive\.google\.com\/file\/d\/([^/?]+)/);
+  if (m) return "https://drive.google.com/file/d/" + m[1] + "/preview";
+  return url;
+}
+
+/* GS sub-tab switch */
+function switchGsSub(sub) {
+  GS_SUB = sub;
+  ["history", "polity", "geography"].forEach(s => {
+    document.getElementById("subtab_" + s).classList.toggle("active", s === sub);
+  });
+  cachedNotes = [];
+  document.getElementById("notesList").innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...";
+  loadNotes();
+}
+
+/* ═══════════ PASS PURCHASE ═══════════ */
+function openPassModal() { document.getElementById("passModal").style.display = "flex"; }
+function closePassModal() { document.getElementById("passModal").style.display = "none"; }
+
+function loadPassPricing() {
+  db.ref("siteSettings/passPricing/" + PASS_KEY).once("value", snap => {
+    const val = snap.val();
+    if (val) {
+      categoryPassPricing = {
+        day: val.day || 9, week: val.week || 39, month: val.month || 99,
+        sixMonths: val.sixMonths || 399, year: val.year || 649
+      };
+      categoryCouponData = val.coupon || null;
+      document.getElementById("planPrice_day").innerText = "₹" + categoryPassPricing.day;
+      document.getElementById("planPrice_week").innerText = "₹" + categoryPassPricing.week;
+      document.getElementById("planPrice_month").innerText = "₹" + categoryPassPricing.month;
+      document.getElementById("planPrice_sixMonths").innerText = "₹" + categoryPassPricing.sixMonths;
+      document.getElementById("planPrice_year").innerText = "₹" + categoryPassPricing.year;
+      updatePayButtonText();
+    }
+  });
+}
+
+function selectPlan(type, el) {
+  selectedPlanType = type;
+  document.querySelectorAll(".pass-plan-card").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  updatePayButtonText();
+}
+
+function updatePayButtonText() {
+  let basePrice = categoryPassPricing[selectedPlanType] || 99;
+  let finalPrice = Math.max(1, basePrice - appliedDiscount);
+  const payBtn = document.getElementById("payPassBtn");
+  if (payBtn) payBtn.innerText = "⚡ Pay ₹" + finalPrice + " via Razorpay";
+}
+
+function applyCoupon() {
+  const codeInp = (document.getElementById("couponInput").value || "").trim().toUpperCase();
+  const msgEl = document.getElementById("couponMsg");
+  if (!codeInp) { msgEl.innerHTML = "<span style='color:#e03131;'>ਕੂਪਨ ਕੋਡ ਲਿਖੋ</span>"; return; }
+  if (categoryCouponData && categoryCouponData.active &&
+      String(categoryCouponData.code).toUpperCase() === codeInp) {
+    const limit = parseInt(categoryCouponData.limit) || 0;
+    const used = parseInt(categoryCouponData.usedCount) || 0;
+    if (limit > 0 && used >= limit) {
+      msgEl.innerHTML = "<span style='color:#e03131;'>⚠️ ਇਹ ਕੂਪਨ ਆਪਣੀ ਲਿਮਿਟ ਪੂਰੀ ਕਰ ਚੁੱਕਾ ਹੈ!</span>";
+      appliedDiscount = 0; appliedCouponCode = ""; updatePayButtonText(); return;
+    }
+    const discountPct = parseInt(categoryCouponData.discount) || 0;
+    const basePrice = categoryPassPricing[selectedPlanType] || 99;
+    appliedDiscount = Math.round((basePrice * discountPct) / 100);
+    appliedCouponCode = codeInp;
+    msgEl.innerHTML = "<span style='color:#2b8a3e; font-weight:bold;'>🎉 ਕੂਪਨ ਲੱਗ ਗਿਆ! ₹" + appliedDiscount + " ਦੀ ਛੋਟ (" + discountPct + "% Off)</span>";
+    updatePayButtonText();
+  } else {
+    msgEl.innerHTML = "<span style='color:#e03131;'>⚠️ ਗ਼ਲਤ ਜਾਂ ਐਕਸਪਾਇਰ ਕੂਪਨ ਕੋਡ!</span>";
+    appliedDiscount = 0; appliedCouponCode = ""; updatePayButtonText();
+  }
+}
+
+async function checkoutSelectedPass() {
+  const u = currentUser();
+  if (!u) { alert("Pass ਖ਼ਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਿਨ ਕਰੋ!"); window.location.href = "login.html"; return; }
+  const payBtn = document.getElementById("payPassBtn");
+  const originalBtnText = payBtn ? payBtn.innerText : "";
+  if (payBtn) { payBtn.disabled = true; payBtn.innerText = "⏳ ਆਰਡਰ ਬਣ ਰਿਹਆ ਹੈ..."; }
+  try {
+    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+    const orderRes = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "pass", planId: selectedPlanType, category: PASS_KEY,
+        couponCode: appliedCouponCode || "", phone: u.phone, idToken: idToken
+      })
+    });
+    const orderData = await orderRes.json();
+    if (!orderData.success) {
+      alert("⚠️ " + (orderData.message || "ਆਰਡਰ ਨਹੀਂ ਬਣ ਸਕਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"));
+      return;
+    }
+    await loadScriptOnce("https://checkout.razorpay.com/v1/checkout.js");
+    var options = {
+      "key": orderData.keyId,
+      "amount": orderData.amount,
+      "currency": orderData.currency,
+      "order_id": orderData.orderId,
+      "name": "Aman Study Point",
+      "description": "Notes Pass (" + meta.title + ")",
+      "image": "assets/icon-192.png",
+      "handler": async function (response) {
+        try {
+          const verifyRes = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              phone: u.phone, name: u.name
+            })
+          });
+          const data = await verifyRes.json();
+          if (data.success) {
+            alert("🎉 ਮੁਬਾਰਕਾਂ! ਤੁਹਾਡਾ Notes Pass ਐਕਟਿਵ ਹੋ ਗਿਆ ਹੈ!");
+            location.reload();
+          } else {
+            alert("⚠️ " + (data.message || "ਪੇਮੈਂਟ ਵੈਰੀਫਿਕੇਸ਼ਨ ਫੇਲ੍ਹ ਹੋ ਗਈ! WhatsApp te contact karo: 90413-21843"));
+          }
+        } catch (err) {
+          alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਮਦਦ ਲਈ WhatsApp karo: 90413-21843");
+        }
+      },
+      "prefill": { "name": u.name, "contact": u.phone },
+      "theme": { "color": "#e8590c" }
+    };
+    var rzp1 = new Razorpay(options);
+    rzp1.on("payment.failed", function (resp) {
+      alert("⚠️ ਪੇਮੈਂਟ ਫੇਲ੍ਹ ਹੋ ਗਈ: " + (resp.error && resp.error.description ? resp.error.description : "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ"));
+    });
+    rzp1.open();
+  } catch (err) {
+    alert("⚠️ ਪੇਮੈਂਟ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆਈ। ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ ਜਾਂ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+  } finally {
+    if (payBtn) { payBtn.disabled = false; payBtn.innerText = originalBtnText; }
+  }
+}
+
+/* ═══════════ QR PAYMENT ═══════════ */
+function loadScriptOnce(src) {
+  return new Promise(function (resolve) {
+    try {
+      var existing = document.querySelector('script[data-lz="' + src + '"]');
+      if (existing) { if (existing.dataset.loaded) return resolve(); existing.addEventListener("load", function () { resolve(); }); existing.addEventListener("error", function () { resolve(); }); return; }
+      var s = document.createElement("script");
+      s.src = src; s.async = true; s.dataset.lz = src;
+      s.onload = function () { s.dataset.loaded = "1"; resolve(); };
+      s.onerror = function () { resolve(); };
+      document.head.appendChild(s);
+    } catch (e) { resolve(); }
+  });
+}
+
+async function openPassQrPay() {
+  const u = currentUser();
+  if (!u) { alert("Pass ਖ਼ਰੀਦਣ ਲਈ ਪਹਿਲਾਂ ਲੌਗਿਨ ਕਰੋ!"); location.href = "login.html"; return; }
+  const btn = document.getElementById("qrPayBtn");
+  if (btn) { btn.disabled = true; btn.innerText = "⏳ ਲਿੰਕ ਬਣ ਰਿਹਆ ਹੈ..."; }
+  try {
+    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+    const r = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "pass", planId: selectedPlanType, category: PASS_KEY,
+        couponCode: appliedCouponCode || "", phone: u.phone, idToken: idToken
+      })
+    });
+    const d = await r.json();
+    if (!d.success) { alert("⚠️ " + (d.message || "Order ਨਹੀਂ ਬਣਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ")); return; }
+    await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");
+    const payUrl = location.origin + "/pay.html?order=" + encodeURIComponent(d.orderId) + "&key=" + encodeURIComponent(d.keyId) + "&amount=" + d.amount;
+    const basePrice = categoryPassPricing[selectedPlanType] || 99;
+    const finalPrice = Math.max(1, basePrice - appliedDiscount);
+    const planNames = { day: "Day", week: "Week", month: "Month", sixMonths: "6-Month", year: "Year" };
+    showQrOverlay(finalPrice, "Notes Pass: " + (planNames[selectedPlanType] || selectedPlanType) + " (" + meta.title + ")", payUrl,
+      "users/" + u.phone + "/passes/" + PASS_KEY, "pass");
+  } catch (e) {
+    alert("⚠️ ਸਰਵਰ ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ ਹੋਇਆ — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "📷 QR ਨਾਲ ਭੁਗਤਾਨ (ਕਿਸੇ ਵੀ ਫ਼ੋਨ ਤੋਂ)"; }
+  }
+}
+
+let _qrPollTimer = null;
+function stopQrPolling() { if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; } }
+
+function showQrOverlay(rupees, label, payUrl, watchPath, watchMode) {
+  stopQrPolling();
+  let ov = document.getElementById("aspQrOverlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "aspQrOverlay";
+    ov.style.cssText = "display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:99999; overflow-y:auto;";
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `
+    <div style="background:#fff; border-radius:16px; max-width:350px; margin:30px auto; padding:20px 16px; position:relative; font-family:sans-serif;">
+      <button onclick="stopQrPolling(); document.getElementById('aspQrOverlay').style.display='none';" style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#888;">✕</button>
+      <div style="text-align:center; font-weight:800; font-size:1.05rem; color:#222;">📷 QR ਨਾਲ ਭੁਗਤਾਨ</div>
+      <div id="aspQrStatus" style="margin-top:10px;">
+        <div style="font-size:1.5rem; font-weight:800; color:#2b8a3e;">₹${rupees}</div>
+        <div style="color:#666; font-size:0.85rem; margin-bottom:8px;">${label}</div>
+        <div id="aspQrBox" style="background:#f8f9fa; border:2px dashed #ccc; border-radius:12px; padding:10px; display:flex; align-items:center; justify-content:center; min-height:230px;">
+          <div style="color:#888; font-size:0.85rem;">QR ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+        </div>
+        <a href="${payUrl}" style="display:block; margin-top:10px; background:#7048e8; color:#fff; text-decoration:none; font-weight:700; padding:11px; border-radius:8px; font-size:0.9rem;">📲 ਇਸ ਫ਼ੋਨ ਵਿੱਚ ਖੋਲ੍ਹ ਕੇ ਭੁਗਤਾਨ ਕਰੋ</a>
+        <a href="https://wa.me/?text=${encodeURIComponent('💳 ਭੁਗਤਾਨ ਲਿੰਕ (Aman Study Point): ' + payUrl)}" target="_blank" style="display:block; margin-top:8px; background:#25D366; color:#fff; text-decoration:none; font-weight:700; padding:11px; border-radius:8px; font-size:0.9rem;">📲 WhatsApp 'ਤੇ ਲਿੰਕ ਭੇਜੋ</a>
+        <div style="color:#888; font-size:0.78rem; margin-top:10px; line-height:1.6; text-align:left;">
+          👇 <b>ਕਿਸੇ ਵੀ ਫ਼ੋਨ</b> ਤੋਂ (ਮਾਪਿਆਂ ਦੇ ਫ਼ੋਨ ਤੋਂ ਵੀ) ਇਹ QR ਸਕੈਨ ਕਰੋ।<br>
+          ⏳ ਭੁਗਤਾਨ ਹੁੰਦੇ ਹੀ ਤੁਹਾਡਾ pass <b>ਆਪਣੇ-ਆਪ</b> active ਹੋ ਜਾਵੇਗਾ — ਇਹ ਸਕਰੀਨ ਖੁੱਲ੍ਹੀ ਰਹਿਣ ਦਿਓ।
+        </div>
+        <div style="margin-top:10px; color:#1971c2; font-weight:700; font-size:0.85rem;">⏳ ਭੁਗਤਾਨ ਦੀ ਉਡੀਕ ਹੈ...</div>
+      </div>
+    </div>`;
+  ov.style.display = "block";
+  renderQrInto(document.getElementById("aspQrBox"), payUrl);
+  _qrPollTimer = setInterval(async () => {
+    try {
+      const u = currentUser();
+      if (!u) return stopQrPolling();
+      const s = await db.ref(watchPath).once("value");
+      const v = s.val();
+      const hit = (watchMode === "book") ? (v === true) : (typeof v === "number" && v > Date.now());
+      if (hit) {
+        stopQrPolling();
+        document.getElementById("aspQrStatus").innerHTML = `
+          <div style="font-size:3.2rem;">🎉</div>
+          <h2 style="color:#2b8a3e; margin:6px 0;">ਭੁਗਤਾਨ ਸਫ਼ਲ!</h2>
+          <p style="color:#555; font-weight:700;">ਤੁਹਾਡਾ Notes Pass active ਹੋ ਗਿਆ ਹੈ ✅</p>`;
+        setTimeout(() => { location.reload(); }, 2200);
+      }
+    } catch (e) {}
+  }, 4000);
+}
+
+function renderQrInto(el, text) {
+  try {
+    el.innerHTML = "";
+    new QRCode(el, { text: text, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M });
+  } catch (e) {
+    el.innerHTML = "<small style='color:#888;'>QR ਲੋਡ ਨਹੀਂ — ਉੱਪਰੋਂ ਬਟਨ ਵਰਤੋ</small>";
+  }
+}
+</script>
+
+<script>
+/* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+</body>
+</html>

@@ -302,6 +302,13 @@ Ans: B"></textarea>
             <option value="banking">🏦 Banking</option>
             <option value="current">⚡ CA ਟੈਸਟ ਸੀਰੀਜ਼</option>
             <option value="ca">🌍 CA ਪੜ੍ਹਾਈ ਵਾਲਾ ਪੰਨਾ</option>
+            <option value="note_punjab">📝 Notes: Punjab</option>
+            <option value="note_math">📝 Notes: Math</option>
+            <option value="note_punjabi">📝 Notes: Punjabi</option>
+            <option value="note_english">📝 Notes: English</option>
+            <option value="note_reasoning">📝 Notes: Reasoning</option>
+            <option value="note_computer">📝 Notes: Computer</option>
+            <option value="note_gs">📝 Notes: GS (History+Polity+Geo)</option>
           </select>
         </div>
       </div>
@@ -352,6 +359,13 @@ Ans: B"></textarea>
           <option value="banking">🏦 Banking Exams</option>
           <option value="current">⚡ Current Affairs (CA ਟੈਸਟ)</option>
           <option value="ca">🌍 CA ਪੜ੍ਹਾਈ (Current Affairs ਪੰਨਾ)</option>
+          <option value="note_punjab">📝 Notes: Punjab</option>
+          <option value="note_math">📝 Notes: Math</option>
+          <option value="note_punjabi">📝 Notes: Punjabi</option>
+          <option value="note_english">📝 Notes: English</option>
+          <option value="note_reasoning">📝 Notes: Reasoning</option>
+          <option value="note_computer">📝 Notes: Computer</option>
+          <option value="note_gs">📝 Notes: GS (History+Polity+Geo)</option>
         </select>
       </div>
 
@@ -424,6 +438,57 @@ Ans: B"></textarea>
 
   <!-- TAB 3: 📚 BOOKS & PDFS (Books, Prices & Book Coupons) -->
   <div id="tab_books" class="tab-content-panel">
+
+    <!-- 📝 NOTES MANAGER — roz nave notes upload -->
+    <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
+      <h3 style="color:#e8590c; margin-top:0;">📝 Notes Manager (ਰੋਜ਼ਾਨਾ Notes)</h3>
+      <p style="font-size:0.85rem; color:#666; margin:6px 0 12px;">Subjects: Punjab, Math, Punjabi, English, Reasoning, Computer, GS — ਰੋਜ਼ ਨਵੇਂ notes ਜੋੜੋ (PDF ਜਾਂ ਲਿਖੇ ਹੋਏ):</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:0.85rem; font-weight:bold;">📚 Subject:</label>
+          <select id="noteVaultSelect" onchange="loadAdminNotesList()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px;">
+            <option value="note_punjab">🌄 Punjab</option>
+            <option value="note_math">➗ Math</option>
+            <option value="note_punjabi">🗣️ Punjabi</option>
+            <option value="note_english">🔤 English</option>
+            <option value="note_reasoning">🧠 Reasoning</option>
+            <option value="note_computer">💻 Computer</option>
+            <option value="note_gs_history">🌏 GS → History</option>
+            <option value="note_gs_polity">🌏 GS → Polity</option>
+            <option value="note_gs_geography">🌏 GS → Geography</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.85rem; font-weight:bold;">📄 Format:</label>
+          <select id="noteKindSelect" onchange="noteKindToggle()" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px;">
+            <option value="pdf">📄 PDF (link)</option>
+            <option value="text">✏️ ਲਿਖਿਆ ਹੋਇਆ (typing)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.85rem; font-weight:bold;">📌 Title:</label>
+        <input type="text" id="noteTitleInput" placeholder="ਜਿਵੇਂ: 23 September ਦੇ Punjab GK Notes" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; font-weight:bold; margin-top:4px; box-sizing:border-box;">
+      </div>
+
+      <div id="notePdfWrap" style="margin-bottom:10px;">
+        <label style="font-size:0.85rem; font-weight:bold;">🔗 PDF Link (Google Drive ya koi vi direct link):</label>
+        <input type="text" id="notePdfInput" placeholder="https://drive.google.com/..." style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; margin-top:4px; box-sizing:border-box;">
+      </div>
+
+      <div id="noteTextWrap" style="display:none; margin-bottom:10px;">
+        <label style="font-size:0.85rem; font-weight:bold;">✏️ Notes di likhari:</label>
+        <textarea id="noteTextInput" placeholder="ਇੱਥੇ notes ਲਿਖੋ..." style="width:100%; height:140px; padding:10px; border-radius:6px; border:1.5px solid #e8590c; margin-top:4px; box-sizing:border-box;"></textarea>
+      </div>
+
+      <button onclick="saveAdminNote()" style="width:100%; padding:12px; background:#e8590c; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer;">➕ Note ਅੱਪਲੋਡ ਕਰੋ</button>
+
+      <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">📚 ਇਸ subject ਦੇ notes:</div>
+      <div id="adminNotesList" style="font-size:0.85rem;">— Subject ਚੁਣੋ —</div>
+    </div>
+
     <!-- Books Coupon Manager -->
     <div class="card-admin" style="border: 2px solid #1971c2; background: #f8faff;">
       <h3 style="color:#1971c2; margin-top:0;">🏷️ Books Coupon Manager</h3>
@@ -885,6 +950,7 @@ function loadAllAdminModules() {
   loadJobAlerts();
   loadBooksSectionState();
   loadCategoryPassPricing();
+  loadAdminNotesList();
   loadBooksCouponConfig();
   loadCategoryTestsAdmin();
   loadTimerSetting();
@@ -899,7 +965,10 @@ function loadAllAdminModules() {
 const freePassCatLabels = {
   police: "Punjab Police", patwari: "PSSSB Board", clerk: "Agniveer GD", ssc: "SSC & Railway",
   ptet1: "PTET Paper 1", ptet2: "PTET Paper 2", banking: "Banking",
-  current: "CA ਟੈਸਟ ਸੀਰੀਜ਼", ca: "CA ਪੜ੍ਹਾਈ (ਪੰਨਾ)"
+  current: "CA ਟੈਸਟ ਸੀਰੀਜ਼", ca: "CA ਪੜ੍ਹਾਈ (ਪੰਨਾ)",
+  note_punjab: "Notes: Punjab", note_math: "Notes: Math", note_punjabi: "Notes: Punjabi",
+  note_english: "Notes: English", note_reasoning: "Notes: Reasoning", note_computer: "Notes: Computer",
+  note_gs: "Notes: GS (History+Polity+Geography)"
 };
 
 function freePassCustomToggle() {
@@ -1019,6 +1088,74 @@ function revokeFreePass() {
   }).catch(function (e) {
     if (e && e.noLogin) return;
     st.innerHTML = "❌ Network error — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ।";
+  });
+}
+
+/* ═══════ 📝 NOTES MANAGER — roz nave notes ═══════ */
+function noteKindToggle() {
+  const k = document.getElementById("noteKindSelect").value;
+  document.getElementById("notePdfWrap").style.display = (k === "pdf") ? "block" : "none";
+  document.getElementById("noteTextWrap").style.display = (k === "text") ? "block" : "none";
+}
+
+function saveAdminNote() {
+  const vault = document.getElementById("noteVaultSelect").value;
+  const kind = document.getElementById("noteKindSelect").value;
+  const title = (document.getElementById("noteTitleInput").value || "").trim();
+  const pdfUrl = (document.getElementById("notePdfInput").value || "").trim();
+  const text = (document.getElementById("noteTextInput").value || "").trim();
+
+  if (!title) return alert("Title ਲਿਖੋ!");
+  if (kind === "pdf" && !pdfUrl) return alert("PDF link ਲਿਖੋ!");
+  if (kind === "text" && !text) return alert("Notes ਦੀ ਲਿਖਾਈ ਲਿਖੋ!");
+
+  const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const note = {
+    t: title,
+    k: kind,
+    u: kind === "pdf" ? pdfUrl : "",
+    c: kind === "text" ? text : "",
+    d: today,
+    at: Date.now()
+  };
+  db.ref(vault + "/" + Date.now()).set(note).then(function () {
+    alert("✅ Note ਅੱਪਲੋਡ ਹੋ ਗਿਆ! Students nu turant dikh jauga.");
+    document.getElementById("noteTitleInput").value = "";
+    document.getElementById("notePdfInput").value = "";
+    document.getElementById("noteTextInput").value = "";
+    loadAdminNotesList();
+  }).catch(function (e) {
+    alert("❌ Error: " + e.message);
+  });
+}
+
+function loadAdminNotesList() {
+  const vault = document.getElementById("noteVaultSelect").value;
+  const box = document.getElementById("adminNotesList");
+  box.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਾ...";
+  db.ref(vault).once("value").then(function (snap) {
+    const val = snap.val() || {};
+    const keys = Object.keys(val).sort(function (a, b) { return (val[b].at || 0) - (val[a].at || 0); });
+    if (!keys.length) { box.innerHTML = "<small style='color:#888;'>— ਇਸ subject ਵਿੱਚ ਹਾਲੇ ਕੋਈ note ਨਹੀਂ —</small>"; return; }
+    box.innerHTML = keys.map(function (id) {
+      const n = val[id];
+      const kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ ਲਿਖਿਆ";
+      return "<div style=\"display:flex; justify-content:space-between; align-items:center; border:1.5px solid #ffe3d1; border-radius:8px; padding:8px 10px; margin-bottom:6px; background:#fff;\">" +
+        "<div><b>" + (n.t || "Untitled") + "</b><br><small style='color:#888;'>" + (n.d || "") + " • " + kindBadge + "</small></div>" +
+        "<button onclick=\"deleteAdminNote('" + vault + "','" + id + "')\" style=\"background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;\">🗑️</button>" +
+        "</div>";
+    }).join("") + "<small style='color:#888;'>(ਕੁੱਲ: " + keys.length + " notes)</small>";
+  }).catch(function (e) {
+    box.innerHTML = "❌ " + e.message;
+  });
+}
+
+function deleteAdminNote(vault, id) {
+  if (!confirm("ਸੱਚੀ ਇਹ note ਹਟਾਉਣਾ ਹੈ?")) return;
+  db.ref(vault + "/" + id).remove().then(function () {
+    loadAdminNotesList();
+  }).catch(function (e) {
+    alert("❌ " + e.message);
   });
 }
 

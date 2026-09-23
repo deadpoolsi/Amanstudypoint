@@ -27,6 +27,9 @@ const DB_SECRET = process.env.FIREBASE_DB_SECRET || null;
 const VALID_CATS = [
   "police", "patwari", "clerk", "ssc", "ptet1", "ptet2",
   "banking", "current", "ca",
+  /* 📝 Notes subjects (GS = 1 pass, 3 sub) */
+  "note_punjab", "note_math", "note_punjabi", "note_english",
+  "note_reasoning", "note_computer", "note_gs",
 ];
 
 function fail(res, status, message) {

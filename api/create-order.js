@@ -120,7 +120,7 @@ function computeItemPrice(type, item, settings) {
   if (type === "pass") {
     const { planId, category } = item;
     if (!VALID_PLANS.includes(planId)) return { error: "ਗ਼ਲਤ ਪਲਾਨ ਚੁਣਿਆ ਗਿਆ ਹੈ।" };
-    if (!category || !/^[a-z0-9]+$/i.test(category)) return { error: "ਗ਼ਲਤ ਕੈਟਾਗਰੀ।" };
+    if (!category || !/^[a-z0-9_]+$/i.test(category)) return { error: "ਗ਼ਲਤ ਕੈਟਾਗਰੀ।" };
     const catPricing = settings && settings.passPricing && settings.passPricing[category];
     if (!catPricing) return { error: "ਇਹ ਕੈਟਾਗਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।" };
     const basePrice = Number(catPricing[planId]);

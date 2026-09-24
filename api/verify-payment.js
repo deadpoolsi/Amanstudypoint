@@ -196,7 +196,7 @@ module.exports = async (req, res) => {
       const planId = notes.plan_id;
       const category = notes.category;
       const durationMs = PASS_DURATIONS[planId];
-      if (!durationMs || !/^[a-z0-9]+$/i.test(category || ""))
+      if (!durationMs || !/^[a-z0-9_]+$/i.test(category || ""))
         return fail(res, 400, "ਆਰਡਰ ਦੀ ਜਾਣਕਾਰੀ ਗ਼ਲਤ ਹੈ।");
 
       const expiry = Date.now() + durationMs;

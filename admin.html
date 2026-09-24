@@ -486,7 +486,8 @@ Ans: B"></textarea>
         <textarea id="noteTextInput" placeholder="ਇੱਥੇ notes ਲਿਖੋ..." style="width:100%; height:140px; padding:10px; border-radius:6px; border:1.5px solid #e8590c; margin-top:4px; box-sizing:border-box;"></textarea>
       </div>
 
-      <button onclick="saveAdminNote()" style="width:100%; padding:12px; background:#e8590c; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer;">➕ Note ਅੱਪਲੋਡ ਕਰੋ</button>
+      <button onclick="saveAdminNote()" id="noteSaveBtn" style="width:100%; padding:12px; background:#e8590c; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer;">➕ Note ਅੱਪਲੋਡ ਕਰੋ</button>
+      <button onclick="cancelEditNote()" id="noteCancelBtn" style="display:none; width:100%; padding:12px; background:#868e96; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.9rem; cursor:pointer; margin-top:8px;">✖️ Edit ਰੱਦ ਕਰੋ (ਨਵਾਂ note ਲਿਖਣਾ ਹੈ)</button>
 
       <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">📚 ਇਸ subject ਦੇ notes:</div>
       <div id="adminNotesList" style="font-size:0.85rem;">— Subject ਚੁਣੋ —</div>
@@ -1101,6 +1102,52 @@ function noteKindToggle() {
   document.getElementById("noteTextWrap").style.display = (k === "text") ? "block" : "none";
 }
 
+/* ═══════ ✏️ EDIT MODE ═══════ */
+let editingNote = null; /* { vault, id, n } — n = purana note */
+
+function resetNoteFormMode() {
+  editingNote = null;
+  const sb = document.getElementById("noteSaveBtn");
+  if (sb) sb.innerText = "➕ Note ਅੱਪਲੋਡ ਕਰੋ";
+  const cb = document.getElementById("noteCancelBtn");
+  if (cb) cb.style.display = "none";
+  const fm = document.getElementById("notePdfFileMsg");
+  if (fm) fm.innerText = "";
+}
+
+function cancelEditNote() {
+  resetNoteFormMode();
+  document.getElementById("noteTitleInput").value = "";
+  document.getElementById("notePdfInput").value = "";
+  document.getElementById("noteTextInput").value = "";
+  const f = document.getElementById("notePdfFile"); if (f) f.value = "";
+}
+
+/* ✏️ list ton note nu form vich lao (same id te update hoga) */
+function editAdminNote(vault, id) {
+  db.ref("bookVault/" + vault + "/" + id).once("value").then(function (snap) {
+    const n = snap.val();
+    if (!n) return alert("Note ਨਹੀਂ ਮਿਲਿਆ!");
+    editingNote = { vault: vault, id: id, n: n };
+    document.getElementById("noteVaultSelect").value = vault;
+    document.getElementById("noteKindSelect").value = (n.k === "text") ? "text" : "pdf";
+    noteKindToggle();
+    document.getElementById("noteTitleInput").value = n.t || "";
+    const oldU = String(n.u || "");
+    document.getElementById("notePdfInput").value = oldU.indexOf("db:") === 0 ? "" : oldU;
+    document.getElementById("noteTextInput").value = n.c || "";
+    const fm = document.getElementById("notePdfFileMsg");
+    if (fm) fm.innerText = (oldU.indexOf("db:") === 0)
+      ? "📎 ਪੁਰਾਣੀ direct PDF ਮੌਜੂਦ ਹੈ — ਨਵੀਂ ਚੁਣੋ ਤਾਂ ਬਦਲ ਜਾਵੇਗੀ (ਨਾ ਬਦਲਣਾ ਹੋਵੇ ਤਾਂ ਖ਼ਾਲੀ ਛੱਡੋ)।"
+      : "";
+    document.getElementById("noteSaveBtn").innerText = "💾 ਬਦਲਾਵ Save ਕਰੋ";
+    document.getElementById("noteCancelBtn").style.display = "block";
+    document.getElementById("noteVaultSelect").scrollIntoView({ behavior: "smooth" });
+  }).catch(function (e) {
+    alert("❌ " + e.message);
+  });
+}
+
 function saveAdminNote() {
   const vault = document.getElementById("noteVaultSelect").value;
   const kind = document.getElementById("noteKindSelect").value;
@@ -1110,10 +1157,12 @@ function saveAdminNote() {
   const fileEl = document.getElementById("notePdfFile");
   const file = (fileEl && fileEl.files && fileEl.files[0]) ? fileEl.files[0] : null;
   const msgEl = document.getElementById("notePdfFileMsg");
+  const oldU = editingNote ? String(editingNote.n.u || "") : "";
 
   if (!title) return alert("Title ਲਿਖੋ!");
-  if (kind === "pdf" && !pdfUrl && !file) return alert("📎 PDF file ਚੁਣੋ ਜਾਂ 🔗 link ਲਿਖੋ (ਇੱਕ ਚਾਹੀਦੀ ਹੈ)!");
   if (kind === "text" && !text) return alert("Notes ਦੀ ਲਿਖਾਈ ਲਿਖੋ!");
+  if (kind === "pdf" && !pdfUrl && !file && oldU.indexOf("db:") !== 0)
+    return alert("📎 PDF file ਚੁਣੋ ਜਾਂ 🔗 link ਲਿਖੋ (ਇੱਕ ਚਾਹੀਦੀ ਹੈ)!");
   if (kind === "pdf" && file) {
     const isPdf = (file.type === "application/pdf") || /\.pdf$/i.test(file.name || "");
     if (!isPdf) return alert("ਸਿਰਫ਼ PDF file ਹੀ ਚਲੇਗੀ!");
@@ -1141,7 +1190,7 @@ function saveAdminNote() {
           return alert("❌ " + ((d && d.message) || "PDF ਅੱਪਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ।"));
         }
         msgEl.innerText = "✅ PDF ਅੱਪਲੋਡ ਹੋ ਗਈ — note save ਹੋ ਰਿਹਾ...";
-        saveNoteNow(vault, kind, title, "db:" + d.fileId, "", today, msgEl);
+        saveNoteNow(kind, title, "db:" + d.fileId, "", today, msgEl, oldU);
       } catch (e) {
         msgEl.innerText = "";
         alert("❌ " + (e.message || "PDF ਅੱਪਲੋਡ ਵਿੱਚ ਸਮੱਸਿਆ।"));
@@ -1152,42 +1201,68 @@ function saveAdminNote() {
     return;
   }
 
-  saveNoteNow(vault, kind, title, kind === "pdf" ? pdfUrl : "", kind === "text" ? text : "", today, null);
+  /* edit + koi nava input nahi → purana u rakho */
+  const finalU = kind === "pdf" ? (pdfUrl || oldU) : "";
+  saveNoteNow(kind, title, finalU, kind === "text" ? text : "", today, null, oldU);
 }
 
-/* 📝 note save — path: bookVault/{vault} (API de path naal match — FIX) */
-function saveNoteNow(vault, kind, title, u, c, today, msgEl) {
-  const note = { t: title, k: kind, u: u, c: c, d: today, at: Date.now() };
-  db.ref("bookVault/" + vault + "/" + Date.now()).set(note).then(function () {
+/* 📝 note save — path: bookVault/{vault} (API de path naal match).
+   EDIT MODE vich same id update hunda hai (d/at original) */
+function saveNoteNow(kind, title, u, c, today, msgEl, oldU) {
+  oldU = String(oldU || "");
+  const done = function () {
+    /* purani direct PDF delete — jado u badlia (navi file/link/text) */
+    if (oldU.indexOf("db:") === 0 && u !== oldU) {
+      db.ref("bookVault/__files/" + oldU.slice(3)).remove().catch(function () {});
+    }
     if (msgEl) { msgEl.innerText = "✅ ਹੋ ਗਿਆ!"; setTimeout(function () { msgEl.innerText = ""; }, 4000); }
-    alert("✅ Note ਅੱਪਲੋਡ ਹੋ ਗਿਆ! Students nu turant dikh jauga.");
+    alert(editingNote ? "✅ Note ਬਦਲ ਗਿਆ! Students nu updated dikhuga." : "✅ Note ਅੱਪਲੋਡ ਹੋ ਗਿਆ! Students nu turant dikh jauga.");
+    resetNoteFormMode();
     document.getElementById("noteTitleInput").value = "";
     document.getElementById("notePdfInput").value = "";
     document.getElementById("noteTextInput").value = "";
     const f = document.getElementById("notePdfFile"); if (f) f.value = "";
     loadAdminNotesList();
-  }).catch(function (e) {
+  };
+  const err = function (e) {
     if (msgEl) msgEl.innerText = "";
     alert("❌ Error: " + e.message);
-  });
+  };
+  if (editingNote) {
+    /* EDIT: same id update (merge) — d/at original rahnde ne */
+    db.ref("bookVault/" + editingNote.vault + "/" + editingNote.id)
+      .update({ t: title, k: kind, u: u, c: c })
+      .then(done)
+      .catch(err);
+    return;
+  }
+  /* NAVA note */
+  db.ref("bookVault/" + document.getElementById("noteVaultSelect").value + "/" + Date.now())
+    .set({ t: title, k: kind, u: u, c: c, d: today, at: Date.now() })
+    .then(done)
+    .catch(err);
 }
 
 function loadAdminNotesList() {
   const vault = document.getElementById("noteVaultSelect").value;
   const box = document.getElementById("adminNotesList");
   box.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਾ...";
-  db.ref(vault).once("value").then(function (snap) {
+  db.ref("bookVault/" + vault).once("value").then(function (snap) {
     const val = snap.val() || {};
     const keys = Object.keys(val).sort(function (a, b) { return (val[b].at || 0) - (val[a].at || 0); });
     if (!keys.length) { box.innerHTML = "<small style='color:#888;'>— ਇਸ subject ਵਿੱਚ ਹਾਲੇ ਕੋਈ note ਨਹੀਂ —</small>"; return; }
     box.innerHTML = keys.map(function (id) {
       const n = val[id];
-      const kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ ਲਿਖਿਆ";
+      var kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ ਲਿਖਿਆ";
+      if (n.k === "pdf") kindBadge += (String(n.u || "").indexOf("db:") === 0) ? " • 📎 Direct" : " • 🔗 Link";
       return "<div style=\"display:flex; justify-content:space-between; align-items:center; border:1.5px solid #ffe3d1; border-radius:8px; padding:8px 10px; margin-bottom:6px; background:#fff;\">" +
         "<div><b>" + (n.t || "Untitled") + "</b><br><small style='color:#888;'>" + (n.d || "") + " • " + kindBadge + "</small></div>" +
+        "<div>" +
+        "<button onclick=\"editAdminNote('" + vault + "','" + id + "')\" style=\"background:#fff4e6; color:#e8590c; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer; margin-right:4px;\">✏️</button>" +
         "<button onclick=\"deleteAdminNote('" + vault + "','" + id + "')\" style=\"background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;\">🗑️</button>" +
+        "</div>" +
         "</div>";
-    }).join("") + "<small style='color:#888;'>(ਕੁੱਲ: " + keys.length + " notes)</small>";
+    }).join("") + "<small style='color:#888;'>(ਕੁੱਲ: " + keys.length + " notes — ✏️ edit • 🗑️ delete)</small>";
   }).catch(function (e) {
     box.innerHTML = "❌ " + e.message;
   });
@@ -1907,6 +1982,15 @@ function exportResultsToCSV() {
   let csv = "data:text/csv;charset=utf-8,Name,Phone,Score,Total,Percentage,Time\n";
   currentResultsData.exports = true;
   currentResultsData.forEach(r => csv += `"${r.name}","${r.phone}",${r.score},${r.total},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
+  const a = document.createElement("a");
+  a.href = encodeURI(csv);
+  a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
+tal},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
   const a = document.createElement("a");
   a.href = encodeURI(csv);
   a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;

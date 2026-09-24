@@ -474,8 +474,11 @@ Ans: B"></textarea>
       </div>
 
       <div id="notePdfWrap" style="margin-bottom:10px;">
-        <label style="font-size:0.85rem; font-weight:bold;">🔗 PDF Link (Google Drive ya koi vi direct link):</label>
-        <input type="text" id="notePdfInput" placeholder="https://drive.google.com/..." style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; margin-top:4px; box-sizing:border-box;">
+        <label style="font-size:0.85rem; font-weight:bold;">📎 ਸਿੱਧੀ PDF file ਚੁਣੋ (3MB ਤੱਕ — Drive ਦੀ ਲੋੜ ਨਹੀਂ):</label>
+        <input type="file" id="notePdfFile" accept="application/pdf,.pdf" style="width:100%; padding:9px; border:1.5px dashed #e8590c; border-radius:6px; margin-top:4px; background:#fff; box-sizing:border-box; font-size:0.85rem;">
+        <div id="notePdfFileMsg" style="font-size:0.78rem; color:#e8590c; font-weight:bold; margin-top:5px;"></div>
+        <label style="font-size:0.85rem; font-weight:bold; margin-top:10px; display:block;">🔗 ਜਾਂ PDF Link (Google Drive ya koi vi direct link):</label>
+        <input type="text" id="notePdfInput" placeholder="https://drive.google.com/... (ਖਾਲੀ ਛੱਡੋ ਜੇ ਉੱਪਰੋਂ file ਚੁਣੀ ਹੈ)" style="width:100%; padding:10px; border-radius:6px; border:1.5px solid #e8590c; margin-top:4px; box-sizing:border-box;">
       </div>
 
       <div id="noteTextWrap" style="display:none; margin-bottom:10px;">
@@ -1104,27 +1107,67 @@ function saveAdminNote() {
   const title = (document.getElementById("noteTitleInput").value || "").trim();
   const pdfUrl = (document.getElementById("notePdfInput").value || "").trim();
   const text = (document.getElementById("noteTextInput").value || "").trim();
+  const fileEl = document.getElementById("notePdfFile");
+  const file = (fileEl && fileEl.files && fileEl.files[0]) ? fileEl.files[0] : null;
+  const msgEl = document.getElementById("notePdfFileMsg");
 
   if (!title) return alert("Title ਲਿਖੋ!");
-  if (kind === "pdf" && !pdfUrl) return alert("PDF link ਲਿਖੋ!");
+  if (kind === "pdf" && !pdfUrl && !file) return alert("📎 PDF file ਚੁਣੋ ਜਾਂ 🔗 link ਲਿਖੋ (ਇੱਕ ਚਾਹੀਦੀ ਹੈ)!");
   if (kind === "text" && !text) return alert("Notes ਦੀ ਲਿਖਾਈ ਲਿਖੋ!");
+  if (kind === "pdf" && file) {
+    const isPdf = (file.type === "application/pdf") || /\.pdf$/i.test(file.name || "");
+    if (!isPdf) return alert("ਸਿਰਫ਼ PDF file ਹੀ ਚਲੇਗੀ!");
+    if (file.size > 3 * 1024 * 1024) return alert("PDF 3MB ਤੋਂ ਘੱਟ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ। ਵੱਡੀ PDF ਲਈ 🔗 Drive link ਵਰਤੋ।");
+  }
 
   const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const note = {
-    t: title,
-    k: kind,
-    u: kind === "pdf" ? pdfUrl : "",
-    c: kind === "text" ? text : "",
-    d: today,
-    at: Date.now()
-  };
-  db.ref(vault + "/" + Date.now()).set(note).then(function () {
+
+  /* 📎 direct file → pehla server upload (admin-grant API), fid baad note save */
+  if (kind === "pdf" && file) {
+    msgEl.innerText = "⏳ PDF ਅੱਪਲੋਡ ਹੋ ਰਹੀ ਹੈ... ਕੁਝ ਸਕਿੰਟ ਉਡੀਕੋ (band na karo)।";
+    const reader = new FileReader();
+    reader.onload = async function () {
+      try {
+        const b64 = String(reader.result || "").split(",")[1] || "";
+        const token = await auth.currentUser.getIdToken();
+        const r = await fetch("/api/admin-grant", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "uploadNoteFile", idToken: token, b64: b64 })
+        });
+        const d = await r.json();
+        if (!d || !d.success || !d.fileId) {
+          msgEl.innerText = "";
+          return alert("❌ " + ((d && d.message) || "PDF ਅੱਪਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ।"));
+        }
+        msgEl.innerText = "✅ PDF ਅੱਪਲੋਡ ਹੋ ਗਈ — note save ਹੋ ਰਿਹਾ...";
+        saveNoteNow(vault, kind, title, "db:" + d.fileId, "", today, msgEl);
+      } catch (e) {
+        msgEl.innerText = "";
+        alert("❌ " + (e.message || "PDF ਅੱਪਲੋਡ ਵਿੱਚ ਸਮੱਸਿਆ।"));
+      }
+    };
+    reader.onerror = function () { msgEl.innerText = ""; alert("❌ File ਪੜ੍ਹੀ ਨਹੀਂ ਜਾ ਸਕੀ।"); };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  saveNoteNow(vault, kind, title, kind === "pdf" ? pdfUrl : "", kind === "text" ? text : "", today, null);
+}
+
+/* 📝 note save — path: bookVault/{vault} (API de path naal match — FIX) */
+function saveNoteNow(vault, kind, title, u, c, today, msgEl) {
+  const note = { t: title, k: kind, u: u, c: c, d: today, at: Date.now() };
+  db.ref("bookVault/" + vault + "/" + Date.now()).set(note).then(function () {
+    if (msgEl) { msgEl.innerText = "✅ ਹੋ ਗਿਆ!"; setTimeout(function () { msgEl.innerText = ""; }, 4000); }
     alert("✅ Note ਅੱਪਲੋਡ ਹੋ ਗਿਆ! Students nu turant dikh jauga.");
     document.getElementById("noteTitleInput").value = "";
     document.getElementById("notePdfInput").value = "";
     document.getElementById("noteTextInput").value = "";
+    const f = document.getElementById("notePdfFile"); if (f) f.value = "";
     loadAdminNotesList();
   }).catch(function (e) {
+    if (msgEl) msgEl.innerText = "";
     alert("❌ Error: " + e.message);
   });
 }
@@ -1152,8 +1195,16 @@ function loadAdminNotesList() {
 
 function deleteAdminNote(vault, id) {
   if (!confirm("ਸੱਚੀ ਇਹ note ਹਟਾਉਣਾ ਹੈ?")) return;
-  db.ref(vault + "/" + id).remove().then(function () {
-    loadAdminNotesList();
+  db.ref("bookVault/" + vault + "/" + id).once("value").then(function (snap) {
+    const n = snap.val() || {};
+    return db.ref("bookVault/" + vault + "/" + id).remove().then(function () {
+      /* 📎 direct-upload PDF vi saaf karo (note de naal) */
+      const u = String(n.u || "");
+      if (u.indexOf("db:") === 0) {
+        db.ref("bookVault/__files/" + u.slice(3)).remove().catch(function () {});
+      }
+      loadAdminNotesList();
+    });
   }).catch(function (e) {
     alert("❌ " + e.message);
   });

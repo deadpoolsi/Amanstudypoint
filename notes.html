@@ -297,9 +297,13 @@ function renderNotes() {
   }).join("");
 }
 
+/* 📎 direct-upload PDF cache (blob URLs — 5 ton vadh nahi) */
+const dbPdfCache = {};
+
 function openNote(i) {
   const n = cachedNotes[i];
   if (!n || !hasValidPass) { openPassModal(); return; }
+  if (n.k === "pdf" && String(n.u || "").indexOf("db:") === 0) { openDbPdf(n); return; }
   if (n.k === "pdf" && n.u) {
     document.getElementById("pdfTitle").innerText = n.t;
     const fixed = fixGoogleDriveUrl(n.u);
@@ -310,6 +314,48 @@ function openNote(i) {
     document.getElementById("textTitle").innerText = n.t;
     document.getElementById("textContent").innerText = n.c;
     document.getElementById("textModal").style.display = "flex";
+  }
+}
+
+/* 📎 direct-upload PDF — /api/get-ca {fn:"file"} to lao, blob banao */
+async function openDbPdf(n) {
+  const fileId = String(n.u).slice(3);
+  document.getElementById("pdfTitle").innerText = "⏳ " + n.t;
+  document.getElementById("pdfModal").style.display = "flex";
+  const frame = document.getElementById("pdfFrame");
+  if (dbPdfCache[fileId]) {
+    frame.src = dbPdfCache[fileId];
+    document.getElementById("pdfNewTab").href = dbPdfCache[fileId];
+    document.getElementById("pdfTitle").innerText = n.t;
+    return;
+  }
+  frame.src = "about:blank";
+  try {
+    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+    const r = await fetch("/api/get-ca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fn: "file", idToken: idToken, pass: PASS_KEY, vault: vaultKey(), id: n.id })
+    });
+    const d = await r.json();
+    if (d && d.success && d.data) {
+      const bin = atob(d.data);
+      const bytes = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const ck = Object.keys(dbPdfCache);
+      if (ck.length >= 5) { try { URL.revokeObjectURL(dbPdfCache[ck[0]]); } catch (e) {} delete dbPdfCache[ck[0]]; }
+      dbPdfCache[fileId] = blobUrl;
+      frame.src = blobUrl;
+      document.getElementById("pdfNewTab").href = blobUrl;
+      document.getElementById("pdfTitle").innerText = n.t;
+    } else {
+      document.getElementById("pdfTitle").innerText = n.t;
+      alert((d && d.message) || "PDF ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ।");
+    }
+  } catch (e) {
+    document.getElementById("pdfTitle").innerText = n.t;
+    alert("ਨੈੱਟਵਰਕ ਸਮੱਸਿਆ — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ, ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
   }
 }
 

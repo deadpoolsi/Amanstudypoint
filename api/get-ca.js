@@ -8,6 +8,8 @@
      2. 📝 NOTES: { fn: "notes", idToken, pass, vault }
         (pehla api/get-notes.js si — Hobby limit 12 karke
         alag file deploy nahi ho saki, is layi eh vich shamil)
+     3. 📎 NOTES FILE: { fn: "file", idToken, pass, vault, id }
+        (admin de directly-upload kite PDF — bookVault/__files)
 
    🔒 SECURITY:
    - currentAffairs/bookVault nodes PUBLICLY padhe nahi ja sakde
@@ -165,6 +167,58 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, hasPass: hasPass, notes: notes });
     } catch (e) {
       console.error("get-notes branch crash:", e);
+      return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
+  /* ═══════════ 📎 NOTES FILE BRANCH (direct-upload PDF) ═══════════
+     { fn: "file", idToken, pass, vault, id } → { data: base64 }
+     Lock: sirf VALID pass vale student (teaser mode vich
+     file bilkul downloadable nahi) + note da u "db:{fileId}" hona zaroori। */
+  if (body.fn === "file") {
+    const passKey = String(body.pass || "").trim();
+    const vaultKey = String(body.vault || "").trim();
+    const noteId = String(body.id || "").trim();
+    if (!NOTE_PASS_KEYS.includes(passKey))
+      return res.status(400).json({ success: false, message: "ਗ਼ਲਤ subject।" });
+    if (!NOTE_VAULT_KEYS.includes(vaultKey))
+      return res.status(400).json({ success: false, message: "ਗ਼ਲਤ vault।" });
+    if (vaultKey !== passKey && vaultKey.indexOf(passKey + "_") !== 0)
+      return res.status(400).json({ success: false, message: "ਗ਼ਲਤ subject combination।" });
+    if (!noteId)
+      return res.status(400).json({ success: false, message: "ਗ਼ਲਤ note।" });
+
+    try {
+      /* 1) Login verify → phone (sirf vidiarathi) */
+      const payload = await verifyIdToken(String(body.idToken || ""));
+      if (!payload || !payload.email)
+        return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+      const m = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+      if (!m)
+        return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ vidiarathi notes padh sakde han।" });
+      const phone = m[1];
+
+      /* 2) VALID pass zaroori — bina pass file koi nahi khol sakda */
+      const expiry = await fbGet("users/" + encodeURIComponent(phone) + "/passes/" + passKey);
+      if (!((typeof expiry === "number") && expiry > Date.now()))
+        return res.status(403).json({ success: false, passRequired: true, message: "ਪਹਿਲਾਂ pass ਲਵੋ।" });
+
+      /* 3) note kholo — u = "db:{fileId}" hona zaroori */
+      const note = await fbGet("bookVault/" + vaultKey + "/" + encodeURIComponent(noteId));
+      if (!note || typeof note !== "object")
+        return res.status(404).json({ success: false, message: "Note ਨਹੀਂ ਮਿਲਿਆ।" });
+      const u = String(note.u || "");
+      if (u.indexOf("db:") !== 0)
+        return res.status(400).json({ success: false, message: "ਇਹ note direct file ਨਹੀਂ ਹੈ।" });
+
+      /* 4) PDF data lao (bookVault/__files/{fileId}) */
+      const data = await fbGet("bookVault/__files/" + encodeURIComponent(u.slice(3)));
+      if (typeof data !== "string" || !data)
+        return res.status(404).json({ success: false, message: "PDF ਨਹੀਂ ਮਿਲੀ।" });
+
+      return res.status(200).json({ success: true, data: data });
+    } catch (e) {
+      console.error("get-file branch crash:", e);
       return res.status(500).json({ success: false, message: "ਸਰਵਰ ਸਮੱਸਿਆ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
     }
   }

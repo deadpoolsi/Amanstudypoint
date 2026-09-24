@@ -171,6 +171,30 @@ module.exports = async (req, res) => {
   if (!isAdmin) return fail(res, 403, "ਸਿਰਫ਼ admin ਦੀ ਇਜਾਜ਼ਤ ਹੈ।");
 
   const action = String(body.action || "grant");
+
+  /* ═══════════ 📎 DIRECT PDF UPLOAD (Notes Manager) ═══════════
+     base64 PDF → bookVault/__files/{fileId} (server-side DB_SECRET PUT —
+     client SDK rahi 3MB+ string slow/retry-prone hundi hai).
+     File id note.u = "db:{fileId}" naal judda hai; students
+     isnu /api/get-ca {fn:"file"} rahi (pass check naal) parhdhe han. */
+  if (action === "uploadNoteFile") {
+    const b64 = String(body.b64 || "");
+    if (!b64 || b64.length < 50)
+      return fail(res, 400, "ਖਾਲੀ/ਬਹੁਤ ਛੋਟੀ PDF ਨਹੀਂ ਚਲੇਗੀ।");
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64))
+      return fail(res, 400, "ਗ਼ਲਤ PDF format।");
+    if (b64.length > 4200000)
+      return fail(res, 400, "PDF 3MB ਤੋਂ ਘੱਟ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ — ਵੱਡੀ PDF ਲਈ Drive link ਵਰਤੋ।");
+    const fileId = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try {
+      await fbRequest("PUT", "bookVault/__files/" + fileId, b64);
+      return res.status(200).json({ success: true, fileId: fileId });
+    } catch (e) {
+      console.error("uploadNoteFile crash:", e);
+      return fail(res, 500, "ਸਰਵਰ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    }
+  }
+
   const phone = String(body.phone || "").trim();
   const cat = String(body.cat || "").trim();
 

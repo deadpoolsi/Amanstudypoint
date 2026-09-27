@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin Panel — Aman Study Point</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
+  <link rel="stylesheet" href="style.css">
 <style>
   /* 🔒 100% Security Enabled */
   body, html {
@@ -836,6 +838,7 @@ function switchAdminTab(panelId, btnEl) {
   const target = document.getElementById(panelId);
   if (target) target.classList.add("active");
   if (btnEl) btnEl.classList.add("active");
+  ensureAdminTabLoaded(panelId); /* 🚀 SPEED: eh tab da data load hoga (1st time) */
 }
 
 /* ═══ 🔔 Job Alerts (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) — jobs.html da data ═══ */
@@ -950,19 +953,33 @@ function deleteJobAlert(key) {
   });
 }
 
+/* ═══════ 🚀 SPEED FIX — LAZY TABS ═══════
+   PURANA: login honde hi SARE 12 modules ikathe load hunde se
+   (tests + PYQ + requests + quizResults + jobs + notes...) —
+   phone te hang + bhari Firebase download, is layi panel slow si।
+   NAYA: sirf khulda hua tab apna data launda hai (pehli var),
+   baaki tabs jado khulde han tab load hunde ne — LOAD hun vagg-vagg! */
+const ADMIN_TAB_LOADERS = {
+  tab_tests: ["loadCategoryTestsAdmin", "loadTimerSetting"],
+  tab_passes: ["loadCategoryPassPricing"],
+  tab_books: ["loadBooksSectionState", "loadAdminNotesList", "loadBooksCouponConfig", "loadSelectedBookData", "loadBookRequests"],
+  tab_results: ["loadQuizResults"],
+  tab_settings: ["loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
+};
+const _adminTabsLoaded = {};
+function ensureAdminTabLoaded(tabId) {
+  if (_adminTabsLoaded[tabId]) return;
+  _adminTabsLoaded[tabId] = true;
+  (ADMIN_TAB_LOADERS[tabId] || []).forEach(function (fnName) {
+    try {
+      if (typeof window[fnName] === "function") window[fnName]();
+      else console.warn("loader missing:", fnName);
+    } catch (e) { console.warn(fnName, e); }
+  });
+}
 function loadAllAdminModules() {
-  loadJobAlerts();
-  loadBooksSectionState();
-  loadCategoryPassPricing();
-  loadAdminNotesList();
-  loadBooksCouponConfig();
-  loadCategoryTestsAdmin();
-  loadTimerSetting();
-  loadAdminPYQs();
-  loadPopupPosterConfig();
-  loadTodayDayConfig();
-  loadSelectedBookData();
-  loadFirebaseData();
+  /* default tab (tab_tests) hi pehle — baaki tab khuln te */
+  ensureAdminTabLoaded("tab_tests");
 }
 
 /* ═══════ 🎁 FREE PASS — manual unlock (admin tool) ═══════ */
@@ -1892,8 +1909,10 @@ function deletePYQ(key) {
   });
 }
 
-/* User Requests, Results & Accounts */
-function loadFirebaseData() {
+/* User Requests, Results & Accounts — 🚀 SPLIT (lazy tabs):
+   requests → tab_books (Books & PDFs de athon), quizResults + accounts
+   → tab_results (Results & Students) */
+function loadBookRequests() {
   db.ref("requests").on("value", snap => {
     const list = document.getElementById("requestsList");
     const data = snap.val();
@@ -1915,7 +1934,10 @@ function loadFirebaseData() {
       </div>
     `).join("");
   });
+}
 
+/* 🚀 quizResults + accounts — tab_results (Results & Students) */
+function loadQuizResults() {
   db.ref("quizResults").on("value", snap => {
     const list = document.getElementById("quizResultsList"), countSpan = document.getElementById("resultsCount");
     const data = snap.val();
@@ -1961,6 +1983,9 @@ function loadFirebaseData() {
   });
 }
 
+/* backward compat — koi purana caller vi challe */
+function loadFirebaseData() { loadBookRequests(); loadQuizResults(); }
+
 function approveBook(phone, bookId, reqId, name) {
   if (bookId === "combo" || bookId === "all_combo") {
     ["punjabi", "gk", "maths", "reasoning", "history", "science", "constitution", "computer"].forEach(id => {
@@ -1982,15 +2007,6 @@ function exportResultsToCSV() {
   let csv = "data:text/csv;charset=utf-8,Name,Phone,Score,Total,Percentage,Time\n";
   currentResultsData.exports = true;
   currentResultsData.forEach(r => csv += `"${r.name}","${r.phone}",${r.score},${r.total},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
-  const a = document.createElement("a");
-  a.href = encodeURI(csv);
-  a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
-</script>
-</body>
-</html>
-tal},"${Math.round((r.score/r.total)*100)}%","${r.time}"\n`);
   const a = document.createElement("a");
   a.href = encodeURI(csv);
   a.download = `Results_${new Date().toISOString().slice(0,10)}.csv`;

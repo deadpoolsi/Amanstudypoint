@@ -78,6 +78,12 @@
     <button class="btn btn-primary" onclick="openPassModal()" style="width:100%;">💎 Pass ਲਵੋ</button>
   </div>
 
+  <!-- 🔍 Notes SEARCH (students lai) -->
+  <div style="position:relative; margin-bottom:10px;">
+    <input type="text" id="noteSearch" placeholder="🔍 Note ਖੋਜੋ — title / ਸ਼ਬਦ ਲਿਖੋ..." oninput="renderNotes()" autocomplete="off" style="width:100%; box-sizing:border-box; border:2px solid #e9ecef; border-radius:12px; padding:12px 40px 12px 14px; font-size:0.95rem; font-weight:600; background:#fff; outline:none; color:#222;">
+    <button id="noteSearchClear" onclick="clearNoteSearch()" style="display:none; position:absolute; right:7px; top:50%; transform:translateY(-50%); background:#f1f3f5; border:none; border-radius:50%; width:28px; height:28px; font-size:0.85rem; cursor:pointer; color:#495057; font-weight:800;">✕</button>
+  </div>
+
   <!-- Notes list -->
   <div id="notesList">⏳ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...</div>
 </div>
@@ -360,7 +366,28 @@ async function loadNotes() {
 function renderNotes() {
   const listEl = document.getElementById("notesList");
   if (!cachedNotes.length) return;
-  listEl.innerHTML = cachedNotes.map((n, i) => {
+  /* 🔍 SEARCH — title + likhai + date vich gholo */
+  const searchEl = document.getElementById("noteSearch");
+  const q = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
+  const clearBtn = document.getElementById("noteSearchClear");
+  if (clearBtn) clearBtn.style.display = q ? "block" : "none";
+  const shownIdx = [];
+  cachedNotes.forEach(function (n, i) {
+    if (!q) { shownIdx.push(i); return; }
+    const hay = (String(n.t || "") + " " + String(n.c || "") + " " + String(n.d || "")).toLowerCase();
+    if (hay.indexOf(q) !== -1) shownIdx.push(i);
+  });
+  if (!shownIdx.length) {
+    listEl.innerHTML = `
+      <div class="card" style="text-align:center; padding:26px;">
+        <div style="font-size:2.2rem;">🔍</div>
+        <b>ਕੋਈ note ਨਹੀਂ ਮਿਲਿਆ</b>
+        <div style="color:#888; font-size:0.82rem; margin-top:4px;">ਹੋਰ ਸ਼ਬਦ ਨਾਲ ਖੋਜੋ ਜਾਂ ✕ ਦਬਾ ਕੇ ਸਾਰੇ ਵੇਖੋ</div>
+      </div>`;
+    return;
+  }
+  listEl.innerHTML = shownIdx.map(function (i) {
+    const n = cachedNotes[i];
     let kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ Notes 🔒";
     if (hasValidPass && n.k === "pdf") kindBadge = String(n.u || "").indexOf("db:") === 0 ? "📄 PDF 🔒" : "📄 PDF 🔗";
     if (hasValidPass) {
@@ -383,6 +410,13 @@ function renderNotes() {
         </div>`;
     }
   }).join("");
+}
+
+/* 🔍 search box saaf + saare notes wapas */
+function clearNoteSearch() {
+  const searchEl = document.getElementById("noteSearch");
+  if (searchEl) searchEl.value = "";
+  renderNotes();
 }
 
 /* 📎 direct-upload PDF cache — pdf.js docs (protected render) */
@@ -563,6 +597,9 @@ function switchGsSub(sub) {
     document.getElementById("subtab_" + s).classList.toggle("active", s === sub);
   });
   cachedNotes = [];
+  /* 🔍 subject badalde hi search reset */
+  const se = document.getElementById("noteSearch");
+  if (se) se.value = "";
   document.getElementById("notesList").innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...";
   loadNotes();
 }

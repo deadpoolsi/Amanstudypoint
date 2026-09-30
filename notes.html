@@ -27,6 +27,16 @@
     .subtabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
     .subtab { background: #fff; border: 2px solid #dee2e6; border-radius: 20px; padding: 8px 14px; font-weight: 800; font-size: 0.85rem; cursor: pointer; color: #495057; }
     .subtab.active { border-color: #e8590c; background: #fff4e6; color: #d9480f; }
+    /* ═══════ 🔒 CONTENT PROTECTION ═══════ */
+    .noselect { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .wm-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; background-repeat: repeat; }
+    .pdf-page-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .pdf-page-btn { background: #e8590c; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; }
+    .pdf-page-btn:disabled { background: #ced4da; }
+    @media print {
+      body * { display: none !important; }
+      body::after { content: "⛔ Printing allowed nahi hai — Aman Study Point"; display: block !important; text-align: center; padding-top: 40vh; font-size: 18px; font-weight: bold; }
+    }
   </style>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
@@ -112,6 +122,18 @@
       </div>
     </div>
     <iframe id="pdfFrame" style="width:100%; height:70vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;"></iframe>
+    <!-- 🔒 protected viewer (direct PDFs) — canvas render, koi download/print button nahi -->
+    <div id="pdfCanvasWrap" style="display:none; position:relative;">
+      <div style="width:100%; overflow:auto; max-height:62vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;">
+        <canvas id="pdfCanvas" class="noselect" style="display:block; margin:0 auto; width:100%;"></canvas>
+      </div>
+      <div class="wm-layer" id="pdfWm"></div>
+      <div class="pdf-page-nav">
+        <button class="pdf-page-btn" id="pdfPrevBtn" onclick="dbPdfNav(-1)">← ਪਿੱਛੇ</button>
+        <b id="pdfPageInfo" style="color:#666; font-size:0.9rem;">…</b>
+        <button class="pdf-page-btn" id="pdfNextBtn" onclick="dbPdfNav(1)">ਅੱਗੇ →</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -203,9 +225,44 @@ firebase.auth().onAuthStateChanged((user) => {
 });
 
 function initPage() {
+  initWatermarks();
   loadPassPricing();
   watchPass();
   loadNotes();
+}
+
+/* ═══════ 🔒 CONTENT PROTECTION ═══════
+   - copy/cut/right-click/drag block + Ctrl+P/S/C + PrintScreen block
+   - print karo → khaali page (CSS @media print)
+   - app switch/background → content blur
+   - 🔖 WATERMARK: har student da phone number — leak hoya tan
+     kasurvar apne aap pakda jauge (screenshot system vadhia,
+     browser vich 100% rokna mumkin nahi) */
+(function () {
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); }, true);
+  document.addEventListener("copy", function (e) { e.preventDefault(); }, true);
+  document.addEventListener("cut", function (e) { e.preventDefault(); }, true);
+  document.addEventListener("dragstart", function (e) { e.preventDefault(); }, true);
+  document.addEventListener("keydown", function (e) {
+    var k = (e.key || "").toLowerCase();
+    if (k === "printscreen") { e.preventDefault(); }
+    if ((e.ctrlKey || e.metaKey) && (k === "p" || k === "s" || k === "u" || k === "c")) { e.preventDefault(); }
+  });
+  document.addEventListener("visibilitychange", function () {
+    document.body.style.filter = document.hidden ? "blur(16px)" : "";
+  });
+})();
+
+/* 🔖 watermark layers (PDF canvas + text viewer) — student phone */
+function initWatermarks() {
+  const u = currentUser();
+  const txt = (u ? u.phone : "ASP") + " • ASP";
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='260' height='170'><text x='16' y='88' font-size='17' font-weight='bold' fill='rgba(60,60,60,0.13)' transform='rotate(-22 130 85)'>" + txt + "</text></svg>";
+  const bg = "url(\"data:image/svg+xml," + encodeURIComponent(svg) + "\")";
+  ["pdfWm", "textWm"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.style.backgroundImage = bg;
+  });
 }
 
 /* ═══════════ PASS WATCH (live) ═══════════ */
@@ -274,7 +331,8 @@ function renderNotes() {
   const listEl = document.getElementById("notesList");
   if (!cachedNotes.length) return;
   listEl.innerHTML = cachedNotes.map((n, i) => {
-    const kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ Notes";
+    let kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ Notes 🔒";
+    if (hasValidPass && n.k === "pdf") kindBadge = String(n.u || "").indexOf("db:") === 0 ? "📄 PDF 🔒" : "📄 PDF 🔗";
     if (hasValidPass) {
       return `
         <div class="note-row" onclick="openNote(${i})">
@@ -297,17 +355,24 @@ function renderNotes() {
   }).join("");
 }
 
-/* 📎 direct-upload PDF cache (blob URLs — 5 ton vadh nahi) */
+/* 📎 direct-upload PDF cache — pdf.js docs (protected render) */
 const dbPdfCache = {};
+const dbPdfFallback = {}; /* pdf.js fail → blob URL (kam protection, par PDF dikhugi) */
+let dbPdfDoc = null, dbPdfPageNum = 1;
 
 function openNote(i) {
   const n = cachedNotes[i];
   if (!n || !hasValidPass) { openPassModal(); return; }
   if (n.k === "pdf" && String(n.u || "").indexOf("db:") === 0) { openDbPdf(n); return; }
   if (n.k === "pdf" && n.u) {
+    /* Drive/link PDF — Google da apna viewer (eh protection bahar hai) */
     document.getElementById("pdfTitle").innerText = n.t;
     const fixed = fixGoogleDriveUrl(n.u);
-    document.getElementById("pdfFrame").src = fixed;
+    document.getElementById("pdfCanvasWrap").style.display = "none";
+    const frame = document.getElementById("pdfFrame");
+    frame.style.display = "block";
+    frame.src = fixed;
+    document.getElementById("pdfNewTab").style.display = "";
     document.getElementById("pdfNewTab").href = fixed;
     document.getElementById("pdfModal").style.display = "flex";
   } else if (n.c) {
@@ -317,46 +382,91 @@ function openNote(i) {
   }
 }
 
-/* 📎 direct-upload PDF — /api/get-ca {fn:"file"} to lao, blob banao */
+/* 📄 pdf.js lazy load (CDN) — sirf pehli direct PDF te */
+async function ensurePdfJs() {
+  if (window.pdfjsLib) return window.pdfjsLib;
+  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  if (!window.pdfjsLib) throw new Error("pdf.js load nahi hoya");
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return window.pdfjsLib;
+}
+
+/* 📎 direct-upload PDF — /api/get-ca {fn:"file"} to lao → 🔒 canvas render */
 async function openDbPdf(n) {
   const fileId = String(n.u).slice(3);
   document.getElementById("pdfTitle").innerText = "⏳ " + n.t;
   document.getElementById("pdfModal").style.display = "flex";
-  const frame = document.getElementById("pdfFrame");
-  if (dbPdfCache[fileId]) {
-    frame.src = dbPdfCache[fileId];
-    document.getElementById("pdfNewTab").href = dbPdfCache[fileId];
-    document.getElementById("pdfTitle").innerText = n.t;
-    return;
-  }
-  frame.src = "about:blank";
+  /* 🔒 download button lukao (protected PDF) */
+  document.getElementById("pdfNewTab").style.display = "none";
+  document.getElementById("pdfFrame").style.display = "none";
+  document.getElementById("pdfFrame").src = "about:blank";
+  document.getElementById("pdfCanvasWrap").style.display = "block";
+  document.getElementById("pdfPageInfo").innerText = "…";
   try {
-    const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
-    const r = await fetch("/api/get-ca", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fn: "file", idToken: idToken, pass: PASS_KEY, vault: vaultKey(), id: n.id })
-    });
-    const d = await r.json();
-    if (d && d.success && d.data) {
+    let doc = dbPdfCache[fileId];
+    if (!doc) {
+      const idToken = firebase.auth().currentUser ? await firebase.auth().currentUser.getIdToken() : "";
+      const r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "file", idToken: idToken, pass: PASS_KEY, vault: vaultKey(), id: n.id })
+      });
+      const d = await r.json();
+      if (!d || !d.success || !d.data) throw new Error((d && d.message) || "PDF ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ।");
       const bin = atob(d.data);
       const bytes = new Uint8Array(bin.length);
       for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-      const ck = Object.keys(dbPdfCache);
-      if (ck.length >= 5) { try { URL.revokeObjectURL(dbPdfCache[ck[0]]); } catch (e) {} delete dbPdfCache[ck[0]]; }
-      dbPdfCache[fileId] = blobUrl;
-      frame.src = blobUrl;
-      document.getElementById("pdfNewTab").href = blobUrl;
-      document.getElementById("pdfTitle").innerText = n.t;
-    } else {
-      document.getElementById("pdfTitle").innerText = n.t;
-      alert((d && d.message) || "PDF ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ।");
+      try {
+        const lib = await ensurePdfJs();
+        doc = await lib.getDocument({ data: bytes }).promise;
+        dbPdfCache[fileId] = doc;
+      } catch (ej) {
+        /* fallback: browser viewer (kam protection — par PDF khol jauge) */
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        dbPdfFallback[fileId] = url;
+      }
     }
+    if (doc) {
+      dbPdfDoc = doc;
+      dbPdfPageNum = 1;
+      await renderDbPdfPage();
+    } else if (dbPdfFallback[fileId]) {
+      document.getElementById("pdfCanvasWrap").style.display = "none";
+      const frame = document.getElementById("pdfFrame");
+      frame.style.display = "block";
+      frame.src = dbPdfFallback[fileId];
+    }
+    document.getElementById("pdfTitle").innerText = n.t;
   } catch (e) {
     document.getElementById("pdfTitle").innerText = n.t;
-    alert("ਨੈੱਟਵਰਕ ਸਮੱਸਿਆ — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ, ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    alert((e && e.message) || "ਨੈੱਟਵਰਕ ਸਮੱਸਿਆ — ਇੰਟਰਨੈੱਟ ਚੈੱਕ ਕਰੋ, ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
   }
+}
+
+/* 🔒 canvas page render — koi download/print/save option nahi */
+async function renderDbPdfPage() {
+  if (!dbPdfDoc) return;
+  const canvas = document.getElementById("pdfCanvas");
+  const page = await dbPdfDoc.getPage(dbPdfPageNum);
+  const wrapW = Math.max(240, Math.min((canvas.parentElement && canvas.parentElement.clientWidth) || 360, 740));
+  const base = page.getViewport({ scale: 1 });
+  const scale = Math.max(0.5, Math.min(2.5, wrapW / base.width));
+  const vp = page.getViewport({ scale: scale });
+  canvas.width = vp.width;
+  canvas.height = vp.height;
+  await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+  document.getElementById("pdfPageInfo").innerText = dbPdfPageNum + " / " + dbPdfDoc.numPages;
+  document.getElementById("pdfPrevBtn").disabled = dbPdfPageNum <= 1;
+  document.getElementById("pdfNextBtn").disabled = dbPdfPageNum >= dbPdfDoc.numPages;
+}
+
+function dbPdfNav(delta) {
+  if (!dbPdfDoc) return;
+  const t = dbPdfPageNum + delta;
+  if (t < 1 || t > dbPdfDoc.numPages) return;
+  dbPdfPageNum = t;
+  document.getElementById("pdfPageInfo").innerText = "⏳";
+  renderDbPdfPage().catch(function () {});
 }
 
 function fixGoogleDriveUrl(url) {

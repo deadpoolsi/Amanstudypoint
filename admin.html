@@ -779,10 +779,15 @@ function isAdminUser(user) {
 }
 
 /* 🔧 REPAIR: jeh DEFAULT app (student pages) vich kabhi admin session
-   phas gaya ho — ik var saaf karo (student da session kade nahi chherda) */
+   phas gaya ho — ik var saaf karo (student da session kade nahi chherda)
+   👑 MASTER UNLOCK: par agar admin ne login.html ton jaan-boojh ke site-login
+   kita hai (pp_session="admin") ta eh session KADHI nahi hatauna —
+   warna admin panel kholde hi site da master-unlock session mar jauge! */
 firebase.auth().onAuthStateChanged((u) => {
   if (u && u.email && u.email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-    firebase.auth().signOut();
+    if (localStorage.getItem("pp_session") !== "admin") {
+      firebase.auth().signOut();
+    }
   }
 });
 

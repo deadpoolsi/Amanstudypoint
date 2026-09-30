@@ -175,8 +175,8 @@
   <!-- 1. Login Form -->
   <form id="formLogin" onsubmit="event.preventDefault(); handleLogin();">
     <div class="field">
-      <label>📱 Mobile Number</label>
-      <input type="tel" id="loginPhone" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+      <label>📱 Mobile Number <span style="font-weight:400; font-size:0.75rem; color:#868e96;">(admin: email ਵੀ ਚੱਲੇਗਾ)</span></label>
+      <input type="text" id="loginPhone" placeholder="10-digit mobile number" autocomplete="username" oninput="if(this.value.includes('@')){ this.value = this.value.replace(/[^a-zA-Z0-9@._\-]/g, ''); } else { this.value = this.value.replace(/[^0-9]/g, '').slice(0,10); }" required>
     </div>
     <div class="field">
       <label>🔒 Password</label>
@@ -333,6 +333,32 @@ async function handleLogin() {
 
   const phone = document.getElementById("loginPhone").value.trim();
   const pass = document.getElementById("loginPass").value;
+
+  /* 👑 ADMIN EMAIL LOGIN — master unlock (sab content hamesha unlocked) */
+  if (phone.indexOf("@") !== -1) {
+    if (phone.toLowerCase() !== ADMIN_EMAIL) {
+      return showError("⚠️ Email ਨਾਲ login ਸਿਰਫ਼ admin ਲਈ ਹੈ। ਵਿਦਿਆਰਥੀ ਆਪਣਾ 10-ਅੰਕਾਂ ਵਾਲਾ mobile number ਲਿਖੋ ਜੀ।");
+    }
+    if (!pass) return showError("⚠️ Admin password ਭਰੋ ਜੀ।");
+    const btn = document.querySelector("#formLogin button[type=submit]");
+    const oldHtml = btn ? btn.innerHTML : "";
+    if (btn) btn.innerHTML = "⏳ Admin login...";
+    try {
+      await firebase.auth().signInWithEmailAndPassword(phone, pass);
+      localStorage.setItem("pp_session", "admin");
+      localStorage.setItem("pp_name", "👑 Admin");
+      try { localStorage.removeItem("pp_device_id"); } catch (e) {}
+      window.location.href = "index.html";
+    } catch (error) {
+      if (btn) btn.innerHTML = oldHtml;
+      const code = error && error.code ? error.code : "";
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-email") {
+        return showError("⚠️ Admin email ਜਾਂ password ਗ਼ਲਤ ਹੈ।");
+      }
+      return showError("⚠️ Admin login ਵਿੱਚ ਸਮੱਸਿਆ: " + (error.message || code));
+    }
+    return;
+  }
 
   if (!/^[6-9]\d{9}$/.test(phone)) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 10 ਅੰਕਾਂ ਦਾ mobile number ਭਰੋ ਜੀ।");
   if (!pass || pass.length < 6) return showError("⚠️ ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ password ਭਰੋ ਜੀ।");

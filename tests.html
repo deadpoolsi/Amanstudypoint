@@ -275,6 +275,9 @@ function loadScriptOnce(src) {
   document.getElementById("bannerSub").innerText = meta.sub;
 
   let hasValidPass = false;
+  /* 👑 ADMIN MODE — admin email naal login = har test hamesha unlocked */
+  const ADMIN_EMAIL = "deadpool73503@gmail.com";
+  let ADMIN_MODE = false;
   let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
   let categoryCouponData = null;
   let appliedCouponCode = "";
@@ -535,6 +538,21 @@ function loadScriptOnce(src) {
       // Firebase login restore hone tak wait karo — eh 100% pakka signal hai
       firebase.auth().onAuthStateChanged((authUser) => {
         if (authUser) {
+          ADMIN_MODE = !!(authUser.email && String(authUser.email).trim().toLowerCase() === ADMIN_EMAIL);
+          if (ADMIN_MODE) {
+            /* 👑 ADMIN = master key — pass check ki, sab test unlocked */
+            hasValidPass = true;
+            const badge = document.getElementById("passStatusBadge");
+            if (badge) {
+              badge.innerText = "👑 ADMIN — ਸਭ Unlocked";
+              badge.style.background = "#fff3bf";
+              badge.style.color = "#d9480f";
+            }
+            const buyBanner = document.getElementById("buyPassBanner");
+            if (buyBanner) buyBanner.style.display = "none";
+            renderTestCardsList(allParsedSortedTests, false);
+            return;
+          }
           beginPassCheck();
         } else {
           // Firebase ne paka dasseya: login session khatam hai
@@ -549,6 +567,7 @@ function loadScriptOnce(src) {
   }
 
   function attachPassListener() {
+    if (ADMIN_MODE) return; /* 👑 admin da koi pass-listener nahi */
     const u = currentUser();
     const badge = document.getElementById("passStatusBadge");
     const buyBanner = document.getElementById("buyPassBanner");

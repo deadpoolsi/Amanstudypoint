@@ -192,6 +192,9 @@ let currentView = "sections";   // sections | months | content
 let currentSection = null;
 let currentMonth = null;
 let hasValidPass = false;
+/* 👑 ADMIN MODE — admin email naal login = CA sab unlocked */
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+let ADMIN_MODE = false;
 let selectedPlanType = "week";
 let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
 let categoryCouponData = null;
@@ -209,8 +212,10 @@ function escapeHtml(s) {
 /* ═══════════ INIT ═══════════ */
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
+    ADMIN_MODE = !!(user.email && String(user.email).trim().toLowerCase() === ADMIN_EMAIL);
     initPage();
   } else {
+    ADMIN_MODE = false;
     if (localStorage.getItem("pp_session")) localStorage.removeItem("pp_session");
     showLoginPrompt();
   }
@@ -229,6 +234,19 @@ function showLoginPrompt() {
 function initPage() {
   const u = currentUser();
   if (!u) { showLoginPrompt(); return; }
+
+  if (ADMIN_MODE) {
+    /* 👑 ADMIN = master key — CA pass watch ki, sab unlocked */
+    hasValidPass = true;
+    const badge = document.getElementById("passBadge");
+    if (badge) {
+      badge.innerText = "👑 ADMIN";
+      badge.style.background = "rgba(255,215,0,0.45)";
+    }
+    loadPassPricing();
+    renderSections();
+    return;
+  }
 
   // 🔒 Pass status (live)
   db.ref(`users/${u.phone}/passes/${CA_PASS_CAT}`).on("value", snap => {

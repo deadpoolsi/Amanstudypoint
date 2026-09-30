@@ -14,6 +14,10 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+/* 👑 ADMIN master-unlock email — login.html c is email naal login karange,
+   ate admin ho shuda har page te har content (notes/tests/CA/books) hamesha unlocked raage. */
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
 const INSTITUTE = {
   name: "Aman Study Point",
   upi: "amritpalsingh735031234-1@oksbi",
@@ -197,6 +201,21 @@ function renderBooksRealtime() {
     userUnlockedBookIds = []; 
     drawBooks(); 
     return; 
+  }
+
+  /* 👑 ADMIN = master key — saariyan books hamesha unlocked */
+  if (u.phone === "admin") {
+    userUnlockedBookIds = BOOKS.map(b => b.id);
+    /* Future vich admin ji naviyan books add karan ta vi auto-unlock */
+    try {
+      db.ref("siteSettings/booksConfig").once("value", s => {
+        const cfg = s.val() || {};
+        Object.keys(cfg).forEach(id => { if (!userUnlockedBookIds.includes(id)) userUnlockedBookIds.push(id); });
+        drawBooks();
+      }).catch(() => {});
+    } catch (e) {}
+    drawBooks();
+    return;
   }
   if (typeof db !== "undefined") {
     // 🔧 RACE FIX: Mobile te page khulde hi Firebase read karan nal

@@ -30,9 +30,16 @@
     /* ═══════ 🔒 CONTENT PROTECTION ═══════ */
     .noselect { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     .wm-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; background-repeat: repeat; }
-    .pdf-page-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .pdf-page-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 6px; }
     .pdf-page-btn { background: #e8590c; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; }
     .pdf-page-btn:disabled { background: #ced4da; }
+    /* 👑 FULL-SCREEN PDF — direct PDF kholde hi poora screen miluge */
+    #pdfModal.pdf-full { padding: 0; }
+    #pdfModal.pdf-full .modal-box { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; border-radius: 0; margin: 0; display: flex; flex-direction: column; overflow: hidden; }
+    #pdfModal.pdf-full #pdfCanvasWrap { display: flex !important; flex-direction: column; flex: 1; min-height: 0; }
+    #pdfModal.pdf-full .pdf-scroll { flex: 1; min-height: 0; max-height: none !important; }
+    #pdfModal.pdf-full .pdf-page-nav { margin-top: 6px; flex-shrink: 0; }
+    #pdfModal.pdf-full .modal-box:fullscreen { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; }
     @media print {
       body * { display: none !important; }
       body::after { content: "⛔ Printing allowed nahi hai — Aman Study Point"; display: block !important; text-align: center; padding-top: 40vh; font-size: 18px; font-weight: bold; }
@@ -114,22 +121,27 @@
 <!-- 📄 PDF VIEWER MODAL -->
 <div class="modal-overlay" id="pdfModal">
   <div class="modal-box" style="max-width:760px; padding:10px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px 10px 6px;">
-      <b id="pdfTitle" style="font-size:0.9rem; color:#222;">PDF</b>
-      <div>
-        <a id="pdfNewTab" href="#" target="_blank" style="background:#e7f5ff; color:#1971c2; text-decoration:none; font-weight:bold; font-size:0.8rem; padding:6px 10px; border-radius:6px; margin-right:6px;">↗ ਨਵੀਂ ਟੈਬ</a>
-        <button onclick="document.getElementById('pdfModal').style.display='none'" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✕</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px 10px 6px; gap:8px;">
+      <b id="pdfTitle" style="font-size:0.9rem; color:#222; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">PDF</b>
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+        <a id="pdfNewTab" href="#" target="_blank" style="background:#e7f5ff; color:#1971c2; text-decoration:none; font-weight:bold; font-size:0.8rem; padding:6px 10px; border-radius:6px;">↗ ਨਵੀਂ ਟੈਬ</a>
+        <button onclick="closePdfModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:2px 6px;">✕</button>
       </div>
     </div>
     <iframe id="pdfFrame" style="width:100%; height:70vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;"></iframe>
     <!-- 🔒 protected viewer (direct PDFs) — canvas render, koi download/print button nahi -->
     <div id="pdfCanvasWrap" style="display:none; position:relative;">
-      <div style="width:100%; overflow:auto; max-height:62vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;">
-        <canvas id="pdfCanvas" class="noselect" style="display:block; margin:0 auto; width:100%;"></canvas>
+      <div class="pdf-scroll" style="width:100%; overflow:auto; max-height:62vh; border:1.5px solid #e9ecef; border-radius:10px; background:#f8f9fa;">
+        <canvas id="pdfCanvas" class="noselect" style="display:block; margin:0 auto;"></canvas>
       </div>
       <div class="wm-layer" id="pdfWm"></div>
       <div class="pdf-page-nav">
         <button class="pdf-page-btn" id="pdfPrevBtn" onclick="dbPdfNav(-1)">← ਪਿੱਛੇ</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="pdf-page-btn" onclick="dbPdfZoomStep(-1)" title="Zoom out" style="padding:8px 12px;">➖</button>
+          <button class="pdf-page-btn" onclick="dbPdfZoomStep(1)" title="Zoom in" style="padding:8px 12px;">➕</button>
+          <button class="pdf-page-btn" id="pdfFsBtn" onclick="dbPdfToggleFs()" title="Full screen" style="background:#1971c2; padding:8px 12px;">⛶</button>
+        </div>
         <b id="pdfPageInfo" style="color:#666; font-size:0.9rem;">…</b>
         <button class="pdf-page-btn" id="pdfNextBtn" onclick="dbPdfNav(1)">ਅੱਗੇ →</button>
       </div>
@@ -201,6 +213,9 @@ function escapeHtml(s) {
 
 /* ═══════════ STATE ═══════════ */
 let hasValidPass = false;
+/* 👑 ADMIN MODE — admin email naal login = har note/test/CA/book hamesha unlocked */
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+let ADMIN_MODE = false;
 let selectedPlanType = "month";
 let categoryPassPricing = { day: 9, week: 39, month: 99, sixMonths: 399, year: 649 };
 let categoryCouponData = null;
@@ -211,8 +226,10 @@ let cachedNotes = [];
 /* ═══════════ INIT ═══════════ */
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
+    ADMIN_MODE = !!(user.email && String(user.email).trim().toLowerCase() === ADMIN_EMAIL);
     initPage();
   } else {
+    ADMIN_MODE = false;
     if (localStorage.getItem("pp_session")) localStorage.removeItem("pp_session");
     document.getElementById("notesList").innerHTML = `
       <div class="card" style="text-align:center; padding:30px;">
@@ -227,7 +244,19 @@ firebase.auth().onAuthStateChanged((user) => {
 function initPage() {
   initWatermarks();
   loadPassPricing();
-  watchPass();
+  if (ADMIN_MODE) {
+    /* 👑 ADMIN = master key — pass watch ki lena, sab hamesha unlocked */
+    hasValidPass = true;
+    const badge = document.getElementById("passBadge");
+    if (badge) {
+      badge.innerText = "👑 ADMIN";
+      badge.style.background = "rgba(255,215,0,0.45)";
+    }
+    const banner = document.getElementById("passBanner");
+    if (banner) banner.style.display = "none";
+  } else {
+    watchPass();
+  }
   loadNotes();
 }
 
@@ -268,6 +297,7 @@ function initWatermarks() {
 /* ═══════════ PASS WATCH (live) ═══════════ */
 let passRef = null;
 function watchPass() {
+  if (ADMIN_MODE) return; /* 👑 admin da koi pass-check nahi */
   const u = currentUser();
   if (!u) return;
   if (passRef) { try { passRef.off(); } catch (e) {} }
@@ -308,7 +338,7 @@ async function loadNotes() {
     });
     const d = await r.json();
     if (d && d.success) {
-      hasValidPass = d.hasPass;
+      hasValidPass = ADMIN_MODE ? true : d.hasPass; /* 👑 admin = hamesha unlocked */
       cachedNotes = d.notes || [];
       if (cachedNotes.length === 0) {
         listEl.innerHTML = `
@@ -359,6 +389,37 @@ function renderNotes() {
 const dbPdfCache = {};
 const dbPdfFallback = {}; /* pdf.js fail → blob URL (kam protection, par PDF dikhugi) */
 let dbPdfDoc = null, dbPdfPageNum = 1;
+let dbPdfZoom = 1; /* 👑 user zoom (fit-width da multiplier) */
+let DB_PDF_MAX_PIXELS = 14000000; /* canvas safety cap (~14MP) */
+
+/* ✕ modal band karo + OS-fullscreen vi kholo (je on hai) */
+function closePdfModal() {
+  document.getElementById("pdfModal").style.display = "none";
+  if (document.fullscreenElement && document.exitFullscreen) {
+    try { document.exitFullscreen().catch(function () {}); } catch (e) {}
+  }
+}
+
+/* ⛶ asli OS full-screen (phone da poora screen) — CSS full-screen pehle ton on hai */
+function dbPdfToggleFs() {
+  try {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen().catch(function () {});
+    } else {
+      const box = document.querySelector("#pdfModal .modal-box");
+      const req = box.requestFullscreen || box.webkitRequestFullscreen;
+      if (req) req.call(box).catch(function () {});
+    }
+  } catch (e) {}
+}
+
+/* ➖/➕ zoom — 0.6x ton 4x tak, phir vi sharp (canvas full resolution te render hunda) */
+function dbPdfZoomStep(dir) {
+  const t = dbPdfZoom + dir * 0.25;
+  dbPdfZoom = Math.max(0.6, Math.min(4, t));
+  document.getElementById("pdfPageInfo").innerText = "⏳";
+  renderDbPdfPage().catch(function () {});
+}
 
 function openNote(i) {
   const n = cachedNotes[i];
@@ -368,6 +429,7 @@ function openNote(i) {
     /* Drive/link PDF — Google da apna viewer (eh protection bahar hai) */
     document.getElementById("pdfTitle").innerText = n.t;
     const fixed = fixGoogleDriveUrl(n.u);
+    document.getElementById("pdfModal").classList.remove("pdf-full");
     document.getElementById("pdfCanvasWrap").style.display = "none";
     const frame = document.getElementById("pdfFrame");
     frame.style.display = "block";
@@ -396,6 +458,9 @@ async function openDbPdf(n) {
   const fileId = String(n.u).slice(3);
   document.getElementById("pdfTitle").innerText = "⏳ " + n.t;
   document.getElementById("pdfModal").style.display = "flex";
+  /* 👑 FULL-SCREEN — direct PDF hamesha poore screen te khulugi */
+  document.getElementById("pdfModal").classList.add("pdf-full");
+  dbPdfZoom = 1;
   /* 🔒 download button lukao (protected PDF) */
   document.getElementById("pdfNewTab").style.display = "none";
   document.getElementById("pdfFrame").style.display = "none";
@@ -431,7 +496,9 @@ async function openDbPdf(n) {
       dbPdfPageNum = 1;
       await renderDbPdfPage();
     } else if (dbPdfFallback[fileId]) {
+      /* browser viewer fallback — normal (centered) modal */
       document.getElementById("pdfCanvasWrap").style.display = "none";
+      document.getElementById("pdfModal").classList.remove("pdf-full");
       const frame = document.getElementById("pdfFrame");
       frame.style.display = "block";
       frame.src = dbPdfFallback[fileId];
@@ -443,18 +510,32 @@ async function openDbPdf(n) {
   }
 }
 
-/* 🔒 canvas page render — koi download/print/save option nahi */
+/* 🔒 canvas page render — koi download/print/save option nahi
+   👑 QUALITY FIX: phone da devicePixelRatio (2x–3x) vich render karan da matlab —
+   pehla canvas CSS-pixels te render hunda si (blurry), hun har canvas-pixel
+   = 1 asli screen-pixel → text bilkul sharp। Zoom te vi quality nahi katdi। */
 async function renderDbPdfPage() {
   if (!dbPdfDoc) return;
   const canvas = document.getElementById("pdfCanvas");
   const page = await dbPdfDoc.getPage(dbPdfPageNum);
-  const wrapW = Math.max(240, Math.min((canvas.parentElement && canvas.parentElement.clientWidth) || 360, 740));
+  const wrapW = Math.max(240, Math.min((canvas.parentElement && canvas.parentElement.clientWidth) || 360, 1200));
   const base = page.getViewport({ scale: 1 });
-  const scale = Math.max(0.5, Math.min(2.5, wrapW / base.width));
-  const vp = page.getViewport({ scale: scale });
-  canvas.width = vp.width;
-  canvas.height = vp.height;
-  await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+  const fit = Math.max(0.5, Math.min(3, wrapW / base.width));
+  const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  let s = fit * dbPdfZoom * dpr;
+  /* canvas memory cap — bahut vadda zoom/phase te browser canvas tod dinda */
+  if (base.width * s * base.height * s > DB_PDF_MAX_PIXELS) {
+    s = Math.sqrt(DB_PDF_MAX_PIXELS / (base.width * base.height));
+  }
+  const vp = page.getViewport({ scale: s });
+  canvas.width = Math.floor(vp.width);
+  canvas.height = Math.floor(vp.height);
+  /* CSS size = dpr ton divide → screen te 1:1 device-pixels, sharp */
+  canvas.style.width = Math.floor(vp.width / dpr) + "px";
+  canvas.style.height = Math.floor(vp.height / dpr) + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
   document.getElementById("pdfPageInfo").innerText = dbPdfPageNum + " / " + dbPdfDoc.numPages;
   document.getElementById("pdfPrevBtn").disabled = dbPdfPageNum <= 1;
   document.getElementById("pdfNextBtn").disabled = dbPdfPageNum >= dbPdfDoc.numPages;

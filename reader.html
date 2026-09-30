@@ -374,7 +374,8 @@
     let isHandled = false;
 
     // ਜੇਕਰ ਲੋਕਲ ਸਟੋਰੇਜ ਵਿੱਚ ਸੈਸ਼ਨ ਮੌਜੂਦ ਹੈ ਤਾਂ ਬਿਨਾਂ ਉਡੀਕ ਕੀਤੇ ਤੁਰੰਤ ਕੋਸ਼ਿਸ਼ ਕਰੋ
-    if (localPhone) {
+    /* 👑 admin ("admin" session) lai skip — direct vault read onAuthStateChanged ch hove */
+    if (localPhone && localPhone !== "admin") {
       isHandled = true;
       loadFullBook(localPhone);
     }
@@ -382,6 +383,29 @@
     // Firebase Auth ਲਿਸਨਰ
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
+        /* 👑 ADMIN = master key — get-book API vich admin branch nahi (repo-only file),
+           is layi direct DB read (Firebase rules admin email nu allow kardiyan) */
+        const uEmail = String(user.email || "").trim().toLowerCase();
+        if (uEmail === ADMIN_EMAIL) {
+          try {
+            const snap = await db.ref("bookVault/" + bookId).once("value");
+            const bk = snap.val() || {};
+            let fullUrl = bk.pdf || bk.url || "";
+            if (!fullUrl) {
+              const cfgSnap = await db.ref("siteSettings/booksConfig/" + bookId).once("value");
+              const cfg = cfgSnap.val() || {};
+              fullUrl = cfg.pdf || "";
+            }
+            if (fullUrl) {
+              renderBook(fixGoogleDriveUrl(fullUrl), false);
+            } else {
+              rBody.innerHTML = `<div class="error-box"><h3>⚠️ ਇਹ ਕਿਤਾਬ admin vault ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ (PDF upload ਨਹੀਂ ਹੈ)।</h3><a href="index.html#books" class="btn btn-primary" style="background:#e8590c; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; display:inline-block;">📚 Books</a></div>`;
+            }
+          } catch (e) {
+            rBody.innerHTML = `<div class="error-box"><h3>⚠️ Admin read ਵਿੱਚ ਸਮੱਸਿਆ: ${e.message}</h3></div>`;
+          }
+          return;
+        }
         try {
           const token = await user.getIdToken();
           const p = user.phoneNumber || user.email?.split('@')[0] || localPhone;

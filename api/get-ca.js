@@ -29,9 +29,15 @@ const FIREBASE_DB_SECRET = process.env.FIREBASE_DB_SECRET;
 const CA_PASS_CAT = "ca";
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
 
-/* 🤖 AI STUDY HELPER (Gemini) — key server-side ENV vich (browser vich kade nahi) */
+/* 🤖 AI STUDY HELPER (Gemini) — key server-side ENV vich (browser vich kade nahi)
+   Model fallback chain: Google models retire kar dinda (gemini-2.0-flash June 2026 ch shut down si),
+   is lai ENV model + nawe models try hunde rehnde, jehra chalde ohna chal janda */
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODELS = [];
+if (process.env.GEMINI_MODEL) GEMINI_MODELS.push(process.env.GEMINI_MODEL);
+["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"].forEach(function (m) {
+  if (GEMINI_MODELS.indexOf(m) === -1) GEMINI_MODELS.push(m);
+});
 const VALID_SECTIONS = [
   "daysThemes",
   "gkBytes",
@@ -153,25 +159,58 @@ module.exports = async (req, res) => {
         "ਵਿਦਿਆਰਥੀ ਦੇ ਪੜ੍ਹਾਈ ਸਬੰਧੀ ਸਵਾਲ ਦਾ ਸਿਰਫ਼ ਇੱਕ ਲਾਈਨ (1-2 ਵਾਕ ਵੱਧ ਤੋਂ ਵੱਧ) ਦਾ ਸਿੱਧਾ ਜਵਾਬ ਪੰਜਾਬੀ (Gurmukhi) ਵਿੱਚ ਦੇ। " +
         "ਲੰਮੀ ਵਿਆਖਿਆ, ਬੁਲੈਟ ਪਾਇੰਟ, ਸਵਾਲ ਵਾਪਸ ਪੁੱਛਣਾ — ਕੁਝ ਨਹੀਂ। ਜੇ ਸਵਾਲ ਪੜ੍ਹਾਈ ਦਾ ਨਹੀਂ ਹੈ ਤਾਂ ਬੱਸ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਕਹਿ ਦੇ: 'ਸਿਰਫ਼ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲ ਪੁੱਛੋ ਜੀ'। " +
         "ਅੰਕੜੇ/ਮਿਤੀਆਂ ਬਾਰੇ ਪੱਕਾ ਨਾ ਪਤਾ ਹੋਵੇ ਤਾਂ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਸੱਚ ਦੱਸ ਦੇ।";
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + GEMINI_API_KEY,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: sysPrompt }] },
-            contents: [{ parts: [{ text: q }] }],
-            generationConfig: { maxOutputTokens: 250, temperature: 0.2 }
-          })
+      const callGemini = async function (model, noThinking) {
+        const genCfg = { maxOutputTokens: noThinking ? 250 : 600, temperature: 0.2 };
+        if (noThinking) genCfg.thinkingConfig = { thinkingBudget: 0 }; /* thinking models de tokens bachaun lai */
+        const r = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + GEMINI_API_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: sysPrompt }] },
+              contents: [{ parts: [{ text: q }] }],
+              generationConfig: genCfg
+            })
+          }
+        );
+        return r.json().catch(() => null);
+      };
+      const pickText = function (d) {
+        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
+          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+          d.candidates[0].content.parts[0].text;
+      };
+
+      let text = "";
+      let lastErr = "";
+      for (let i = 0; i < GEMINI_MODELS.length && !text; i++) {
+        const model = GEMINI_MODELS[i];
+        let d = await callGemini(model, false);
+        text = pickText(d);
+        if (!text) {
+          /* ਸ਼ਾਇਦ thinking ne saare tokens kha ley — thinking off karke retry */
+          const fr = d && d.candidates && d.candidates[0] && d.candidates[0].finishReason;
+          if (fr === "MAX_TOKENS") {
+            d = await callGemini(model, true);
+            text = pickText(d);
+          }
         }
-      );
-      const d = await r.json().catch(() => null);
-      const text =
-        d && d.candidates && d.candidates[0] && d.candidates[0].content &&
-        d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
-        d.candidates[0].content.parts[0].text;
+        if (!text) {
+          lastErr = d && d.error
+            ? String(d.error.status || "") + " " + String(d.error.message || "")
+            : "no response";
+          console.error("AI ask fail (" + model + "): " + lastErr.slice(0, 250));
+          /* key ਗ਼ਲਤ ਹੋਵੇ ਤਾਂ ਬਾਕੀ models try karna besuda */
+          if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastErr)) break;
+        }
+      }
       if (!text) {
-        const quotaHit = d && d.error && /quota|429|RESOURCE_EXHAUSTED/i.test(String(d.error.message || "") + String(d.error.status || ""));
+        if (/API_KEY_INVALID/i.test(lastErr))
+          return res.status(401).json({ success: false, message: "Gemini API key ਗ਼ਲਤ ਹੈ — admin ENV check ਕਰੇ।" });
+        if (/PERMISSION_DENIED/i.test(lastErr))
+          return res.status(401).json({ success: false, message: "API key ਦੀ Generative AI access off ਹੈ — Google AI Studio ਚੈੱਕ ਕਰੇ।" });
+        const quotaHit = /quota|429|RESOURCE_EXHAUSTED/i.test(lastErr);
         return res.status(quotaHit ? 429 : 502).json({
           success: false,
           message: quotaHit

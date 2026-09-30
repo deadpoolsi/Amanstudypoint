@@ -28,6 +28,10 @@ const FIREBASE_DB_SECRET = process.env.FIREBASE_DB_SECRET;
 
 const CA_PASS_CAT = "ca";
 const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
+/* 🤖 AI STUDY HELPER (Gemini) — key server-side ENV vich (browser vich kade nahi) */
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const VALID_SECTIONS = [
   "daysThemes",
   "gkBytes",
@@ -122,6 +126,64 @@ module.exports = async (req, res) => {
     body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
   } catch (e) {
     return res.status(400).json({ success: false, message: "ਗ਼ਲਤ request format।" });
+  }
+
+  /* ═══════════ 🤖 AI STUDY HELPER BRANCH — { fn: "ask", idToken, q }
+     (Gemini API — one-line Punjabi answers, key ENV vich server-side) ═══════════ */
+  if (body.fn === "ask") {
+    const q = String(body.q || "").trim();
+    if (!q) return res.status(400).json({ success: false, message: "ਸਵਾਲ ਲਿਖੋ ਜੀ।" });
+    if (q.length > 300)
+      return res.status(400).json({ success: false, message: "ਛੋਟਾ ਜਿਹਾ ਸਵਾਲ ਲਿਖੋ (ਵੱਧ ਤੋਂ ਵੱਧ 300 ਅੱਖਰ)।" });
+    if (!GEMINI_API_KEY)
+      return res.status(500).json({ success: false, message: "AI service ਹਾਲੇ off ਹੈ (GEMINI_API_KEY set ਨਹੀਂ) — admin ਨੂੰ ਦੱਸੋ।" });
+
+    /* 🔒 sirf login kite students/admin — koie random call nahi kar sakda */
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const isAdmin = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const m = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!m && !isAdmin)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਪੁੱਛ ਸਕਦੇ ਹਨ।" });
+
+    try {
+      const sysPrompt =
+        "ਤੂੰ 'Aman Study Point' (ਪੰਜਾਬ ਦੀਆਂ competitive exams: Police, Patwari, SSC, Banking, TET, Current Affairs) ਦਾ AI study helper ਹੈਂ। " +
+        "ਵਿਦਿਆਰਥੀ ਦੇ ਪੜ੍ਹਾਈ ਸਬੰਧੀ ਸਵਾਲ ਦਾ ਸਿਰਫ਼ ਇੱਕ ਲਾਈਨ (1-2 ਵਾਕ ਵੱਧ ਤੋਂ ਵੱਧ) ਦਾ ਸਿੱਧਾ ਜਵਾਬ ਪੰਜਾਬੀ (Gurmukhi) ਵਿੱਚ ਦੇ। " +
+        "ਲੰਮੀ ਵਿਆਖਿਆ, ਬੁਲੈਟ ਪਾਇੰਟ, ਸਵਾਲ ਵਾਪਸ ਪੁੱਛਣਾ — ਕੁਝ ਨਹੀਂ। ਜੇ ਸਵਾਲ ਪੜ੍ਹਾਈ ਦਾ ਨਹੀਂ ਹੈ ਤਾਂ ਬੱਸ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਕਹਿ ਦੇ: 'ਸਿਰਫ਼ ਪੜ੍ਹਾਈ ਦੇ ਸਵਾਲ ਪੁੱਛੋ ਜੀ'। " +
+        "ਅੰਕੜੇ/ਮਿਤੀਆਂ ਬਾਰੇ ਪੱਕਾ ਨਾ ਪਤਾ ਹੋਵੇ ਤਾਂ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਸੱਚ ਦੱਸ ਦੇ।";
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + GEMINI_API_KEY,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: sysPrompt }] },
+            contents: [{ parts: [{ text: q }] }],
+            generationConfig: { maxOutputTokens: 250, temperature: 0.2 }
+          })
+        }
+      );
+      const d = await r.json().catch(() => null);
+      const text =
+        d && d.candidates && d.candidates[0] && d.candidates[0].content &&
+        d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+        d.candidates[0].content.parts[0].text;
+      if (!text) {
+        const quotaHit = d && d.error && /quota|429|RESOURCE_EXHAUSTED/i.test(String(d.error.message || "") + String(d.error.status || ""));
+        return res.status(quotaHit ? 429 : 502).json({
+          success: false,
+          message: quotaHit
+            ? "ਅੱਜ ਦੀ AI limit ਪੂਰੀ ਹੋ ਗਈ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"
+            : "AI ਜਵਾਬ ਨਹੀਂ ਦੇ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+        });
+      }
+      return res.status(200).json({ success: true, a: String(text).trim().slice(0, 800) });
+    } catch (e) {
+      console.error("AI ask branch crash:", e);
+      return res.status(502).json({ success: false, message: "AI service ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ — ਥੋੜ੍ਹੀ ਉਡੀਕ ਪਿੱਛੋਂ ਦੁਬਾਰਾ।" });
+    }
   }
 
   /* ═══════════ 📝 NOTES BRANCH ═══════════ */

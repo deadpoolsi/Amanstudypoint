@@ -91,6 +91,7 @@
       <a href="#books" onclick="toggleNavMenu()" class="books-ui">📝 Notes</a>
       <a href="javascript:void(0)" id="analyticsNav" onclick="openStudentTab('progress'); toggleNavMenu();">📊 My Progress</a>
       <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
+      <a href="#doubt" onclick="toggleNavMenu()">💬 ਸਵਾਲ ਪੁੱਛੋ</a>
       <a href="javascript:void(0)" onclick="installApp()" style="color:#2b8a3e; font-weight:800;">📲 ਐਪ ਇੰਸਟਾਲ ਕਰੋ</a>
       <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
       <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
@@ -293,6 +294,17 @@
     <p class="section-sub">ਅੱਜ ਦੇ ਮੌਕ ਟੈਸਟ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਨੰਬਰ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ</p>
     <div class="leaderboard-card">
       <div id="leaderboardList">Loading toppers...</div>
+    </div>
+  </div>
+</section>
+
+<!-- 💬 Doubt Box -->
+<section id="doubt" class="section">
+  <div class="container">
+    <h2>💬 ਸਵਾਲ ਪੁੱਛੋ (Doubt Box)</h2>
+    <p class="section-sub">ਪੜ੍ਹਾਈ ਦਾ ਕੋਈ ਵੀ ਸਵਾਲ ਲਿਖ ਕੇ ਭੇਜੋ — ਜਵਾਬ ਇੱਥੇ ਹੀ ਮਿਲੇਗਾ</p>
+    <div class="leaderboard-card" style="max-width:680px; margin:0 auto; text-align:left;">
+      <div id="doubtBox">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
     </div>
   </div>
 </section>
@@ -547,6 +559,163 @@
     </a>
   </div>
 </div>
+
+<script>
+/* 💬 DOUBT BOX — student apna sawal bhejde, admin jawaab de */
+(function () {
+  var boxEl = null;
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function fmt(ts) {
+    try { return new Date(ts).toLocaleDateString("pa-IN", { day: "numeric", month: "short" }); } catch (e) { return ""; }
+  }
+
+  function renderLogin() {
+    if (!boxEl) return;
+    boxEl.innerHTML = '<div style="text-align:center; padding:22px;">' +
+      '<div style="font-size:2.3rem;">🔐</div>' +
+      '<b style="font-size:1.05rem;">ਸਵਾਲ ਭੇਜਣ ਲਈ ਲੌਗਿਨ ਕਰੋ</b><br>' +
+      '<a href="login.html" class="btn btn-primary" style="display:inline-block; margin-top:12px; text-decoration:none; color:#fff;">📲 ਲੌਗਿਨ ਕਰੋ</a></div>';
+  }
+
+  function renderForm(items) {
+    if (!boxEl) return;
+    var rows = items.map(function (d) {
+      return '<div style="border:1.5px solid ' + (d.reply ? "#b2f2bb" : "#ffe066") + '; background:' + (d.reply ? "#ebfbee" : "#fff9db") + '; border-radius:10px; padding:10px 12px; margin-bottom:8px;">' +
+        '<div style="font-size:0.9rem;"><b>❓ ' + esc(d.q) + '</b></div>' +
+        '<div style="font-size:0.7rem; color:#868e96; margin-top:2px;">' + fmt(d.at) + '</div>' +
+        (d.reply ? '<div style="font-size:0.88rem; background:#fff; border-left:3px solid #2b8a3e; border-radius:6px; padding:8px; margin-top:6px;">💬 ' + esc(d.reply) + '</div>'
+                 : '<div style="font-size:0.78rem; color:#e8590c; margin-top:4px;">⏳ ਜਵਾਬ ਆਉਣਾ ਬਾਕੀ — ਛੇਤੀ ਆ ਜਾਵੇਗਾ</div>') +
+        '</div>';
+    }).join("");
+
+    boxEl.innerHTML =
+      '<div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:12px;">' +
+      '<textarea id="doubtText" placeholder="ਆਪਣਾ ਸਵਾਲ ਲਿਖੋ (ਪੜ੍ਹਾਈ ਦਾ ਕੋਈ ਵੀ topic)..." rows="3" style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:10px; font-size:0.92rem; font-family:inherit; resize:vertical;"></textarea>' +
+      '<button id="doubtSendBtn" onclick="sendDoubt()" class="btn btn-primary" style="flex-shrink:0;">ਭੇਜੋ ➔</button>' +
+      '</div>' +
+      (items.length ? '<b style="font-size:0.85rem; color:#495057;">ਤੇਰੇ ਸਵਾਲ (' + items.length + ')</b>' + rows
+                    : '<small style="color:#868e96;">ਹੇਠਾਂ ਲਿਖ ਕੇ ਭੇਜੋ — ਜਵਾਬ ਇੱਥੇ ਹੀ ਦਿਖੇਗਾ ✅</small>');
+  }
+
+  window.sendDoubt = function () {
+    var phone = localStorage.getItem("pp_session");
+    var ta = document.getElementById("doubtText");
+    var q = ta ? String(ta.value || "").trim() : "";
+    if (!phone) { window.location.href = "login.html"; return; }
+    if (q.length < 5) { alert("⚠️ ਘੱਟੋ-ਘੱਟ 5 ਅੱਖਰ ਲਿਖੋ ਜੀ।"); return; }
+    if (q.length > 500) { alert("⚠️ ਵੱਧ ਤੋਂ ਵੱਧ 500 ਅੱਖਰ।"); return; }
+    var btn = document.getElementById("doubtSendBtn");
+    if (btn) { btn.disabled = true; btn.innerText = "⏳ ਭੇਜਿਆ ਜਾ ਰਿਹਆ..."; }
+    db.ref("users/" + phone + "/doubts").push({ q: q, at: Date.now() })
+      .then(function () { if (ta) ta.value = ""; if (btn) { btn.disabled = false; btn.innerText = "ਭੇਜੋ ➔"; } })
+      .catch(function (e) {
+        if (btn) { btn.disabled = false; btn.innerText = "ਭੇਜੋ ➔"; }
+        alert("❌ ਭੇਜਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ: " + e.message);
+      });
+  };
+
+  function init() {
+    boxEl = document.getElementById("doubtBox");
+    if (!boxEl) return;
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { renderLogin(); return; }
+    db.ref("users/" + phone + "/doubts").on("value", function (snap) {
+      var data = snap.val() || {};
+      var items = Object.keys(data).map(function (k) { return Object.assign({ _k: k }, data[k] || {}); });
+      items.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+      renderForm(items);
+    }, function () {
+      boxEl.innerHTML = '<div style="text-align:center; padding:18px; color:#868e96;">⚠️ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕਿਆ — <a href="login.html" style="color:#e8590c;">ਦੁਬਾਰਾ ਲੌਗਿਨ</a> ਕਰੋ</div>';
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+
+<!-- 🎁 ਅੱਜ ਦਾ OFFER — daily popup (roj auto-badlada, 1 vaar/din) -->
+<div id="offerOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9998; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(165deg,#ffffff,#fff4e6); border-radius:20px; padding:24px 20px; max-width:330px; width:100%; text-align:center; position:relative;">
+    <button onclick="closeOfferPopup()" style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:1.25rem; cursor:pointer; color:#868e96;">✕</button>
+    <div style="font-size:2.8rem; line-height:1;">🎁</div>
+    <h2 style="margin:8px 0 2px; font-size:1.15rem; color:#d9480f;">ਅੱਜ ਦਾ Offer</h2>
+    <p id="offerText" style="font-size:0.95rem; font-weight:700; color:#343a40; margin:8px 0 12px; line-height:1.5;"></p>
+    <div id="offerCodeChip" style="display:none; align-items:center; gap:8px; justify-content:center; background:#fff; border:2px dashed #e8590c; border-radius:12px; padding:10px; margin-bottom:14px;">
+      <span id="offerCodeText" style="font-size:1.05rem; font-weight:900; color:#e8590c; letter-spacing:1px;"></span>
+      <button onclick="copyOfferCode(document.getElementById('offerCodeText').innerText)" style="background:#e8590c; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:bold; cursor:pointer;">📋 Copy</button>
+    </div>
+    <a href="tests.html?cat=police" onclick="closeOfferPopup()" style="display:block; background:linear-gradient(135deg,#e8590c,#f76707); color:#fff; text-decoration:none; border-radius:12px; padding:12px; font-weight:800;">⚡ ਹੁਣੇ Pass ਲਵੋ</a>
+    <div style="font-size:0.72rem; color:#868e96; margin-top:10px;">🔁 ਰੋਜ਼ ਨਵਾਂ offer — ਹਰ ਰੋਜ਼ ਵੇਖੋ!</div>
+  </div>
+</div>
+
+<script>
+/* 🎁 DAILY OFFER — admin de set kite (siteSettings/dailyOffers) ya default,
+   din de hisab nalon auto-badlada, din vich 1 vaar hi dikhega */
+(function () {
+  var FALLBACK = [
+    "🎊 Sunday Special — ਅੱਜ ਦਾ pass ਖ਼ਾਸ ਭਾਉ 'ਤੇ! ਮਿਆਦ ਖ਼ਤਮ ਤੇ ਆਪੇ ਬੰਦ (auto-cut)।",
+    "🎯 Monday — ਹਫ਼ਤੇ ਦੀ ਸ਼ੁਰੂਆਤ ਕਰੋ Day Pass ਨਾਲ, ਖ਼ਾਸ ਛੂਟ ਅੱਜ!",
+    "🔥 Tuesday — Mock Test Pass 'ਤੇ ਅੱਜ ਵੱਧ ਬਚਤ!",
+    "⚡ Wednesday — ਹਫ਼ਤੇ ਦਾ ਵਿਚਕਾਰ, ਵੱਡੀ ਛੂਟ ਦਾ ਦਿਨ!",
+    "💎 Thursday — Notes Pass ਅੱਜ ਖ਼ਾਸ ਭਾਉ 'ਤੇ!",
+    "🏆 Friday — Weekend ਤਿਆਰੀ ਸ਼ੁਰੂ, ਕੋਈ ਵੀ pass ਵਿੱਚ offer!",
+    "🚀 Saturday — ਹਫ਼ਤੇ ਦਾ ਆਖ਼ਰੀ ਦਿਨ, ਸਭ ਤੋਂ ਵੱਧ ਛੂਟ!"
+  ];
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  window.closeOfferPopup = function () {
+    var o = document.getElementById("offerOverlay");
+    if (o) o.style.display = "none";
+  };
+  window.copyOfferCode = function (code) {
+    code = String(code || "").trim();
+    if (!code) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () { alert("✅ Coupon copy ਹੋ ਗਿਆ: " + code + "\nPass ਲੈਂਦੇ ਵੇਲੇ ਲਾਓ!"); });
+    } else {
+      prompt("ਇਹ coupon code copy ਕਰੋ:", code);
+    }
+  };
+  function show(offer) {
+    var o = document.getElementById("offerOverlay");
+    var t = document.getElementById("offerText");
+    var chip = document.getElementById("offerCodeChip");
+    if (!o || !t) return;
+    t.innerText = offer.t || FALLBACK[new Date().getDay()];
+    if (chip) {
+      if (offer.code) {
+        chip.style.display = "flex";
+        document.getElementById("offerCodeText").innerText = offer.code;
+      } else {
+        chip.style.display = "none";
+      }
+    }
+    o.style.display = "flex";
+    try { localStorage.setItem("asp_offer_day", todayKey()); } catch (e) {}
+  }
+  function init() {
+    var seen = "";
+    try { seen = localStorage.getItem("asp_offer_day") || ""; } catch (e) {}
+    if (seen === todayKey()) return; /* ਅੱਜ ਦਾ popup ਵੇਖ ਲਿਆ */
+    db.ref("siteSettings/dailyOffers").once("value").then(function (s) {
+      var data = s.val() || {};
+      var offer = data[new Date().getDay()];
+      if (!offer || !offer.t) offer = { t: FALLBACK[new Date().getDay()], code: "" };
+      show(offer);
+    }).catch(function () {
+      show({ t: FALLBACK[new Date().getDay()], code: "" });
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
 
 <script>
 /* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */

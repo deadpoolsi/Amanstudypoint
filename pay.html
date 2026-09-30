@@ -104,7 +104,11 @@
         })
       });
       var d = await r.json();
-      if (d && d.success) { showSuccess(d.message); }
+      if (d && d.success) {
+        /* 🎉 payment hoyaa — pass page te khulde hi Congratulations popup ave */
+        try { localStorage.setItem("pp_just_paid", "1"); } catch (e) {}
+        showSuccess(d.message);
+      }
       else { showError((d && d.message) || "ਅਣਜਾਣ ਗ਼ਲਤੀ"); }
     } catch (e) {
       showError("ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ");

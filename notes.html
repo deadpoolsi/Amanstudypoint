@@ -44,6 +44,8 @@
       body * { display: none !important; }
       body::after { content: "⛔ Printing allowed nahi hai — Aman Study Point"; display: block !important; text-align: center; padding-top: 40vh; font-size: 18px; font-weight: bold; }
     }
+    /* 🎉 congratulations popup — pass unlock te */
+    @keyframes conFall { 0% { transform: translateY(-30px) rotate(0deg); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(430px) rotate(260deg); opacity: 0; } }
   </style>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
@@ -82,6 +84,11 @@
   <div style="position:relative; margin-bottom:10px;">
     <input type="text" id="noteSearch" placeholder="🔍 Note ਖੋਜੋ — title / ਸ਼ਬਦ ਲਿਖੋ..." oninput="renderNotes()" autocomplete="off" style="width:100%; box-sizing:border-box; border:2px solid #e9ecef; border-radius:12px; padding:12px 40px 12px 14px; font-size:0.95rem; font-weight:600; background:#fff; outline:none; color:#222;">
     <button id="noteSearchClear" onclick="clearNoteSearch()" style="display:none; position:absolute; right:7px; top:50%; transform:translateY(-50%); background:#f1f3f5; border:none; border-radius:50%; width:28px; height:28px; font-size:0.85rem; cursor:pointer; color:#495057; font-weight:800;">✕</button>
+  </div>
+
+  <!-- ⭐ ਮਨਪਸੰਦ filter -->
+  <div style="display:flex; justify-content:flex-end; margin:-4px 0 10px 0;">
+    <button id="marksFilterBtn" onclick="toggleMarksFilter()" style="background:#fff; border:2px solid #e9ecef; border-radius:20px; padding:7px 14px; font-weight:800; font-size:0.8rem; cursor:pointer; color:#495057;">⭐ ਸਿਰਫ਼ ਮਨਪਸੰਦ</button>
   </div>
 
   <!-- Notes list -->
@@ -250,6 +257,7 @@ firebase.auth().onAuthStateChanged((user) => {
 function initPage() {
   initWatermarks();
   loadPassPricing();
+  loadNoteMarks(); /* ⭐ ਮਨਪਸੰਦ live */
   if (ADMIN_MODE) {
     /* 👑 ADMIN = master key — pass watch ki lena, sab hamesha unlocked */
     hasValidPass = true;
@@ -312,12 +320,23 @@ function watchPass() {
     const expiry = snap.val();
     const badge = document.getElementById("passBadge");
     if (expiry && expiry > Date.now()) {
+      const wasActive = hasValidPass; /* 🎉 transition pakarna */
       hasValidPass = true;
       const daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
       badge.innerText = "💎 " + daysLeft + "D";
       badge.style.background = "rgba(255,255,255,0.35)";
       document.getElementById("passBanner").style.display = "none";
       renderNotes();
+      /* 🎉 CONGRATULATIONS — pass aya (live) ya payment to wapas aya */
+      let justPaid = false;
+      try { justPaid = localStorage.getItem("pp_just_paid") === "1"; if (justPaid) localStorage.removeItem("pp_just_paid"); } catch (e) {}
+      if (!wasActive && (passPopupArmed || justPaid)) {
+        const sub = document.getElementById("pageTitle");
+        showCongratsPopup(
+          "📝 " + (sub ? sub.innerText : "Notes") + " Pass unlock ਹੋ ਗਿਆ!",
+          daysLeft + " ਦਿਨ ਲਈ ਸਾਰੇ notes ਖੁੱਲ੍ਹੇ ਹਨ — ਮੁਬਾਰਕਾਂ! 🎊"
+        );
+      }
     } else {
       hasValidPass = false;
       badge.innerText = "🔒 Pass";
@@ -325,6 +344,7 @@ function watchPass() {
       document.getElementById("passBanner").style.display = "block";
       renderNotes();
     }
+    passPopupArmed = true; /* 🎉 pehla read = baseline */
   });
 }
 
@@ -373,6 +393,7 @@ function renderNotes() {
   if (clearBtn) clearBtn.style.display = q ? "block" : "none";
   const shownIdx = [];
   cachedNotes.forEach(function (n, i) {
+    if (showOnlyMarks && !isNoteMarked(n)) return; /* ⭐ ਸਿਰਫ਼ ਮਨਪਸੰਦ */
     if (!q) { shownIdx.push(i); return; }
     const hay = (String(n.t || "") + " " + String(n.c || "") + " " + String(n.d || "")).toLowerCase();
     if (hay.indexOf(q) !== -1) shownIdx.push(i);
@@ -380,32 +401,36 @@ function renderNotes() {
   if (!shownIdx.length) {
     listEl.innerHTML = `
       <div class="card" style="text-align:center; padding:26px;">
-        <div style="font-size:2.2rem;">🔍</div>
-        <b>ਕੋਈ note ਨਹੀਂ ਮਿਲਿਆ</b>
-        <div style="color:#888; font-size:0.82rem; margin-top:4px;">ਹੋਰ ਸ਼ਬਦ ਨਾਲ ਖੋਜੋ ਜਾਂ ✕ ਦਬਾ ਕੇ ਸਾਰੇ ਵੇਖੋ</div>
+        <div style="font-size:2.2rem;">${showOnlyMarks ? "⭐" : "🔍"}</div>
+        <b>${showOnlyMarks ? "ਹਾਲੇ ਕੋਈ ਮਨਪਸੰਦ note ਨਹੀਂ" : "ਕੋਈ note ਨਹੀਂ ਮਿਲਿਆ"}</b>
+        <div style="color:#888; font-size:0.82rem; margin-top:4px;">${showOnlyMarks ? "ਹੇਠਾਂ notes ਵਿੱਚ ☆ ਦਬਾ ਕੇ ਮਨਪਸੰਦ ਬਣਾਓ" : "ਹੋਰ ਸ਼ਬਦ ਨਾਲ ਖੋਜੋ ਜਾਂ ✕ ਦਬਾ ਕੇ ਸਾਰੇ ਵੇਖੋ"}</div>
       </div>`;
     return;
   }
   listEl.innerHTML = shownIdx.map(function (i) {
     const n = cachedNotes[i];
+    const marked = isNoteMarked(n);
+    const starBtn = `<button onclick="event.stopPropagation(); toggleNoteMark(${i})" title="ਮਨਪਸੰਦ" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;">${marked ? "⭐" : "☆"}</button>`;
     let kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ Notes 🔒";
     if (hasValidPass && n.k === "pdf") kindBadge = String(n.u || "").indexOf("db:") === 0 ? "📄 PDF 🔒" : "📄 PDF 🔗";
     if (hasValidPass) {
       return `
         <div class="note-row" onclick="openNote(${i})">
-          <div style="flex:1;">
+          <div style="flex:1; min-width:0;">
             <b style="font-size:0.95rem; color:#222;">${escapeHtml(n.t)}</b>
             <div style="font-size:0.75rem; color:#888; margin-top:3px;">${escapeHtml(n.d || "")} • ${kindBadge}</div>
           </div>
+          ${starBtn}
           <span style="background:#ebfbee; color:#2b8a3e; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:8px;">ਪੜ੍ਹੋ →</span>
         </div>`;
     } else {
       return `
         <div class="note-row" onclick="openPassModal()" style="opacity:0.85;">
-          <div style="flex:1;">
+          <div style="flex:1; min-width:0;">
             <b style="font-size:0.95rem; color:#222;">🔒 ${escapeHtml(n.t)}</b>
             <div style="font-size:0.75rem; color:#888; margin-top:3px;">${escapeHtml(n.d || "")} • ${kindBadge}</div>
           </div>
+          ${starBtn}
           <span style="background:#fff4e6; color:#d9480f; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:8px;">Pass ਲਵੋ</span>
         </div>`;
     }
@@ -416,6 +441,53 @@ function renderNotes() {
 function clearNoteSearch() {
   const searchEl = document.getElementById("noteSearch");
   if (searchEl) searchEl.value = "";
+  renderNotes();
+}
+
+/* ⭐ ਮਨਪਸੰਦ (bookmarks) — users/{phone}/noteMarks */
+let userNoteMarks = {};
+let marksRef = null;
+let showOnlyMarks = false;
+
+function loadNoteMarks() {
+  const u = currentUser();
+  if (!u) return;
+  if (marksRef) { try { marksRef.off(); } catch (e) {} }
+  marksRef = db.ref("users/" + u.phone + "/noteMarks");
+  marksRef.on("value", snap => {
+    userNoteMarks = snap.val() || {};
+    renderNotes();
+  }, () => { userNoteMarks = {}; /* permission nahi — chhado */ });
+}
+
+function isNoteMarked(n) {
+  const vk = vaultKey();
+  return !!(userNoteMarks && userNoteMarks[vk] && userNoteMarks[vk][n.id]);
+}
+
+function toggleNoteMark(i) {
+  const n = cachedNotes[i];
+  if (!n) return;
+  const u = currentUser();
+  if (!u) return;
+  const ref = db.ref("users/" + u.phone + "/noteMarks/" + vaultKey() + "/" + n.id);
+  if (isNoteMarked(n)) {
+    ref.remove().catch(function (e) { alert("❌ " + e.message); });
+  } else {
+    ref.set(true).then(function () {
+      /* 😎 turant star lag jauge — list re-render marks listener karega */
+    }).catch(function (e) { alert("❌ ਮਨਪਸੰਦ save ਨਹੀਂ ਹੋਇਆ: " + e.message); });
+  }
+}
+
+function toggleMarksFilter() {
+  showOnlyMarks = !showOnlyMarks;
+  const b = document.getElementById("marksFilterBtn");
+  if (b) {
+    b.style.background = showOnlyMarks ? "#fff3bf" : "#fff";
+    b.style.borderColor = showOnlyMarks ? "#ffd43b" : "#e9ecef";
+    b.style.color = showOnlyMarks ? "#d9480f" : "#495057";
+  }
   renderNotes();
 }
 
@@ -844,6 +916,44 @@ function renderQrInto(el, text) {
 <script>
 /* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+<!-- 🎉 CONGRATULATIONS POPUP — pass unlock te (khareed/QR/free sab routes) -->
+<div id="congratsOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(165deg,#ffffff,#fff9db); border-radius:20px; padding:26px 22px 22px; max-width:340px; width:100%; text-align:center; position:relative; overflow:hidden; box-shadow:0 15px 40px rgba(0,0,0,0.35);">
+    <div id="congratsConfetti" style="position:absolute; inset:0; pointer-events:none; overflow:hidden;"></div>
+    <div style="font-size:3.2rem; line-height:1;">🎉</div>
+    <h2 style="margin:10px 0 4px; font-size:1.25rem; color:#2b8a3e;">Congratulations!</h2>
+    <b id="congratsTitle" style="display:block; font-size:1rem; color:#d9480f; line-height:1.4;"></b>
+    <p id="congratsSub" style="color:#666; font-size:0.88rem; margin:8px 0 4px;"></p>
+    <div style="font-size:0.73rem; color:#868e96; margin-bottom:14px;">⏳ ਮਿਆਦ ਖ਼ਤਮ ਹੋਣ ਤੇ pass ਆਪੇ ਬੰਦ (auto-cut) — ਪੈਸੇ ਆਪੇ ਨਹੀਂ ਕੱਟਣਗੇ</div>
+    <button onclick="closeCongrats()" style="background:linear-gradient(135deg,#2b8a3e,#40c057); color:#fff; border:none; border-radius:12px; padding:12px 28px; font-size:1rem; font-weight:800; cursor:pointer; width:100%;">✨ ਸ਼ੁਰੂ ਕਰੋ</button>
+  </div>
+</div>
+<script>
+/* 🎉 pass unlock → congratulations popup */
+let passPopupArmed = false;
+function showCongratsPopup(title, sub) {
+  const ov = document.getElementById("congratsOverlay");
+  const t = document.getElementById("congratsTitle");
+  const s = document.getElementById("congratsSub");
+  if (!ov || !t || !s) return;
+  t.innerText = title || "";
+  s.innerText = sub || "";
+  const cf = document.getElementById("congratsConfetti");
+  if (cf) {
+    let html = "";
+    const em = ["🎉", "🎊", "✨", "⭐", "💥"];
+    for (let i = 0; i < 16; i++) {
+      html += '<span style="position:absolute; top:-30px; left:' + (Math.random() * 92).toFixed(0) + '%; font-size:' + (11 + Math.random() * 15).toFixed(0) + 'px; animation:conFall ' + (1.6 + Math.random() * 1.5).toFixed(2) + 's linear ' + (Math.random() * 1).toFixed(2) + 's infinite;">' + em[i % em.length] + "</span>";
+    }
+    cf.innerHTML = html;
+  }
+  ov.style.display = "flex";
+}
+function closeCongrats() {
+  const ov = document.getElementById("congratsOverlay");
+  if (ov) ov.style.display = "none";
+}
 </script>
 </body>
 </html>

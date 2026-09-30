@@ -159,6 +159,7 @@
     <button class="tab-btn" onclick="switchAdminTab('tab_passes', this)">💎 Passes & Pricing</button>
     <button class="tab-btn" onclick="switchAdminTab('tab_books', this)">📚 Books & PDFs</button>
     <button class="tab-btn" onclick="switchAdminTab('tab_results', this)">📊 Results & Students</button>
+    <button class="tab-btn" onclick="switchAdminTab('tab_doubts', this)">💬 Doubts</button>
     <button class="tab-btn" onclick="switchAdminTab('tab_settings', this)">⚙️ Settings & PYQ</button>
   </div>
 
@@ -600,6 +601,15 @@ Ans: B"></textarea>
 
   <!-- TAB 5: ⚙️ SETTINGS & PYQ (Notice, Poster, Today's Day, PYQ) -->
   <div id="tab_settings" class="tab-content-panel">
+    <!-- 🎁 DAILY OFFERS Manager (ਅੱਜ ਦਾ Offer) -->
+    <div class="card-admin" style="border: 2px solid #7048e8; background: #f8f7ff;">
+      <h3 style="color:#7048e8; margin-top:0;">🎁 ਅੱਜ ਦਾ Offer (Daily Offers — ਰੋਜ਼ auto-ਬਦਲਦੇ)</h3>
+      <div style="font-size:0.78rem; color:#868e96; margin-bottom:8px;">ਹਰ ਹਫ਼ਤੇ ਦੇ ਦਿਨ ਦਾ offer ਇੱਕ ਵਾਰ ਲਿਖੋ — ਮੁੱਖ page ਤੇ ਰੋਜ਼ ਆਪੇ ਬਦਲਦਾ popup ਆਵੇਗਾ (ਹਰ user ਨੂੰ ਦਿਨ ਵਿੱਚ 1 ਵਾਰ)। Coupon code ਵੀ ਲਿਖੋ — Passes tab ਵਿੱਚ ਬਣਾਇਆ code ਹੀ ਲਾਓ (ਜਿਵੇਂ ₹1 demo ਵਾਲਾ 99% off coupon)।</div>
+      <div id="dailyOffersAdminForm">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+      <button onclick="saveDailyOffers()" style="background:#7048e8; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:bold; cursor:pointer; margin-top:6px;">💾 Save ਕਰੋ</button>
+      <span id="dailyOfferMsg" style="font-size:0.8rem; font-weight:bold; margin-left:8px;"></span>
+    </div>
+
     <!-- 🔔 Job Alerts Manager (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) -->
     <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
       <h3 style="color:#e8590c; margin-top:0;">🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts)</h3>
@@ -721,6 +731,14 @@ Ans: B"></textarea>
       <div class="sec-title" style="font-size:0.95rem; margin-top:14px;">ਅੱਪਲੋਡ ਕੀਤੇ ਪੇਪਰ:</div>
       <div id="adminPyqList">Loading papers...</div>
     </div>
+  </div>
+
+  <!-- 💬 DOUBTS TAB (student questions) -->
+  <div id="tab_doubts" class="tab-content-panel">
+    <h3 style="margin:0 0 4px 0;">💬 ਵਿਦਿਆਰਥੀਆਂ ਦੇ ਸਵਾਲ (Doubt Box)</h3>
+    <p style="color:#868e96; font-size:0.82rem; margin:0 0 12px 0;">Students ਸਾਈਟ ਤੋਂ ਜੋ ਸਵਾਲ ਭੇਜਦੇ ਹਨ ਇੱਥੇ ਦਿਖਦੇ ਹਨ — ਜਵਾਬ ਲਿਖ ਕੇ 💾 ਦਬਾਓ, student ਨੂੰ ਉਸਦੇ "ਸਵਾਲ ਪੁੱਛੋ" section ਵਿੱਚ ਦਿਖ ਜਾਵੇਗਾ। 🟡 ਪੀਲਾ = ਜਵਾਬ ਬਾਕੀ</p>
+    <button onclick="loadDoubtsAdmin()" style="background:#e7f5ff; color:#1971c2; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:10px;">🔄 Refresh</button>
+    <div id="doubtsAdminList">⏳ ਪਹਿਲੀ ਵਾਰ ਖੋਲ੍ਹਣ ਤੇ ਲੋਡ ਹੋਵੇਗਾ...</div>
   </div>
 
 </div>
@@ -969,7 +987,8 @@ const ADMIN_TAB_LOADERS = {
   tab_passes: ["loadCategoryPassPricing"],
   tab_books: ["loadBooksSectionState", "loadAdminNotesList", "loadBooksCouponConfig", "loadSelectedBookData", "loadBookRequests"],
   tab_results: ["loadQuizResults"],
-  tab_settings: ["loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
+  tab_doubts: ["loadDoubtsAdmin"],
+  tab_settings: ["loadDailyOffers", "loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
 };
 const _adminTabsLoaded = {};
 function ensureAdminTabLoaded(tabId) {
@@ -985,6 +1004,118 @@ function ensureAdminTabLoaded(tabId) {
 function loadAllAdminModules() {
   /* default tab (tab_tests) hi pehle — baaki tab khuln te */
   ensureAdminTabLoaded("tab_tests");
+}
+
+/* ═══════ 🎁 DAILY OFFERS — "ਅੱਜ ਦਾ Offer" popup (index) ═══════ */
+const DAILY_OFFER_DAYS = ["ਐਤਵਾਰ", "ਸੋਮਵਾਰ", "ਮੰਗਲਵਾਰ", "ਬੁੱਧਵਾਰ", "ਵੀਰਵਾਰ", "ਸ਼ੁੱਖਰਵਾਰ", "ਸ਼ਨੀਵਾਰ"];
+
+function loadDailyOffers() {
+  const box = document.getElementById("dailyOffersAdminForm");
+  if (!box) return;
+  db.ref("siteSettings/dailyOffers").once("value").then(function (snap) {
+    const data = snap.val() || {};
+    box.innerHTML = DAILY_OFFER_DAYS.map(function (d, i) {
+      const o = data[i] || {};
+      const t = String(o.t || "").replace(/"/g, "&quot;");
+      const c = String(o.code || "").replace(/"/g, "&quot;");
+      return "<div style=\"display:flex; gap:6px; margin-bottom:6px; align-items:center; flex-wrap:wrap;\">" +
+        "<b style=\"width:82px; font-size:0.8rem; color:#495057; flex-shrink:0;\">" + d + "</b>" +
+        "<input id=\"dofT" + i + "\" placeholder=\"Offer text (ਜਿਵੇਂ: ₹1 ਵਿੱਚ Demo Pass!)\" value=\"" + t + "\" style=\"flex:1; min-width:180px; border:1.5px solid #dee2e6; border-radius:8px; padding:8px; font-size:0.82rem; font-family:inherit;\">" +
+        "<input id=\"dofC" + i + "\" placeholder=\"Coupon (ਵਿਕਲਪਿਕ)\" value=\"" + c + "\" style=\"width:150px; border:1.5px solid #dee2e6; border-radius:8px; padding:8px; font-size:0.82rem; font-family:inherit;\">" +
+        "</div>";
+    }).join("") +
+    "<small style=\"color:#868e96;\">⚠️ Coupon ਸਿਰਫ਼ ਉਹੀ ਲਾਓ ਜੋ Passes tab ਵਿੱਚ ਬਣਾਇਆ ਹੋਵੇ — ਨਹੀਂ ਤਾਂ ਖ਼ਾਲੀ ਛੱਡੋ।</small>";
+  }).catch(function (e) {
+    box.innerHTML = "❌ " + e.message;
+  });
+}
+
+function saveDailyOffers() {
+  const updates = {};
+  const msg = document.getElementById("dailyOfferMsg");
+  DAILY_OFFER_DAYS.forEach(function (d, i) {
+    const tEl = document.getElementById("dofT" + i);
+    const cEl = document.getElementById("dofC" + i);
+    updates[i] = { t: tEl ? String(tEl.value || "").trim() : "", code: cEl ? String(cEl.value || "").trim() : "" };
+  });
+  db.ref("siteSettings/dailyOffers").set(updates).then(function () {
+    if (msg) {
+      msg.innerText = "✅ Save ਹੋ ਗਿਆ — ਕੱਲ੍ਹ ਤੋਂ ਰੋਜ਼ popup ਵਿੱਚ ਦਿਖੇਗਾ।";
+      msg.style.color = "#2b8a3e";
+      setTimeout(function () { msg.innerText = ""; }, 4000);
+    }
+  }).catch(function (e) {
+    if (msg) { msg.innerText = "❌ " + e.message; msg.style.color = "#c92a2a"; }
+  });
+}
+
+/* ═══════ 💬 DOUBT BOX — students de sawal (index de "ਸਵਾਲ ਪੁੱਛੋ" section ton) ═══════ */
+let doubtsAdminCache = [];
+
+function _doubtEsc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function loadDoubtsAdmin() {
+  const el = document.getElementById("doubtsAdminList");
+  if (el) el.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...";
+  db.ref("users").once("value").then(function (snap) {
+    const all = snap.val() || {};
+    const rows = [];
+    Object.keys(all).forEach(function (phone) {
+      const u = all[phone] || {};
+      const doubts = u.doubts || {};
+      Object.keys(doubts).forEach(function (k) {
+        const d = doubts[k] || {};
+        rows.push({ phone: phone, key: k, name: u.name || "", q: d.q || "", at: d.at || 0, reply: d.reply || "" });
+      });
+    });
+    rows.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    doubtsAdminCache = rows;
+    renderDoubtsAdmin(rows);
+  }).catch(function (e) {
+    if (el) el.innerHTML = "❌ " + e.message;
+  });
+}
+
+function renderDoubtsAdmin(rows) {
+  const el = document.getElementById("doubtsAdminList");
+  if (!el) return;
+  if (!rows.length) { el.innerHTML = "<small style='color:#868e96;'>— ਹਾਲੇ ਕੋਈ ਸਵਾਲ ਨਹੀਂ ਆਇਆ —</small>"; return; }
+  el.innerHTML = rows.map(function (r) {
+    const unanswered = !r.reply;
+    const dt = r.at ? new Date(r.at).toLocaleDateString("pa-IN") : "";
+    return "<div style=\"border:1.5px solid " + (unanswered ? "#ffe066" : "#b2f2bb") + "; background:" + (unanswered ? "#fff9db" : "#f8fff9") + "; border-radius:10px; padding:10px; margin-bottom:8px;\">" +
+      "<div style=\"display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap;\">" +
+      "<b style=\"font-size:0.85rem;\">" + (r.name ? _doubtEsc(r.name) + " (" + r.phone + ")" : r.phone) + "</b>" +
+      "<small style=\"color:#868e96;\">" + dt + (unanswered ? " • <b style=\"color:#d9480f;\">🆕 ਜਵਾਬ ਬਾਕੀ</b>" : " • ✅ ਜਵਾਬ ਦਿੱਤਾ") + "</small>" +
+      "</div>" +
+      "<div style=\"font-size:0.9rem; margin:6px 0;\">❓ " + _doubtEsc(r.q) + "</div>" +
+      (r.reply ? "<div style=\"font-size:0.85rem; background:#fff; border-left:3px solid #2b8a3e; border-radius:6px; padding:8px; margin-bottom:6px;\">💬 " + _doubtEsc(r.reply) + "</div>" : "") +
+      "<div style=\"display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;\">" +
+      "<input id=\"dr_" + r.key + "\" placeholder=\"ਜਵਾਬ ਲਿਖੋ...\" value=\"" + _doubtEsc(r.reply).replace(/'/g, "&#39;") + "\" style=\"flex:1; min-width:160px; border:1.5px solid #dee2e6; border-radius:8px; padding:8px; font-size:0.85rem; font-family:inherit;\">" +
+      "<button onclick=\"saveDoubtReply('" + r.phone + "','" + r.key + "')\" style=\"background:#2b8a3e; color:#fff; border:none; border-radius:8px; padding:8px 12px; font-weight:bold; cursor:pointer;\">💾 ਜਵਾਬ</button>" +
+      "<button onclick=\"deleteDoubt('" + r.phone + "','" + r.key + "')\" style=\"background:#ffe3e3; color:#c92a2a; border:none; border-radius:8px; padding:8px 10px; font-weight:bold; cursor:pointer;\">🗑️</button>" +
+      "</div>" +
+      "</div>";
+  }).join("") + "<small style='color:#868e96;'>(ਕੁੱਲ: " + rows.length + " ਸਵਾਲ — 🟡 ਪੀਲੇ = ਜਵਾਬ ਬਾਕੀ)</small>";
+}
+
+function saveDoubtReply(phone, key) {
+  const inp = document.getElementById("dr_" + key);
+  const reply = inp ? String(inp.value || "").trim() : "";
+  if (!reply) { alert("ਜਵਾਬ ਲਿਖੋ ਜੀ।"); return; }
+  if (reply.length > 600) { alert("ਵੱਧ ਤੋਂ ਵੱਧ 600 ਅੱਖਰ।"); return; }
+  db.ref("users/" + phone + "/doubts/" + key).update({ reply: reply, repliedAt: Date.now() })
+    .then(function () { loadDoubtsAdmin(); })
+    .catch(function (e) { alert("❌ " + e.message); });
+}
+
+function deleteDoubt(phone, key) {
+  if (!confirm("ਇਹ ਸਵਾਲ ਹਟਾਉਣਾ ਹੈ?")) return;
+  db.ref("users/" + phone + "/doubts/" + key).remove()
+    .then(loadDoubtsAdmin)
+    .catch(function (e) { alert("❌ " + e.message); });
 }
 
 /* ═══════ 🎁 FREE PASS — manual unlock (admin tool) ═══════ */

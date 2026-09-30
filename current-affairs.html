@@ -37,6 +37,8 @@
     .btn-primary { background: #e8590c; color: #fff; }
     .btn-green { background: #2b8a3e; color: #fff; }
     .lockbox { background: #fff; border: 2px solid #ffe3e3; border-radius: 14px; padding: 22px; text-align: center; margin-top: 14px; }
+    /* 🎉 congratulations popup — pass unlock te */
+    @keyframes conFall { 0% { transform: translateY(-30px) rotate(0deg); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(430px) rotate(260deg); opacity: 0; } }
   </style>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
@@ -253,15 +255,26 @@ function initPage() {
     const expiry = snap.val();
     const badge = document.getElementById("passBadge");
     if (expiry && expiry > Date.now()) {
+      const wasActive = hasValidPass; /* 🎉 transition pakarna */
       hasValidPass = true;
       const daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
       badge.innerText = `💎 ${daysLeft}D`;
       badge.style.background = "rgba(255,255,255,0.35)";
+      /* 🎉 CONGRATULATIONS — pass aya (live) ya payment to wapas aya */
+      let justPaid = false;
+      try { justPaid = localStorage.getItem("pp_just_paid") === "1"; if (justPaid) localStorage.removeItem("pp_just_paid"); } catch (e) {}
+      if (!wasActive && (passPopupArmed || justPaid)) {
+        showCongratsPopup(
+          "🌍 Current Affairs Pass unlock ਹੋ ਗਿਆ!",
+          daysLeft + " ਦਿਨ ਲਈ ਸਾਰੇ ਅੱਪਡੇਟ ਖੁੱਲ੍ਹੇ ਹਨ — ਮੁਬਾਰਕਾਂ! 🎊"
+        );
+      }
     } else {
       hasValidPass = false;
       badge.innerText = "🔒 Pass";
       badge.style.background = "rgba(255,255,255,0.2)";
     }
+    passPopupArmed = true; /* 🎉 pehla read = baseline */
   });
 
   loadPassPricing();
@@ -671,6 +684,44 @@ async function openPassQrPay() {
 <script>
 /* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+<!-- 🎉 CONGRATULATIONS POPUP — pass unlock te (khareed/QR/free sab routes) -->
+<div id="congratsOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(165deg,#ffffff,#fff9db); border-radius:20px; padding:26px 22px 22px; max-width:340px; width:100%; text-align:center; position:relative; overflow:hidden; box-shadow:0 15px 40px rgba(0,0,0,0.35);">
+    <div id="congratsConfetti" style="position:absolute; inset:0; pointer-events:none; overflow:hidden;"></div>
+    <div style="font-size:3.2rem; line-height:1;">🎉</div>
+    <h2 style="margin:10px 0 4px; font-size:1.25rem; color:#2b8a3e;">Congratulations!</h2>
+    <b id="congratsTitle" style="display:block; font-size:1rem; color:#d9480f; line-height:1.4;"></b>
+    <p id="congratsSub" style="color:#666; font-size:0.88rem; margin:8px 0 4px;"></p>
+    <div style="font-size:0.73rem; color:#868e96; margin-bottom:14px;">⏳ ਮਿਆਦ ਖ਼ਤਮ ਹੋਣ ਤੇ pass ਆਪੇ ਬੰਦ (auto-cut) — ਪੈਸੇ ਆਪੇ ਨਹੀਂ ਕੱਟਣਗੇ</div>
+    <button onclick="closeCongrats()" style="background:linear-gradient(135deg,#2b8a3e,#40c057); color:#fff; border:none; border-radius:12px; padding:12px 28px; font-size:1rem; font-weight:800; cursor:pointer; width:100%;">✨ ਸ਼ੁਰੂ ਕਰੋ</button>
+  </div>
+</div>
+<script>
+/* 🎉 pass unlock → congratulations popup */
+let passPopupArmed = false;
+function showCongratsPopup(title, sub) {
+  const ov = document.getElementById("congratsOverlay");
+  const t = document.getElementById("congratsTitle");
+  const s = document.getElementById("congratsSub");
+  if (!ov || !t || !s) return;
+  t.innerText = title || "";
+  s.innerText = sub || "";
+  const cf = document.getElementById("congratsConfetti");
+  if (cf) {
+    let html = "";
+    const em = ["🎉", "🎊", "✨", "⭐", "💥"];
+    for (let i = 0; i < 16; i++) {
+      html += '<span style="position:absolute; top:-30px; left:' + (Math.random() * 92).toFixed(0) + '%; font-size:' + (11 + Math.random() * 15).toFixed(0) + 'px; animation:conFall ' + (1.6 + Math.random() * 1.5).toFixed(2) + 's linear ' + (Math.random() * 1).toFixed(2) + 's infinite;">' + em[i % em.length] + "</span>";
+    }
+    cf.innerHTML = html;
+  }
+  ov.style.display = "flex";
+}
+function closeCongrats() {
+  const ov = document.getElementById("congratsOverlay");
+  if (ov) ov.style.display = "none";
+}
 </script>
 </body>
 </html>

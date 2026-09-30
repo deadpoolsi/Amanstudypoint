@@ -1265,63 +1265,91 @@ function saveNoteNow(kind, title, u, c, today, msgEl, oldU) {
     .catch(err);
 }
 
+function adminNoteSeq(a, b) {
+  /* 🔢 o set nahi = sab ton hetha (nava note list de ant vich auge) */
+  const oa = (typeof a.o === "number") ? a.o : 9e12;
+  const ob = (typeof b.o === "number") ? b.o : 9e12;
+  if (oa !== ob) return oa - ob;
+  return (b.at || 0) - (a.at || 0);
+}
+
+/* 🚀 CACHE — move/jump te dobara read NAHI karna padega (tezi da raaz) */
+let adminNotesCache = null; /* { vault: "...", arr: [{_id, n}] } */
+
 function loadAdminNotesList() {
   const vault = document.getElementById("noteVaultSelect").value;
   const box = document.getElementById("adminNotesList");
   box.innerHTML = "⏳ ਲੋਡ ਹੋ ਰਿਹਾ...";
   db.ref("bookVault/" + vault).once("value").then(function (snap) {
     const val = snap.val() || {};
-    /* 🔢 students wali hi tararuf: admin di sequence (o) pehle, fer nava pehle */
-    const keys = Object.keys(val).sort(function (a, b) {
-      const oa = (val[a] && typeof val[a].o === "number") ? val[a].o : -1;
-      const ob = (val[b] && typeof val[b].o === "number") ? val[b].o : -1;
-      if (oa !== ob) return oa - ob;
-      return (val[b].at || 0) - (val[a].at || 0);
-    });
-    if (!keys.length) { box.innerHTML = "<small style='color:#888;'>— ਇਸ subject ਵਿੱਚ ਹਾਲੇ ਕੋਈ note ਨਹੀਂ —</small>"; return; }
-    box.innerHTML = keys.map(function (id) {
-      const n = val[id];
-      var kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ ਲਿਖਿਆ";
-      if (n.k === "pdf") kindBadge += (String(n.u || "").indexOf("db:") === 0) ? " • 📎 Direct" : " • 🔗 Link";
-      return "<div style=\"display:flex; justify-content:space-between; align-items:center; border:1.5px solid #ffe3d1; border-radius:8px; padding:8px 10px; margin-bottom:6px; background:#fff;\">" +
-        "<div style=\"flex:1; min-width:0;\"><b>" + (n.t || "Untitled") + "</b><br><small style='color:#888;'>" + (n.d || "") + " • " + kindBadge + "</small></div>" +
-        "<div style=\"display:flex; gap:4px; flex-shrink:0;\">" +
-        "<button onclick=\"moveAdminNote('" + vault + "','" + id + "',-1)\" title=\"Upar\" style=\"background:#e7f5ff; color:#1971c2; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer;\">⬆️</button>" +
-        "<button onclick=\"moveAdminNote('" + vault + "','" + id + "',1)\" title=\"Hethal\" style=\"background:#e7f5ff; color:#1971c2; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer;\">⬇️</button>" +
-        "<button onclick=\"editAdminNote('" + vault + "','" + id + "')\" style=\"background:#fff4e6; color:#e8590c; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;\">✏️</button>" +
-        "<button onclick=\"deleteAdminNote('" + vault + "','" + id + "')\" style=\"background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;\">🗑️</button>" +
-        "</div>" +
-        "</div>";
-    }).join("") + "<small style='color:#888;'>(ਕੁੱਲ: " + keys.length + " notes — ⬆️⬇️ ਤਰਤੀਬ • ✏️ edit • 🗑️ delete)</small>";
+    const arr = Object.keys(val).map(function (k) { return { _id: k, n: val[k] || {} }; });
+    arr.sort(function (x, y) { return adminNoteSeq(x.n, y.n); });
+    adminNotesCache = { vault: vault, arr: arr };
+    renderAdminNotesList(vault, arr);
   }).catch(function (e) {
+    adminNotesCache = null;
     box.innerHTML = "❌ " + e.message;
   });
 }
 
-/* 🔢 NOTE SEQUENCE — ⬆️⬇️ nal adjust karo (students nu isi tararuf milugi) */
-function moveAdminNote(vault, id, dir) {
+function renderAdminNotesList(vault, arr) {
   const box = document.getElementById("adminNotesList");
-  box.innerHTML = "⏳ ਤਰਤੀਬ ਬਦਲੀ ਜਾ ਰਹੀ ਹੈ...";
-  db.ref("bookVault/" + vault).once("value").then(function (snap) {
-    const val = snap.val() || {};
-    const arr = Object.keys(val).map(function (k) { return { _id: k, n: val[k] || {} }; });
-    arr.sort(function (a, b) {
-      const oa = (typeof a.n.o === "number") ? a.n.o : -1;
-      const ob = (typeof b.n.o === "number") ? b.n.o : -1;
-      if (oa !== ob) return oa - ob;
-      return (b.n.at || 0) - (a.n.at || 0);
-    });
-    const i = arr.findIndex(function (x) { return x._id === id; });
-    const j = i + (dir < 0 ? -1 : 1);
-    if (i < 0 || j < 0 || j >= arr.length) { loadAdminNotesList(); return; }
-    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    /* puri list nu fresh sequence numbers (0,10,20...) — hamesha clean */
-    const updates = {};
-    arr.forEach(function (x, idx) { updates[vault + "/" + x._id + "/o"] = idx * 10; });
-    return db.ref("bookVault").update(updates).then(function () { loadAdminNotesList(); });
-  }).catch(function (e) {
-    alert("❌ ਤਰਤੀਬ ਨਹੀਂ ਬਦਲੀ ਜਾ ਸਕੀ: " + e.message);
-    loadAdminNotesList();
+  if (!arr.length) { box.innerHTML = "<small style='color:#888;'>— ਇਸ subject ਵਿੱਚ ਹਾਲੇ ਕੋਈ note ਨਹੀਂ —</small>"; return; }
+  box.innerHTML = arr.map(function (x, pos) {
+    const n = x.n;
+    var kindBadge = n.k === "pdf" ? "📄 PDF" : "✏️ ਲਿਖਿਆ";
+    if (n.k === "pdf") kindBadge += (String(n.u || "").indexOf("db:") === 0) ? " • 📎 Direct" : " • 🔗 Link";
+    return "<div style=\"display:flex; justify-content:space-between; align-items:center; gap:6px; border:1.5px solid #ffe3d1; border-radius:8px; padding:8px 10px; margin-bottom:6px; background:#fff;\">" +
+      "<div style=\"flex:1; min-width:0;\"><b>" + (n.t || "Untitled") + "</b><br><small style='color:#888;'>" + (n.d || "") + " • " + kindBadge + "</small></div>" +
+      "<div style=\"display:flex; gap:4px; align-items:center; flex-wrap:wrap; justify-content:flex-end; flex-shrink:0;\">" +
+      "<button onclick=\"moveAdminNote('" + vault + "','" + x._id + "',-1)\" title=\"ਇੱਕ ਥਾਂ ਉੱਪਰ\" style=\"background:#e7f5ff; color:#1971c2; border:none; border-radius:6px; padding:6px 7px; font-weight:bold; cursor:pointer;\">⬆️</button>" +
+      "<button onclick=\"moveAdminNote('" + vault + "','" + x._id + "',1)\" title=\"ਇੱਕ ਥਾਂ ਹੇਠਾਂ\" style=\"background:#e7f5ff; color:#1971c2; border:none; border-radius:6px; padding:6px 7px; font-weight:bold; cursor:pointer;\">⬇️</button>" +
+      "<input id=\"jp_" + x._id + "\" type=\"number\" min=\"1\" max=\"" + arr.length + "\" value=\"" + (pos + 1) + "\" title=\"Position number\" style=\"width:46px; border:1.5px solid #dee2e6; border-radius:6px; padding:5px 4px; font-weight:bold; text-align:center; font-size:0.85rem;\">" +
+      "<button onclick=\"jumpAdminNote('" + vault + "','" + x._id + "')\" title=\"ਇਸ number ਤੇ ਲੈ ਜਾਓ\" style=\"background:#d3f9d8; color:#2b8a3e; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer;\">✓</button>" +
+      "<button onclick=\"editAdminNote('" + vault + "','" + x._id + "')\" style=\"background:#fff4e6; color:#e8590c; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer;\">✏️</button>" +
+      "<button onclick=\"deleteAdminNote('" + vault + "','" + x._id + "')\" style=\"background:#ffe3e3; color:#c92a2a; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer;\">🗑️</button>" +
+      "</div>" +
+      "</div>";
+  }).join("") + "<small style='color:#888;'>(ਕੁੱਲ: " + arr.length + " notes — ⬆️⬇️ ਇੱਕ ਥਾਂ • <b># number ਲਿਖ ਕੇ ✓</b> = ਸਿੱਧਾ ਉਸ position ਤੇ • ✏️ edit • 🗑️ delete • ਨਵਾਂ note ਹੇਠਾਂ ਆਵੇਗਾ)</small>";
+}
+
+/* 🚀 TURANT ਉੱਪਰ/ਹੇਠਾਂ — list dobara load nahi hundi (1 second nahi, 0 second!) */
+function moveAdminNote(vault, id, dir) {
+  if (!adminNotesCache || adminNotesCache.vault !== vault) { loadAdminNotesList(); return; }
+  const arr = adminNotesCache.arr;
+  const i = arr.findIndex(function (x) { return x._id === id; });
+  const j = i + (dir < 0 ? -1 : 1);
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  renderAdminNotesList(vault, arr); /* 😎 turant dikh jauge */
+  saveAdminNoteOrder(vault, arr);   /* background vich save */
+}
+
+/* 🚀 NUMBER JUMP — "#3 ✓" = sidhe 3rd position te (kai ⬆️⬇️ to bacho) */
+function jumpAdminNote(vault, id) {
+  if (!adminNotesCache || adminNotesCache.vault !== vault) { loadAdminNotesList(); return; }
+  const arr = adminNotesCache.arr;
+  const inp = document.getElementById("jp_" + id);
+  const pos = inp ? parseInt(inp.value, 10) : NaN;
+  if (!pos || pos < 1 || pos > arr.length) {
+    alert("⚠️ 1 ਤੋਂ " + arr.length + " ਵਿਚਕਾਰ number ਲਿਖੋ ਜੀ।");
+    return;
+  }
+  const i = arr.findIndex(function (x) { return x._id === id; });
+  if (i < 0) return;
+  const x = arr.splice(i, 1)[0];
+  arr.splice(pos - 1, 0, x);
+  renderAdminNotesList(vault, arr); /* 😎 turant */
+  saveAdminNoteOrder(vault, arr);   /* background vich save */
+}
+
+/* 🔢 background save — puri list nu fresh sequence (0,10,20...) */
+function saveAdminNoteOrder(vault, arr) {
+  const updates = {};
+  arr.forEach(function (x, idx) { updates[vault + "/" + x._id + "/o"] = idx * 10; });
+  db.ref("bookVault").update(updates).catch(function (e) {
+    alert("❌ ਤਰਤੀਬ ਸੇਵ ਨਹੀਂ ਹੋਈ (ਨੈੱਟ ਚੈੱਕ ਕਰੋ) — list refresh ਕਰ ਰਿਹਾ ਹਾਂ: " + e.message);
+    loadAdminNotesList(); /* sach wapas lao */
   });
 }
 

@@ -601,15 +601,6 @@ Ans: B"></textarea>
 
   <!-- TAB 5: ⚙️ SETTINGS & PYQ (Notice, Poster, Today's Day, PYQ) -->
   <div id="tab_settings" class="tab-content-panel">
-    <!-- 🎁 DAILY OFFERS Manager (ਅੱਜ ਦਾ Offer) -->
-    <div class="card-admin" style="border: 2px solid #7048e8; background: #f8f7ff;">
-      <h3 style="color:#7048e8; margin-top:0;">🎁 ਅੱਜ ਦਾ Offer (Daily Offers — ਰੋਜ਼ auto-ਬਦਲਦੇ)</h3>
-      <div style="font-size:0.78rem; color:#868e96; margin-bottom:8px;">ਹਰ ਹਫ਼ਤੇ ਦੇ ਦਿਨ ਦਾ offer ਇੱਕ ਵਾਰ ਲਿਖੋ — ਮੁੱਖ page ਤੇ ਰੋਜ਼ ਆਪੇ ਬਦਲਦਾ popup ਆਵੇਗਾ (ਹਰ user ਨੂੰ ਦਿਨ ਵਿੱਚ 1 ਵਾਰ)। Coupon code ਵੀ ਲਿਖੋ — Passes tab ਵਿੱਚ ਬਣਾਇਆ code ਹੀ ਲਾਓ (ਜਿਵੇਂ ₹1 demo ਵਾਲਾ 99% off coupon)।</div>
-      <div id="dailyOffersAdminForm">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
-      <button onclick="saveDailyOffers()" style="background:#7048e8; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:bold; cursor:pointer; margin-top:6px;">💾 Save ਕਰੋ</button>
-      <span id="dailyOfferMsg" style="font-size:0.8rem; font-weight:bold; margin-left:8px;"></span>
-    </div>
-
     <!-- 🔔 Job Alerts Manager (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) -->
     <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
       <h3 style="color:#e8590c; margin-top:0;">🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts)</h3>
@@ -988,7 +979,7 @@ const ADMIN_TAB_LOADERS = {
   tab_books: ["loadBooksSectionState", "loadAdminNotesList", "loadBooksCouponConfig", "loadSelectedBookData", "loadBookRequests"],
   tab_results: ["loadQuizResults"],
   tab_doubts: ["loadDoubtsAdmin"],
-  tab_settings: ["loadDailyOffers", "loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
+  tab_settings: ["loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
 };
 const _adminTabsLoaded = {};
 function ensureAdminTabLoaded(tabId) {
@@ -1004,49 +995,6 @@ function ensureAdminTabLoaded(tabId) {
 function loadAllAdminModules() {
   /* default tab (tab_tests) hi pehle — baaki tab khuln te */
   ensureAdminTabLoaded("tab_tests");
-}
-
-/* ═══════ 🎁 DAILY OFFERS — "ਅੱਜ ਦਾ Offer" popup (index) ═══════ */
-const DAILY_OFFER_DAYS = ["ਐਤਵਾਰ", "ਸੋਮਵਾਰ", "ਮੰਗਲਵਾਰ", "ਬੁੱਧਵਾਰ", "ਵੀਰਵਾਰ", "ਸ਼ੁੱਖਰਵਾਰ", "ਸ਼ਨੀਵਾਰ"];
-
-function loadDailyOffers() {
-  const box = document.getElementById("dailyOffersAdminForm");
-  if (!box) return;
-  db.ref("siteSettings/dailyOffers").once("value").then(function (snap) {
-    const data = snap.val() || {};
-    box.innerHTML = DAILY_OFFER_DAYS.map(function (d, i) {
-      const o = data[i] || {};
-      const t = String(o.t || "").replace(/"/g, "&quot;");
-      const c = String(o.code || "").replace(/"/g, "&quot;");
-      return "<div style=\"display:flex; gap:6px; margin-bottom:6px; align-items:center; flex-wrap:wrap;\">" +
-        "<b style=\"width:82px; font-size:0.8rem; color:#495057; flex-shrink:0;\">" + d + "</b>" +
-        "<input id=\"dofT" + i + "\" placeholder=\"Offer text (ਜਿਵੇਂ: ₹1 ਵਿੱਚ Demo Pass!)\" value=\"" + t + "\" style=\"flex:1; min-width:180px; border:1.5px solid #dee2e6; border-radius:8px; padding:8px; font-size:0.82rem; font-family:inherit;\">" +
-        "<input id=\"dofC" + i + "\" placeholder=\"Coupon (ਵਿਕਲਪਿਕ)\" value=\"" + c + "\" style=\"width:150px; border:1.5px solid #dee2e6; border-radius:8px; padding:8px; font-size:0.82rem; font-family:inherit;\">" +
-        "</div>";
-    }).join("") +
-    "<small style=\"color:#868e96;\">⚠️ Coupon ਸਿਰਫ਼ ਉਹੀ ਲਾਓ ਜੋ Passes tab ਵਿੱਚ ਬਣਾਇਆ ਹੋਵੇ — ਨਹੀਂ ਤਾਂ ਖ਼ਾਲੀ ਛੱਡੋ।</small>";
-  }).catch(function (e) {
-    box.innerHTML = "❌ " + e.message;
-  });
-}
-
-function saveDailyOffers() {
-  const updates = {};
-  const msg = document.getElementById("dailyOfferMsg");
-  DAILY_OFFER_DAYS.forEach(function (d, i) {
-    const tEl = document.getElementById("dofT" + i);
-    const cEl = document.getElementById("dofC" + i);
-    updates[i] = { t: tEl ? String(tEl.value || "").trim() : "", code: cEl ? String(cEl.value || "").trim() : "" };
-  });
-  db.ref("siteSettings/dailyOffers").set(updates).then(function () {
-    if (msg) {
-      msg.innerText = "✅ Save ਹੋ ਗਿਆ — ਕੱਲ੍ਹ ਤੋਂ ਰੋਜ਼ popup ਵਿੱਚ ਦਿਖੇਗਾ।";
-      msg.style.color = "#2b8a3e";
-      setTimeout(function () { msg.innerText = ""; }, 4000);
-    }
-  }).catch(function (e) {
-    if (msg) { msg.innerText = "❌ " + e.message; msg.style.color = "#c92a2a"; }
-  });
 }
 
 /* ═══════ 💬 DOUBT BOX — students de sawal (index de "ਸਵਾਲ ਪੁੱਛੋ" section ton) ═══════ */

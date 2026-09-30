@@ -136,18 +136,22 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: "ਗ਼ਲਤ subject combination।" });
 
     try {
-      /* 1) Login verify → phone (sirf vidiarathi) */
+      /* 1) Login verify → phone (sirf vidiarathi + 👑 admin) */
       const payload = await verifyIdToken(String(body.idToken || ""));
       if (!payload || !payload.email)
         return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+      const isAdmin = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
       const m = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
-      if (!m)
+      if (!m && !isAdmin)
         return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ vidiarathi notes padh sakde han।" });
-      const phone = m[1];
+      const phone = m ? m[1] : "admin";
 
-      /* 2) Pass check — server-side */
-      const expiry = await fbGet(`users/${encodeURIComponent(phone)}/passes/${passKey}`);
-      const hasPass = (typeof expiry === "number") && expiry > Date.now();
+      /* 2) Pass check — server-side (👑 admin = hamesha pass, sab unlocked) */
+      let hasPass = isAdmin;
+      if (!isAdmin) {
+        const expiry = await fbGet(`users/${encodeURIComponent(phone)}/passes/${passKey}`);
+        hasPass = (typeof expiry === "number") && expiry > Date.now();
+      }
 
       /* 3) Notes list lao */
       const vault = (await fbGet(`bookVault/${vaultKey}`)) || {};
@@ -189,19 +193,22 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: "ਗ਼ਲਤ note।" });
 
     try {
-      /* 1) Login verify → phone (sirf vidiarathi) */
+      /* 1) Login verify → phone (sirf vidiarathi + 👑 admin) */
       const payload = await verifyIdToken(String(body.idToken || ""));
       if (!payload || !payload.email)
         return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+      const isAdmin = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
       const m = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
-      if (!m)
+      if (!m && !isAdmin)
         return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ vidiarathi notes padh sakde han।" });
-      const phone = m[1];
+      const phone = m ? m[1] : "admin";
 
-      /* 2) VALID pass zaroori — bina pass file koi nahi khol sakda */
-      const expiry = await fbGet("users/" + encodeURIComponent(phone) + "/passes/" + passKey);
-      if (!((typeof expiry === "number") && expiry > Date.now()))
-        return res.status(403).json({ success: false, passRequired: true, message: "ਪਹਿਲਾਂ pass ਲਵੋ।" });
+      /* 2) VALID pass zaroori — bina pass file koi nahi khol sakda (👑 admin chhadd) */
+      if (!isAdmin) {
+        const expiry = await fbGet("users/" + encodeURIComponent(phone) + "/passes/" + passKey);
+        if (!((typeof expiry === "number") && expiry > Date.now()))
+          return res.status(403).json({ success: false, passRequired: true, message: "ਪਹਿਲਾਂ pass ਲਵੋ।" });
+      }
 
       /* 3) note kholo — u = "db:{fileId}" hona zaroori */
       const note = await fbGet("bookVault/" + vaultKey + "/" + encodeURIComponent(noteId));

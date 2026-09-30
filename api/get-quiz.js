@@ -22,6 +22,26 @@ const FIREBASE_DB_SECRET = process.env.FIREBASE_DB_SECRET;
 // hai hi (public cheez hai), is layi server vich likhna surakhit hai.
 const WEB_API_KEY = "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw";
 
+/* 👑 ADMIN MASTER KEY — admin email nal login = sab tests hamesha unlocked */
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+async function isAdminToken(idToken) {
+  try {
+    const r = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${WEB_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: idToken }),
+      }
+    );
+    const d = await r.json();
+    const email = d && d.users && d.users[0] && d.users[0].email;
+    return !!email && String(email).trim().toLowerCase() === ADMIN_EMAIL;
+  } catch (e) {
+    return false;
+  }
+}
+
 function stripAnswer(q) {
   if (!q || typeof q !== "object") return q;
   const copy = Object.assign({}, q);
@@ -94,7 +114,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: "cat/id missing" });
     }
 
-    const identityOk = await verifyIdentity(idToken, phone);
+    /* 👑 ADMIN = master key — admin lai pass-check skip, sab tests unlocked */
+    const isAdmin = await isAdminToken(idToken);
+    const identityOk = isAdmin || (await verifyIdentity(idToken, phone));
     if (!identityOk) {
       return res
         .status(403)
@@ -109,8 +131,9 @@ module.exports = async (req, res) => {
     const keys = ldata && typeof ldata === "object" ? Object.keys(ldata) : [];
     const isFreeDemo = keys.length > 0 && keys[0] === id;
 
-    if (!isFreeDemo) {
+    if (!isFreeDemo && !isAdmin) {
       // 🔒 PASS CHECK — server-side (browser skip nahi kar sakda)
+      // (👑 admin lai skip — master key)
       if (!phone) {
         return res.status(403).json({ success: false, message: "Login chahida" });
       }

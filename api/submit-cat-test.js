@@ -20,6 +20,9 @@ const FIREBASE_DB_URL =
 const FIREBASE_DB_SECRET = process.env.FIREBASE_DB_SECRET;
 const WEB_API_KEY = "AIzaSyDHKhXcfzOPHBYzkn1CXuz2tw0Iix1EzMw";
 
+/* 👑 ADMIN MASTER KEY — admin email nal login = test submit vi chalega */
+const ADMIN_EMAIL = "deadpool73503@gmail.com";
+
 async function verifyIdentity(idToken, expectedPhone) {
   try {
     const r = await fetch(
@@ -33,6 +36,8 @@ async function verifyIdentity(idToken, expectedPhone) {
     const d = await r.json();
     const email = d && d.users && d.users[0] && d.users[0].email;
     if (!email) return false;
+    /* 👑 ADMIN = master key — kisi vi phone lai valid */
+    if (String(email).trim().toLowerCase() === ADMIN_EMAIL) return true;
     if (expectedPhone) {
       return email === `${expectedPhone}@amanstudypoint.student`;
     }

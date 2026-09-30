@@ -157,9 +157,16 @@ module.exports = async (req, res) => {
       const vault = (await fbGet(`bookVault/${vaultKey}`)) || {};
       let notes = Object.keys(vault).map(function (id) {
         const n = vault[id] || {};
-        return { id: id, t: n.t || "Untitled", k: n.k || "pdf", u: n.u || "", c: n.c || "", d: n.d || "", at: n.at || 0 };
+        return { id: id, t: n.t || "Untitled", k: n.k || "pdf", u: n.u || "", c: n.c || "", d: n.d || "", at: n.at || 0, o: (typeof n.o === "number") ? n.o : null };
       });
-      notes.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+      /* 🔢 SORT: admin di sequence (o) pehle → fer nava note pehle.
+         (o set nahi = nava/un-ordered → upar, at desc vich) */
+      notes.sort(function (a, b) {
+        const oa = (a.o === null) ? -1 : a.o;
+        const ob = (b.o === null) ? -1 : b.o;
+        if (oa !== ob) return oa - ob;
+        return (b.at || 0) - (a.at || 0);
+      });
 
       /* 4) Pass nathi → sirf teaser (titles + dates) */
       if (!hasPass) {

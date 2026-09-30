@@ -159,11 +159,12 @@ module.exports = async (req, res) => {
         const n = vault[id] || {};
         return { id: id, t: n.t || "Untitled", k: n.k || "pdf", u: n.u || "", c: n.c || "", d: n.d || "", at: n.at || 0, o: (typeof n.o === "number") ? n.o : null };
       });
-      /* 🔢 SORT: admin di sequence (o) pehle → fer nava note pehle.
-         (o set nahi = nava/un-ordered → upar, at desc vich) */
+      /* 🔢 SORT: admin di sequence (o) pehle.
+         (o set nahi = sab ton hetha — nava note list de ANT vich auge,
+         admin di set kiti sequence nahi ttrdi) */
       notes.sort(function (a, b) {
-        const oa = (a.o === null) ? -1 : a.o;
-        const ob = (b.o === null) ? -1 : b.o;
+        const oa = (a.o === null) ? 9e12 : a.o;
+        const ob = (b.o === null) ? 9e12 : b.o;
         if (oa !== ob) return oa - ob;
         return (b.at || 0) - (a.at || 0);
       });

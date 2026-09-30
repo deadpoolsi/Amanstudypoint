@@ -91,7 +91,7 @@
       <a href="#books" onclick="toggleNavMenu()" class="books-ui">📝 Notes</a>
       <a href="javascript:void(0)" id="analyticsNav" onclick="openStudentTab('progress'); toggleNavMenu();">📊 My Progress</a>
       <a href="#pyq" onclick="toggleNavMenu()">📑 PYQ Papers</a>
-      <a href="#doubt" onclick="toggleNavMenu()">💬 ਸਵਾਲ ਪੁੱਛੋ</a>
+      <a href="#doubt" onclick="toggleNavMenu()">🤖 AI ਸਵਾਲ ਪੁੱਛੋ</a>
       <a href="javascript:void(0)" onclick="installApp()" style="color:#2b8a3e; font-weight:800;">📲 ਐਪ ਇੰਸਟਾਲ ਕਰੋ</a>
       <a href="#referral" onclick="toggleNavMenu()">🎁 Refer</a>
       <button class="btn btn-ghost btn-small" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 Dark</button>
@@ -298,13 +298,29 @@
   </div>
 </section>
 
-<!-- 💬 Doubt Box -->
+<!-- 🤖 AI STUDY HELPER + 💬 DOUBT BOX -->
 <section id="doubt" class="section">
   <div class="container">
-    <h2>💬 ਸਵਾਲ ਪੁੱਛੋ (Doubt Box)</h2>
-    <p class="section-sub">ਪੜ੍ਹਾਈ ਦਾ ਕੋਈ ਵੀ ਸਵਾਲ ਲਿਖ ਕੇ ਭੇਜੋ — ਜਵਾਬ ਇੱਥੇ ਹੀ ਮਿਲੇਗਾ</p>
+    <h2>🤖 AI ਤੁਰੰਤ ਜਵਾਬ + 💬 ਸਵਾਲ ਪੁੱਛੋ</h2>
+    <p class="section-sub">ਪੜ੍ਹਾਈ ਦਾ ਕੋਈ ਵੀ ਸਵਾਲ — AI ਤੁਰੰਤ one-line ਜਵਾਬ ਦੇਵੇਗਾ, ਜਾਂ Aman Sir ਤੋਂ ਪੁੱਛੋ</p>
     <div class="leaderboard-card" style="max-width:680px; margin:0 auto; text-align:left;">
-      <div id="doubtBox">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+      <!-- tabs -->
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <button id="askTabAi" onclick="showAskTab('ai')" style="flex:1; background:#e7f5ff; color:#1971c2; border:2px solid #1971c2; border-radius:12px; padding:10px; font-weight:800; font-size:0.85rem; cursor:pointer;">🤖 AI ਤੁਰੰਤ ਜਵਾਬ</button>
+        <button id="askTabSir" onclick="showAskTab('sir')" style="flex:1; background:#fff; color:#495057; border:2px solid #dee2e6; border-radius:12px; padding:10px; font-weight:800; font-size:0.85rem; cursor:pointer;">💬 Sir ਤੋਂ ਪੁੱਛੋ</button>
+      </div>
+      <!-- 🤖 AI tab -->
+      <div id="askAiWrap">
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="text" id="askInput" placeholder="ਸਵਾਲ ਲਿਖੋ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦੀ ਰਾਜਧਾਨੀ ਕੀ ਹੈ?)" onkeydown="if(event.key==='Enter'){event.preventDefault(); askAi();}" style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:11px 12px; font-size:0.92rem; font-family:inherit; min-width:0;">
+          <button id="askBtn" onclick="askAi()" class="btn btn-primary" style="flex-shrink:0;">ਪੁੱਛੋ ➔</button>
+        </div>
+        <div id="askAnswer"><small style="color:#868e96;">✨ ਕੋਈ ਵੀ ਪੜ੍ਹਾਈ ਦਾ ਸਵਾਲ ਲਿਖੋ — ਤੁਰੰਤ one-line ਜਵਾਬ ਮਿਲੇਗਾ (ਰੋਜ਼ 20 ਸਵਾਲ)</small></div>
+      </div>
+      <!-- 💬 Sir tab -->
+      <div id="askSirWrap" style="display:none;">
+        <div id="doubtBox">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
+      </div>
     </div>
   </div>
 </section>
@@ -559,6 +575,78 @@
     </a>
   </div>
 </div>
+
+<script>
+/* 🤖 AI STUDY HELPER — Gemini rahi one-line answers (fn:"ask" branch, get-ca.js) */
+(function () {
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  window.showAskTab = function (t) {
+    var ai = document.getElementById("askTabAi");
+    var sir = document.getElementById("askTabSir");
+    var aiW = document.getElementById("askAiWrap");
+    var sirW = document.getElementById("askSirWrap");
+    if (!aiW || !sirW) return;
+    var isAi = (t === "ai");
+    if (ai) {
+      ai.style.background = isAi ? "#e7f5ff" : "#fff";
+      ai.style.borderColor = isAi ? "#1971c2" : "#dee2e6";
+      ai.style.color = isAi ? "#1971c2" : "#495057";
+    }
+    if (sir) {
+      sir.style.background = !isAi ? "#e7f5ff" : "#fff";
+      sir.style.borderColor = !isAi ? "#1971c2" : "#dee2e6";
+      sir.style.color = !isAi ? "#1971c2" : "#495057";
+    }
+    aiW.style.display = isAi ? "block" : "none";
+    sirW.style.display = isAi ? "none" : "block";
+  };
+
+  window.askAi = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var inp = document.getElementById("askInput");
+    var btn = document.getElementById("askBtn");
+    var out = document.getElementById("askAnswer");
+    if (!inp || !out) return;
+    var q = String(inp.value || "").trim();
+    if (q.length < 3) { alert("⚠️ ਸਵਾਲ ਲਿਖੋ ਜੀ।"); return; }
+    /* 🔢 daily limit — 20 ਸਵਾਲ/ਦਿਨ (free AI quota bachaun lai) */
+    var dk = "asp_ai_" + new Date().toDateString();
+    var n = 0;
+    try { n = parseInt(localStorage.getItem(dk) || "0", 10) || 0; } catch (e) {}
+    if (n >= 20) { alert("⚠️ ਅੱਜ ਦੀ AI limit (20 ਸਵਾਲ) ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"); return; }
+    if (btn) { btn.disabled = true; btn.innerText = "⏳"; }
+    out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;"><b>🤖</b> ਸੋਚ ਰਿਹਾ ਹਾਂ... ⏳</div>';
+    try {
+      var idToken = "";
+      if (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) {
+        idToken = await firebase.auth().currentUser.getIdToken();
+      }
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "ask", idToken: idToken, q: q })
+      });
+      var d = await r.json();
+      if (d && d.success) {
+        try { localStorage.setItem(dk, String(n + 1)); } catch (e) {}
+        var left = 20 - (n + 1);
+        out.innerHTML =
+          '<div style="background:#ebfbee; border-left:3px solid #2b8a3e; border-radius:10px; padding:10px 12px; font-size:0.92rem; line-height:1.5;"><b>🤖 ਜਵਾਬ:</b> ' + esc(d.a) + '</div>' +
+          (left <= 5 ? '<small style="color:#868e96;">ਅੱਜ ਬਾਕੀ ' + left + ' ਸਵਾਲ</small>' : '');
+        inp.value = "";
+      } else {
+        out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "ਜਵਾਬ ਨਹੀਂ ਮਿਲਿਆ") + '</div>';
+      }
+    } catch (e) {
+      out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</div>';
+    }
+    if (btn) { btn.disabled = false; btn.innerText = "ਪੁੱਛੋ ➔"; }
+  };
+})();
+</script>
 
 <script>
 /* 💬 DOUBT BOX — student apna sawal bhejde, admin jawaab de */

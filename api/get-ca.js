@@ -346,6 +346,88 @@ module.exports = async (req, res) => {
     }
   }
 
+  /* ═══════════ 📸 PHOTO ASK BRANCH — { fn: "askphoto", idToken, img }
+     (kitaab de sawal di photo → Gemini nu vekh ke ik-line jawaab) ═══════════ */
+  if (body.fn === "askphoto") {
+    const img = typeof body.img === "string" ? body.img : "";
+    if (!img)
+      return res.status(400).json({ success: false, message: "ਫੋਟੋ ਨਹੀਂ ਮਿਲੀ।" });
+    if (img.length > 3500000)
+      return res.status(400).json({ success: false, message: "ਫੋਟੋ ਬਹੁਤ ਵੱਡੀ ਹੈ — ਨੇੜੇ ਤੋਂ ਸਿਰਫ਼ ਸਵਾਲ ਦੀ ਫੋਟੋ ਖਿੱਚੋ।" });
+    if (!GEMINI_API_KEY)
+      return res.status(500).json({ success: false, message: "AI service ਹਾਲੇ off ਹੈ — admin ਨੂੰ ਦੱਸੋ।" });
+
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const isAdminPh = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const mPh = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mPh && !isAdminPh)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵਰਤ ਸਕਦੇ ਹਨ।" });
+
+    try {
+      const sysPh =
+        "ਤੂੰ 'Aman Study Point' ਦਾ AI study helper ਹੈਂ। ਵਿਦਿਆਰਥੀ ਕਿਤਾਬ ਦੇ ਸਵਾਲ ਦੀ ਫੋਟੋ ਭੇਜਦਾ ਹੈ — ਸਵਾਲ ਪੜ੍ਹ ਕੇ ਸਿਰਫ਼ ਇੱਕ ਲਾਈਨ ਦਾ ਸਿੱਧਾ ਜਵਾਬ ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਵਿੱਚ ਦੇ। " +
+        "ਜੇ ਫੋਟੋ ਵਿੱਚ ਕਈ ਸਵਾਲ ਹੋਣ ਤਾਂ ਸਭ ਤੋਂ ਪਹਿਲੇ ਸਵਾਲ ਦਾ ਜਵਾਬ ਦੇ। ਲੰਮੀ ਵਿਆਖਿਆ ਨਹੀਂ।";
+      const phPrompt =
+        "ਇਸ ਫੋਟੋ ਵਿੱਚ ਜੋ ਵੀ ਪੜ੍ਹਾਈ ਦਾ ਸਵਾਲ ਦਿਸਦਾ ਹੈ ਉਸ ਦਾ ਇੱਕ ਲਾਈਨ ਦਾ ਜਵਾਬ ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਵਿੱਚ ਦੇ। " +
+        "ਜੇ ਫੋਟੋ ਵਿੱਚ ਕੋਈ ਸਵਾਲ ਨਹੀਂ ਦਿਸਦਾ ਜਾਂ ਧੁੰਦਲੀ ਹੈ ਤਾਂ ਬੱਸ ਕਹਿ: 'ਫੋਟੋ ਸਾਫ਼ ਨਹੀਂ ਹੈ — ਸਿਰਫ਼ ਸਵਾਲ ਵਾਲਾ ਹਿੱਸਾ ਖਿੱਚੋ'।";
+      const callPh = async function (model) {
+        const r = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + GEMINI_API_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: sysPh }] },
+              contents: [{ parts: [
+                { inline_data: { mime_type: "image/jpeg", data: img } },
+                { text: phPrompt }
+              ] }],
+              generationConfig: { maxOutputTokens: 300, temperature: 0.2 }
+            })
+          }
+        );
+        return r.json().catch(() => null);
+      };
+      const pickTextPh = function (d) {
+        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
+          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+          d.candidates[0].content.parts[0].text;
+      };
+
+      let text = "";
+      let lastErr = "";
+      for (let i = 0; i < GEMINI_MODELS.length && !text; i++) {
+        const model = GEMINI_MODELS[i];
+        const d = await callPh(model);
+        text = pickTextPh(d);
+        if (!text) {
+          lastErr = d && d.error
+            ? String(d.error.status || "") + " " + String(d.error.message || "")
+            : "no response";
+          console.error("AI photo fail (" + model + "): " + lastErr.slice(0, 250));
+          if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastErr)) break;
+        }
+      }
+      if (!text) {
+        if (/API_KEY_INVALID/i.test(lastErr))
+          return res.status(401).json({ success: false, message: "Gemini API key ਗ਼ਲਤ ਹੈ — admin ENV check ਕਰੇ।" });
+        const quotaHit = /quota|429|RESOURCE_EXHAUSTED/i.test(lastErr);
+        return res.status(quotaHit ? 429 : 502).json({
+          success: false,
+          message: quotaHit
+            ? "ਅੱਜ ਦੀ AI limit ਪੂਰੀ ਹੋ ਗਈ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"
+            : "ਫੋਟੋ ਦਾ ਜਵਾਬ ਨਹੀਂ ਮਿਲਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+        });
+      }
+      return res.status(200).json({ success: true, a: String(text).trim().slice(0, 800) });
+    } catch (e) {
+      console.error("AI photo branch crash:", e);
+      return res.status(502).json({ success: false, message: "AI service ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ — ਥੋੜ੍ਹੀ ਉਡੀਕ ਪਿੱਛੋਂ ਦੁਬਾਰਾ।" });
+    }
+  }
+
   /* ═══════════ 📝 NOTES BRANCH ═══════════ */
   if (body.fn === "notes") {
     const passKey = String(body.pass || "").trim();

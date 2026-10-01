@@ -315,7 +315,33 @@
           <input type="text" id="askInput" placeholder="ਸਵਾਲ ਲਿਖੋ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦੀ ਰਾਜਧਾਨੀ ਕੀ ਹੈ?)" onkeydown="if(event.key==='Enter'){event.preventDefault(); askAi();}" style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:11px 12px; font-size:0.92rem; font-family:inherit; min-width:0;">
           <button id="askBtn" onclick="askAi()" class="btn btn-primary" style="flex-shrink:0;">ਪੁੱਛੋ ➔</button>
         </div>
-        <div id="askAnswer"><small style="color:#868e96;">✨ ਕੋਈ ਵੀ ਪੜ੍ਹਾਈ ਦਾ ਸਵਾਲ ਲਿਖੋ — ਤੁਰੰਤ one-line ਜਵਾਬ ਮਿਲੇਗਾ (ਰੋਜ਼ 20 ਸਵਾਲ)</small></div>
+        <div id="askAnswer"><small style="color:#868e96;">✨ ਕੋਈ ਵੀ ਪੜ੍ਹਾਈ ਦਾ ਸਵਾਲ ਲਿਖੋ — ਤੁਰੰਤ one-line ਜਵਾਬ (ਰੋਜ਼ 100 ਸਵਾਲ)</small></div>
+        <!-- 📝 AI Practice ਟੈਸਟ -->
+        <div style="border-top:1px dashed #dee2e6; margin:16px 0 12px;"></div>
+        <div style="font-weight:800; margin-bottom:8px;">📝 AI Practice ਟੈਸਟ <small style="color:#868e96; font-weight:600;">(ਆਪਣੀ ਮਰਜ਼ੀ ਦਾ topic, AI ਟੈਸਟ ਬਣਾਵੇਗਾ)</small></div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="text" id="prTopic" list="prTopics" placeholder="Topic ਲਿਖੋ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦਾ ਇਤਿਹਾਸ)" style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:11px 12px; font-size:0.92rem; font-family:inherit; min-width:0;">
+          <select id="prCount" style="border:2px solid #e9ecef; border-radius:10px; padding:11px 8px; font-size:0.9rem; font-family:inherit; flex-shrink:0;">
+            <option value="5">5 ਸਵਾਲ</option>
+            <option value="10">10 ਸਵਾਲ</option>
+          </select>
+        </div>
+        <datalist id="prTopics">
+          <option value="ਪੰਜਾਬ ਦਾ ਇਤਿਹਾਸ"></option>
+          <option value="ਪੰਜਾਬ ਦਾ ਭੂਗੋਲ"></option>
+          <option value="ਪੰਜਾਬ ਦਾ ਸਭਿਆਚਾਰ"></option>
+          <option value="ਭਾਰਤ ਦਾ ਸੰਵਿਧਾਨ"></option>
+          <option value="ਭਾਰਤ ਦਾ ਇਤਿਹਾਸ"></option>
+          <option value="ਮੌਜੂਦਾ ਸਵਾਲ (Current Affairs)"></option>
+          <option value="ਗਣਿਤ (Maths)"></option>
+          <option value="ਅੰਗਰੇਜ਼ੀ (English)"></option>
+          <option value="ਪੰਜਾਬੀ ਵਿਆਕਰਨ"></option>
+          <option value="ਕੰਪਿਊਟਰ"></option>
+          <option value="ਸਮਾਜ ਸ਼ਾਸਤਰ"></option>
+          <option value="ਜੀਵ ਵਿਗਿਆਨ"></option>
+        </datalist>
+        <button id="prBtn" onclick="genPractice()" class="btn btn-primary" style="width:100%;">📝 ਟੈਸਟ ਬਣਾਓ</button>
+        <div id="prOut"></div>
       </div>
       <!-- 💬 Sir tab -->
       <div id="askSirWrap" style="display:none;">
@@ -612,11 +638,11 @@
     if (!inp || !out) return;
     var q = String(inp.value || "").trim();
     if (q.length < 3) { alert("⚠️ ਸਵਾਲ ਲਿਖੋ ਜੀ।"); return; }
-    /* 🔢 daily limit — 20 ਸਵਾਲ/ਦਿਨ (free AI quota bachaun lai) */
+    /* 🔢 daily limit — 100 ਸਵਾਲ/ਦਿਨ (Google free key 1500 calls/din shared — practically unlimited) */
     var dk = "asp_ai_" + new Date().toDateString();
     var n = 0;
     try { n = parseInt(localStorage.getItem(dk) || "0", 10) || 0; } catch (e) {}
-    if (n >= 20) { alert("⚠️ ਅੱਜ ਦੀ AI limit (20 ਸਵਾਲ) ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"); return; }
+    if (n >= 100) { alert("⚠️ ਅੱਜ ਦੀ AI limit (100 ਸਵਾਲ) ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"); return; }
     if (btn) { btn.disabled = true; btn.innerText = "⏳"; }
     out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;"><b>🤖</b> ਸੋਚ ਰਿਹਾ ਹਾਂ... ⏳</div>';
     try {
@@ -632,10 +658,10 @@
       var d = await r.json();
       if (d && d.success) {
         try { localStorage.setItem(dk, String(n + 1)); } catch (e) {}
-        var left = 20 - (n + 1);
+        var left = 100 - (n + 1);
         out.innerHTML =
           '<div style="background:#ebfbee; border-left:3px solid #2b8a3e; border-radius:10px; padding:10px 12px; font-size:0.92rem; line-height:1.5;"><b>🤖 ਜਵਾਬ:</b> ' + esc(d.a) + '</div>' +
-          (left <= 5 ? '<small style="color:#868e96;">ਅੱਜ ਬਾਕੀ ' + left + ' ਸਵਾਲ</small>' : '');
+          (left <= 10 ? '<small style="color:#868e96;">ਅੱਜ ਬਾਕੀ ' + left + ' ਸਵਾਲ</small>' : '');
         inp.value = "";
       } else {
         out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "ਜਵਾਬ ਨਹੀਂ ਮਿਲਿਆ") + '</div>';
@@ -645,6 +671,107 @@
     }
     if (btn) { btn.disabled = false; btn.innerText = "ਪੁੱਛੋ ➔"; }
   };
+
+  /* ═══ 📝 AI PRACTICE TEST — topic de, AI MCQ test banaunda ═══ */
+  var PRACTICE = null;
+
+  window.genPractice = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var inp = document.getElementById("prTopic");
+    var cntSel = document.getElementById("prCount");
+    var btn = document.getElementById("prBtn");
+    var out = document.getElementById("prOut");
+    if (!inp || !out) return;
+    var topic = String(inp.value || "").trim();
+    if (topic.length < 2) { alert("⚠️ Topic ਲਿਖੋ ਜੀ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦਾ ਇਤਿਹਾਸ)।"); return; }
+    /* 🔢 practice daily limit — 30 ਟੈਸਟ/ਦਿਨ (ਹਰ ਟੈਸਟ 5-10 ਸਵਾਲ = 300 ਸਵਾਲ/ਦਿਨ ਤੱਕ) */
+    var pk = "asp_ai_pr_" + new Date().toDateString();
+    var pn = 0;
+    try { pn = parseInt(localStorage.getItem(pk) || "0", 10) || 0; } catch (e) {}
+    if (pn >= 30) { alert("⚠️ ਅੱਜ ਦੀ practice limit (30 ਟੈਸਟ) ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਜੀ।"); return; }
+    if (btn) { btn.disabled = true; btn.innerText = "⏳ ਟੈਸਟ ਬਣ ਰਿਹਆ ਹੈ..."; }
+    out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;"><b>📝</b> ਤੁਹਾਡਾ ਟੈਸਟ ਬਣ ਰਿਹਆ ਹੈ... ⏳</div>';
+    try {
+      var idToken = "";
+      if (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) {
+        idToken = await firebase.auth().currentUser.getIdToken();
+      }
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "practice", idToken: idToken, topic: topic, count: Number(cntSel && cntSel.value) === 10 ? 10 : 5 })
+      });
+      var d = await r.json();
+      if (d && d.success && d.questions && d.questions.length) {
+        try { localStorage.setItem(pk, String(pn + 1)); } catch (e) {}
+        PRACTICE = { list: d.questions, sel: {}, checked: false };
+        renderPractice();
+      } else {
+        out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "ਟੈਸਟ ਨਹੀਂ ਬਣਿਆ") + '</div>';
+      }
+    } catch (e) {
+      out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</div>';
+    }
+    if (btn) { btn.disabled = false; btn.innerText = "📝 ਟੈਸਟ ਬਣਾਓ"; }
+  };
+
+  window.selPracOpt = function (qi, oi) {
+    if (!PRACTICE || PRACTICE.checked) return;
+    PRACTICE.sel[qi] = oi;
+    renderPractice();
+  };
+
+  window.checkPractice = function () {
+    if (!PRACTICE || PRACTICE.checked) return;
+    PRACTICE.checked = true;
+    renderPractice();
+    var box = document.getElementById("prOut");
+    if (box) { box.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  };
+
+  function renderPractice() {
+    var out = document.getElementById("prOut");
+    if (!out || !PRACTICE) return;
+    var h = "";
+    var sc = 0;
+    var k, j;
+    for (k = 0; k < PRACTICE.list.length; k++) {
+      if (PRACTICE.sel[k] === PRACTICE.list[k].a) sc++;
+    }
+    if (PRACTICE.checked) {
+      var pct = Math.round((sc * 100) / PRACTICE.list.length);
+      h += '<div style="background:#fff3bf; border:2px solid #fab005; border-radius:12px; padding:12px; text-align:center; margin-bottom:12px;">' +
+        '<b style="font-size:1.1rem;">🎯 ਸਕੋਰ: ' + sc + '/' + PRACTICE.list.length + ' (' + pct + '%)</b><br>' +
+        '<small>' + (sc === PRACTICE.list.length ? "ਵਾਹ! ਪੂਰੇ ਸਹੀ 🎉🏆" : (pct >= 60 ? "ਚੰਗਾ ਹੈ! ਹੋਰ ਸੁਧਾਈਏ 💪" : "ਗ਼ਲਤ ਸਵਾਲ ਦੁਹਰਾਓ — ਅਗਲੀ ਵਾਰ ਪੱਕਾ ਵਧੇਗਾ 📚")) + '</small></div>';
+    }
+    for (k = 0; k < PRACTICE.list.length; k++) {
+      var q = PRACTICE.list[k];
+      h += '<div style="border:1px solid #e9ecef; border-radius:12px; padding:12px; margin-bottom:10px; background:#fff;">';
+      h += '<div style="font-weight:700; margin-bottom:8px; line-height:1.45;">' + (k + 1) + '. ' + esc(q.q) + '</div>';
+      for (j = 0; j < 4; j++) {
+        var st = "display:block; border:2px solid #e9ecef; border-radius:10px; padding:9px 11px; margin-bottom:6px; font-size:0.88rem; line-height:1.4;";
+        var mark = "";
+        if (PRACTICE.checked) {
+          if (j === q.a) { st += "border-color:#2b8a3e; background:#ebfbee; font-weight:700;"; mark = " ✓"; }
+          else if (PRACTICE.sel[k] === j) { st += "border-color:#e03131; background:#ffe3e3;"; mark = " ✗"; }
+          else { st += "opacity:0.65;"; }
+        } else if (PRACTICE.sel[k] === j) {
+          st += "border-color:#1971c2; background:#e7f5ff; font-weight:700;";
+        } else {
+          st += "cursor:pointer;";
+        }
+        h += '<div onclick="selPracOpt(' + k + ',' + j + ')" style="' + st + '">' + String.fromCharCode(65 + j) + ') ' + esc(q.o[j]) + mark + '</div>';
+      }
+      h += '</div>';
+    }
+    if (!PRACTICE.checked) {
+      h += '<button onclick="checkPractice()" class="btn btn-primary" style="width:100%;">✅ ਜਾਂਚੋ ਜਵਾਬ</button>';
+    } else {
+      h += '<button onclick="genPractice()" class="btn btn-primary" style="width:100%;">🔄 ਇਸੇ topic ਦਾ ਹੋਰ ਟੈਸਟ</button>';
+    }
+    out.innerHTML = h;
+  }
 })();
 </script>
 

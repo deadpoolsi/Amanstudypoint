@@ -225,6 +225,127 @@ module.exports = async (req, res) => {
     }
   }
 
+  /* ═══════════ 📝 AI PRACTICE TEST BRANCH — { fn: "practice", idToken, topic, count }
+     (AI khud MCQ test banaunda — JSON mode, 1 call = poora test) ═══════════ */
+  if (body.fn === "practice") {
+    const topic = String(body.topic || "").trim();
+    const count = Number(body.count) === 10 ? 10 : 5;
+    if (topic.length < 2)
+      return res.status(400).json({ success: false, message: "Topic ਲਿਖੋ ਜੀ।" });
+    if (topic.length > 120)
+      return res.status(400).json({ success: false, message: "ਛੋਟਾ ਜਿਹਾ topic ਲਿਖੋ।" });
+    if (!GEMINI_API_KEY)
+      return res.status(500).json({ success: false, message: "AI service ਹਾਲੇ off ਹੈ — admin ਨੂੰ ਦੱਸੋ।" });
+
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const isAdminP = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const mP = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mP && !isAdminP)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵਰਤ ਸਕਦੇ ਹਨ।" });
+
+    try {
+      const promptTxt =
+        "ਹੇਠ ਦਿੱਤੇ topic ਤੋਂ " + count + " multiple-choice ਸਵਾਲ ਬਣਾਓ — ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਵਿੱਚ, ਪੰਜਾਬ ਦੀਆਂ competitive exams (Police, Patwari, SSC, Banking, TET, Current Affairs) ਦੇ level ਤੇ। Topic: " + topic + "\n" +
+        'ਸਿਰਫ਼ STRICT JSON return ਕਰੋ — ਇੱਕ array, ਹਰ item: {"q": "ਸਵਾਲ", "o": ["ਜਵਾਬ1","ਜਵਾਬ2","ਜਵਾਬ3","ਜਵਾਬ4"], "a": ਸਹੀ ਜਵਾਬ ਦਾ index (0,1,2 ਜਾਂ 3)}। ਕੋਈ ਵਿਆਖਿਆ ਨਹੀਂ, ਕੋਈ markdown ਨਹੀਂ — ਸਿਰਫ਼ JSON।';
+      const callP = async function (model, withThinking) {
+        const genCfg = {
+          maxOutputTokens: count === 10 ? 3000 : 1800,
+          temperature: 0.4,
+          responseMimeType: "application/json"
+        };
+        if (withThinking) genCfg.thinkingConfig = { thinkingBudget: 0 };
+        const r = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + GEMINI_API_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: "ਤੂੰ exam questions generator ਹੈਂ — ਹਮੇਸ਼ਾ ਸਿਰਫ਼ valid JSON output ਕਰਦਾ ਹੈਂ, ਕੁਝ ਹੋਰ ਨਹੀਂ।" }] },
+              contents: [{ parts: [{ text: promptTxt }] }],
+              generationConfig: genCfg
+            })
+          }
+        );
+        return r.json().catch(() => null);
+      };
+      const pickTextP = function (d) {
+        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
+          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+          d.candidates[0].content.parts[0].text;
+      };
+
+      let text = "";
+      let lastErr = "";
+      for (let i = 0; i < GEMINI_MODELS.length && !text; i++) {
+        const model = GEMINI_MODELS[i];
+        let d = await callP(model, false);
+        text = pickTextP(d);
+        if (!text) {
+          lastErr = d && d.error
+            ? String(d.error.status || "") + " " + String(d.error.message || "")
+            : "no response";
+          console.error("AI practice fail (" + model + "): " + lastErr.slice(0, 250));
+          if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastErr)) break;
+          /* thinking ne saare tokens kha ley hove (MAX_TOKENS) — thinking off karke retry */
+          const frP = d && d.candidates && d.candidates[0] && d.candidates[0].finishReason;
+          if (frP === "MAX_TOKENS") {
+            d = await callP(model, true);
+            text = pickTextP(d);
+            if (!text) {
+              lastErr = d && d.error ? String(d.error.status || "") + " " + String(d.error.message || "") : "MAX_TOKENS empty";
+            }
+          }
+        }
+      }
+      if (!text) {
+        if (/API_KEY_INVALID/i.test(lastErr))
+          return res.status(401).json({ success: false, message: "Gemini API key ਗ਼ਲਤ ਹੈ — admin ENV check ਕਰੇ।" });
+        const quotaHit = /quota|429|RESOURCE_EXHAUSTED/i.test(lastErr);
+        return res.status(quotaHit ? 429 : 502).json({
+          success: false,
+          message: quotaHit
+            ? "ਅੱਜ ਦੀ AI limit ਪੂਰੀ ਹੋ ਗਈ — ਕੱਲ੍ਹ ਫੇਰ ਪੁੱਛੋ ਜੀ।"
+            : "AI ਟੈਸਟ ਨਹੀਂ ਬਣਾ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+        });
+      }
+
+      /* JSON parse + validate — AI ਥੋੜਾ ਵੀ ਬਦਸੂਰਤ ਜਵਾਬ ਦੇਵੇ ਤਾਂ ਸਾਫ਼ ਕਰੀਏ */
+      let qs = null;
+      try {
+        let raw = String(text).trim();
+        const fIdx = raw.indexOf("[");
+        const lIdx = raw.lastIndexOf("]");
+        if (fIdx !== -1 && lIdx > fIdx) raw = raw.slice(fIdx, lIdx + 1);
+        qs = JSON.parse(raw);
+      } catch (e) { qs = null; }
+      if (!Array.isArray(qs))
+        return res.status(502).json({ success: false, message: "AI ਟੈਸਟ ਨਹੀਂ ਬਣਾ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+      const clean = [];
+      for (let i = 0; i < qs.length && clean.length < count; i++) {
+        const it = qs[i];
+        if (it && typeof it.q === "string" && it.q.trim() &&
+            Array.isArray(it.o) && it.o.length === 4 &&
+            typeof it.o[0] === "string" && typeof it.o[1] === "string" &&
+            typeof it.o[2] === "string" && typeof it.o[3] === "string" &&
+            (it.a === 0 || it.a === 1 || it.a === 2 || it.a === 3)) {
+          clean.push({
+            q: it.q.slice(0, 400),
+            o: [it.o[0].slice(0, 200), it.o[1].slice(0, 200), it.o[2].slice(0, 200), it.o[3].slice(0, 200)],
+            a: it.a
+          });
+        }
+      }
+      if (!clean.length)
+        return res.status(502).json({ success: false, message: "AI ਟੈਸਟ ਨਹੀਂ ਬਣਾ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+      return res.status(200).json({ success: true, questions: clean });
+    } catch (e) {
+      console.error("AI practice branch crash:", e);
+      return res.status(502).json({ success: false, message: "AI service ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ — ਥੋੜ੍ਹੀ ਉਡੀਕ ਪਿੱਛੋਂ ਦੁਬਾਰਾ।" });
+    }
+  }
+
   /* ═══════════ 📝 NOTES BRANCH ═══════════ */
   if (body.fn === "notes") {
     const passKey = String(body.pass || "").trim();

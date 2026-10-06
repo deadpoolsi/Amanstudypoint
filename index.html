@@ -995,7 +995,10 @@
           await navigator.share({ files: [file], text: shareTxt });
           return;
         }
-      } catch (e) { /* share cancel ya unsupported — fallback neeche */ }
+      } catch (e) {
+        /* student ne share band kita — result view hi rakhde, fallback nahi */
+        if (e && (/abort/i.test(String(e.name || "")) || /cancel/i.test(String(e.message || "")))) return;
+      }
       var box = document.getElementById("prOut");
       if (box) {
         box.innerHTML = '<img src="' + dataUrl + '" alt="Score Card" style="max-width:100%; border-radius:12px; margin-bottom:8px; border:1px solid #e9ecef;">' +

@@ -428,6 +428,89 @@ module.exports = async (req, res) => {
     }
   }
 
+  /* ═══════════ 🏆 LEADERBOARD BRANCH — { fn: "leaderboard", idToken }
+     (hafte de top-10 — quizResults ton, server-side read, rules bypass) ═══════════ */
+  if (body.fn === "leaderboard") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const isAdmLb = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const mLb = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mLb && !isAdmLb)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵੇਖ ਸਕਦੇ ਹਨ।" });
+    try {
+      const all = await fbGet("quizResults");
+      if (!all || typeof all !== "object")
+        return res.status(200).json({ success: true, list: [] });
+      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const best = {};
+      Object.keys(all).forEach(function (k) {
+        const e = all[k];
+        if (!e || typeof e !== "object") return;
+        const at = Number(e.at) || 0;
+        if (at < weekAgo) return;
+        const sc = Number(e.score) || 0, tt = Number(e.total) || 0;
+        if (tt <= 0) return;
+        const pct = Math.round((sc * 100) / tt);
+        const nm = String(e.name || "Student").slice(0, 40).trim() || "Student";
+        if (!best[nm] || pct > best[nm].pct) best[nm] = { pct: pct, score: sc, total: tt, at: at };
+      });
+      const list = Object.keys(best).map(function (nm) {
+        return { name: nm, pct: best[nm].pct, score: best[nm].score, total: best[nm].total, at: best[nm].at };
+      }).sort(function (a, b) { return b.pct - a.pct || a.at - b.at; }).slice(0, 10);
+      return res.status(200).json({ success: true, list: list });
+    } catch (e) {
+      console.error("Leaderboard branch crash:", e);
+      return res.status(502).json({ success: false, message: "Leaderboard ਲੋਡ ਨਹੀਂ ਹੋਇਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
+  /* ═══════════ 📈 REPORT CARD BRANCH — { fn: "report", idToken }
+     (apni progress — userAttempts/$phone ton server-side read) ═══════════ */
+  if (body.fn === "report") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const isAdmRp = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const mRp = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mRp && !isAdmRp)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵੇਖ ਸਕਦੇ ਹਨ।" });
+    const phone = mRp ? mRp[1] : "";
+    if (!phone)
+      return res.status(200).json({ success: true, stats: null, message: "Admin ਦੀ ਆਪਣੀ report ਨਹੀਂ ਹੁੰਦੀ 🙂" });
+    try {
+      const att = await fbGet("userAttempts/" + encodeURIComponent(phone));
+      if (!att || typeof att !== "object")
+        return res.status(200).json({ success: true, stats: { attempts: 0, avg: 0, best: 0, questions: 0, recent: [] } });
+      let n = 0, sumPct = 0, bestPct = 0, questions = 0;
+      const rec = [];
+      Object.keys(att).forEach(function (k) {
+        const a = att[k];
+        if (!a || typeof a !== "object") return;
+        const tt = Number(a.total) || 0, sc = Number(a.score) || 0;
+        const pct = Number(a.percentage) || (tt > 0 ? Math.round((sc * 100) / tt) : 0);
+        n++; sumPct += pct;
+        if (pct > bestPct) bestPct = pct;
+        questions += tt;
+        rec.push({ title: String(a.title || k).slice(0, 80), score: sc, total: tt, pct: pct, at: Number(a.at) || 0 });
+      });
+      rec.sort(function (x, y) { return y.at - x.at; });
+      return res.status(200).json({
+        success: true,
+        stats: {
+          attempts: n,
+          avg: n ? Math.round(sumPct / n) : 0,
+          best: bestPct,
+          questions: questions,
+          recent: rec.slice(0, 5)
+        }
+      });
+    } catch (e) {
+      console.error("Report branch crash:", e);
+      return res.status(502).json({ success: false, message: "Report ਲੋਡ ਨਹੀਂ ਹੋਈ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
   /* ═══════════ 📝 NOTES BRANCH ═══════════ */
   if (body.fn === "notes") {
     const passKey = String(body.pass || "").trim();

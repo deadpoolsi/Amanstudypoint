@@ -428,6 +428,189 @@ module.exports = async (req, res) => {
     }
   }
 
+  /* ═══════════ 💰 REFERRAL: refsync (newbie jodda) ═══════════ */
+  if (body.fn === "refsync") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const mRs = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    const isAdminRs = String(payload.email).trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    if (!mRs && !isAdminRs)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵਰਤ ਸਕਦੇ ਹਨ।" });
+    const nb = mRs ? mRs[1] : "";
+    const ref = String(body.ref || "").replace(/\D/g, "").slice(0, 10);
+    if (!nb)
+      return res.status(400).json({ success: true, done: false, message: "" });
+    if (ref.length !== 10)
+      return res.status(400).json({ success: false, message: "Referral code ਗ਼ਲਤ ਹੈ।" });
+    if (ref === nb)
+      return res.status(400).json({ success: true, done: false, message: "ਆਪਣਾ ਆਪ refer ਨਹੀਂ ਕਰ ਸਕਦੇ 😊" });
+    try {
+      const refUser = await fbGet("users/" + encodeURIComponent(ref));
+      if (!refUser)
+        return res.status(400).json({ success: true, done: false, message: "ਇਹ referral code ਵਾਲਾ student ਨਹੀਂ ਮਿਲਿਆ।" });
+      const all = (await fbGet("referrals")) || {};
+      let nbSeen = false, refApproved = 0;
+      Object.keys(all).forEach(function (k) {
+        const e = all[k] || {};
+        if (e.nb === nb) nbSeen = true;
+        if (e.ref === ref && e.status === "approved") refApproved++;
+      });
+      if (nbSeen)
+        return res.status(200).json({ success: true, done: false, message: "ਤੁਸੀਂ ਪਹਿਲਾਂ ਹੀ refer ਹੋ ਚੁੱਕੇ ਹੋ।" });
+      if (refApproved >= 2)
+        return res.status(200).json({ success: true, done: false, message: "ਇਹ code ਦੀ reward limit (2) ਪੂਰੀ ਹੈ।" });
+      await fetch(FIREBASE_DB_URL + "/referrals.json?auth=" + encodeURIComponent(FIREBASE_DB_SECRET), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: ref, nb: nb, at: Date.now(), status: "pending" })
+      });
+      return res.status(200).json({ success: true, done: true, message: "Referral ਜੁੜ ਗਿਆ ✅ — ਦੋਸਤ 5 ਟੈਸਟ + 3 ਦਿਨ ਪੂਰੇ ਕਰੇ ਤਾਂ reward ਮਿਲੇਗਾ।" });
+    } catch (e) {
+      console.error("refsync crash:", e);
+      return res.status(502).json({ success: false, message: "ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ।" });
+    }
+  }
+
+  /* ═══════════ 💰 REFERRAL: refstatus (apan referrals dekhda) ═══════════ */
+  if (body.fn === "refstatus") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const mSt = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mSt)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵੇਖ ਸਕਦੇ ਹਨ।" });
+    const phone = mSt[1];
+    try {
+      const all = (await fbGet("referrals")) || {};
+      const mine = [];
+      let approved = 0;
+      Object.keys(all).forEach(function (k) {
+        const e = all[k] || {};
+        if (e.ref !== phone) return;
+        if (e.status === "approved") approved++;
+        const nbS = String(e.nb || "");
+        mine.push({
+          id: k,
+          nb: nbS.slice(0, 2) + "••••" + nbS.slice(-4),
+          at: Number(e.at) || 0,
+          status: String(e.status || "pending")
+        });
+      });
+      mine.sort(function (a, b) { return b.at - a.at; });
+      return res.status(200).json({ success: true, mine: mine.slice(0, 20), approved: approved, cap: 2 });
+    } catch (e) {
+      console.error("refstatus crash:", e);
+      return res.status(502).json({ success: false, message: "ਲੋਡ ਨਹੀਂ ਹੋਇਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
+  /* ═══════════ 💰 REFERRAL: reflist (admin — eligibility calculate) ═══════════ */
+  if (body.fn === "reflist") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email || String(payload.email).trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase())
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ admin।" });
+    try {
+      const all = (await fbGet("referrals")) || {};
+      const keys = Object.keys(all).sort(function (a, b) {
+        return (Number(all[b] && all[b].at) || 0) - (Number(all[a] && all[a].at) || 0);
+      }).slice(0, 30);
+      const list = [];
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        const e = all[k] || {};
+        const at = Number(e.at) || 0;
+        let tests = 0;
+        const days = {};
+        try {
+          const att = (await fbGet("userAttempts/" + encodeURIComponent(String(e.nb || "")))) || {};
+          Object.keys(att).forEach(function (ak) {
+            const a = att[ak];
+            if (!a) return;
+            const aAt = Number(a.at) || 0;
+            if (at && aAt < at) return;
+            tests++;
+            const d = new Date(aAt || Date.now());
+            days[d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate()] = 1;
+          });
+        } catch (e2) { /* attempts na mile = 0 */ }
+        const dayCount = Object.keys(days).length;
+        list.push({
+          id: k,
+          ref: String(e.ref || ""),
+          nb: String(e.nb || ""),
+          at: at,
+          status: String(e.status || "pending"),
+          tests: tests,
+          days: dayCount,
+          eligible: tests >= 5 && dayCount >= 3
+        });
+      }
+      return res.status(200).json({ success: true, list: list });
+    } catch (e) {
+      console.error("reflist crash:", e);
+      return res.status(502).json({ success: false, message: "ਲੋਡ ਨਹੀਂ ਹੋਇਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
+  /* ═══════════ 💰 REFERRAL: refact (admin approve/reject — approve = 3 din FULL pass) ═══════════ */
+  if (body.fn === "refact") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email || String(payload.email).trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase())
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ admin।" });
+    const id = String(body.id || "");
+    const action = String(body.action || "");
+    if (!id || (action !== "approve" && action !== "reject"))
+      return res.status(400).json({ success: false, message: "ਗ਼ਲਤ request।" });
+    try {
+      const rec = await fbGet("referrals/" + encodeURIComponent(id));
+      if (!rec || typeof rec !== "object")
+        return res.status(400).json({ success: false, message: "ਇਹ referral ਨਹੀਂ ਮਿਲਿਆ।" });
+      if (action === "reject") {
+        await fetch(FIREBASE_DB_URL + "/referrals/" + encodeURIComponent(id) + ".json?auth=" + encodeURIComponent(FIREBASE_DB_SECRET), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ref: rec.ref, nb: rec.nb, at: rec.at || Date.now(), status: "rejected" })
+        });
+        return res.status(200).json({ success: true, message: "Reject ਕਰ ਦਿੱਤਾ।" });
+      }
+      if (rec.status === "approved")
+        return res.status(400).json({ success: false, message: "ਇਹ ਪਹਿਲਾਂ ਹੀ approved ਹੈ।" });
+      const all = (await fbGet("referrals")) || {};
+      let refApproved = 0;
+      Object.keys(all).forEach(function (k) {
+        const e = all[k] || {};
+        if (e.ref === rec.ref && e.status === "approved") refApproved++;
+      });
+      if (refApproved >= 2)
+        return res.status(400).json({ success: false, message: "ਇਸ student ਦੀ reward limit (2) ਪੂਰੀ ਹੈ।" });
+      /* 🎁 3 din FULL pass — sare 8 categories */
+      const REWARD_DAYS = 3;
+      const cats = ["police", "patwari", "clerk", "ssc", "ptet1", "ptet2", "banking", "current"];
+      let granted = 0;
+      for (let ci = 0; ci < cats.length; ci++) {
+        let cur = 0;
+        try { cur = await fbGet("users/" + encodeURIComponent(rec.ref) + "/passes/" + cats[ci]); } catch (e2) {}
+        const base = Math.max(Date.now(), (typeof cur === "number") ? cur : 0);
+        await fetch(FIREBASE_DB_URL + "/users/" + encodeURIComponent(rec.ref) + "/passes/" + cats[ci] + ".json?auth=" + encodeURIComponent(FIREBASE_DB_SECRET), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(base + REWARD_DAYS * 24 * 60 * 60 * 1000)
+        });
+        granted++;
+      }
+      await fetch(FIREBASE_DB_URL + "/referrals/" + encodeURIComponent(id) + ".json?auth=" + encodeURIComponent(FIREBASE_DB_SECRET), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: rec.ref, nb: rec.nb, at: rec.at || Date.now(), status: "approved", rewAt: Date.now() })
+      });
+      return res.status(200).json({ success: true, granted: granted, message: "✅ 3 ਦਿਨ ਦਾ full pass ਮਿਲ ਗਿਆ (" + granted + " categories)।" });
+    } catch (e) {
+      console.error("refact crash:", e);
+      return res.status(502).json({ success: false, message: "ਨਹੀਂ ਹੋ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।" });
+    }
+  }
+
   /* ═══════════ 🏆 LEADERBOARD BRANCH — { fn: "leaderboard", idToken }
      (hafte de top-10 — quizResults ton, server-side read, rules bypass) ═══════════ */
   if (body.fn === "leaderboard") {

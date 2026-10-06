@@ -311,6 +311,7 @@
       </div>
       <!-- 🤖 AI tab -->
       <div id="askAiWrap">
+        <div id="tgtCard" style="background:#f8f0fc; border:1px solid #e599f7; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:0.85rem;"></div>
         <div style="display:flex; gap:8px; margin-bottom:10px;">
           <input type="text" id="askInput" placeholder="ਸਵਾਲ ਲਿਖੋ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦੀ ਰਾਜਧਾਨੀ ਕੀ ਹੈ?)" onkeydown="if(event.key==='Enter'){event.preventDefault(); askAi();}" style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:11px 12px; font-size:0.92rem; font-family:inherit; min-width:0;">
           <button id="micBtn" onclick="startVoice()" title="ਬੋਲ ਕੇ ਪੁੱਛੋ" style="flex-shrink:0; border:2px solid #1971c2; background:#e7f5ff; color:#1971c2; border-radius:10px; padding:0 14px; font-size:1.15rem; cursor:pointer; line-height:1;">🎙️</button>
@@ -343,11 +344,28 @@
         </datalist>
         <button id="prBtn" onclick="genPractice()" class="btn btn-primary" style="width:100%;">📝 ਟੈਸਟ ਬਣਾਓ</button>
         <div id="prOut"></div>
+        <button id="wrongBtn" onclick="toggleWrongBook()" style="width:100%; background:#fff; border:2px dashed #e03131; color:#c92a2a; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer; margin-top:12px;">❌ ਮੇਰੀ ਗ਼ਲਤੀਆਂ ਦੀ ਕਾਪੀ</button>
+        <div id="wrongBox" style="display:none; margin-top:10px;"></div>
       </div>
       <!-- 💬 Sir tab -->
       <div id="askSirWrap" style="display:none;">
         <div id="doubtBox">⏳ ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ...</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- 🏆 Leaderboard + 📈 Report Card -->
+<section id="rank" class="section">
+  <div class="container">
+    <h2>🏆 ਹਫ਼ਤਾਵਾਰੀ Toppers + 📈 ਮੇਰੀ Report</h2>
+    <p class="section-sub">ਮੁਕਾਬਲਾ ਕਰੋ, ਆਪਣੀ progress ਵੇਖੋ — ਹਫ਼ਤੇ ਦੇ top-10 ਵਿੱਚ ਆਓ!</p>
+    <div class="leaderboard-card" style="max-width:680px; margin:0 auto; text-align:left;">
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button onclick="loadLeaderboard()" class="btn btn-primary" style="flex:1;">🏆 Top-10 ਵੇਖੋ</button>
+        <button onclick="loadMyReport()" style="flex:1; background:#fff; color:#1971c2; border:2px solid #1971c2; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer;">📈 ਮੇਰੀ Report</button>
+      </div>
+      <div id="rankOut"><small style="color:#868e96;">ਹਫ਼ਤੇ ਦੇ ਸਭ ਤੋਂ ਵੱਧ % ਵਾਲੇ 10 students। ਤੁਸੀਂ ਵੀ ਟੈਸਟ ਦਿਓ, ਲਿਸਟ ਵਿੱਚ ਆਓ! 🚀</small></div>
     </div>
   </div>
 </section>
@@ -659,9 +677,12 @@
       var d = await r.json();
       if (d && d.success) {
         try { localStorage.setItem(dk, String(n + 1)); } catch (e) {}
+        addTgt(1);
+        LAST_ANS = String(d.a || "");
         var left = 100 - (n + 1);
         out.innerHTML =
-          '<div style="background:#ebfbee; border-left:3px solid #2b8a3e; border-radius:10px; padding:10px 12px; font-size:0.92rem; line-height:1.5;"><b>🤖 ਜਵਾਬ:</b> ' + esc(d.a) + '</div>' +
+          '<div style="background:#ebfbee; border-left:3px solid #2b8a3e; border-radius:10px; padding:10px 12px; font-size:0.92rem; line-height:1.5;"><b>🤖 ਜਵਾਬ:</b> ' + esc(d.a) +
+          ' <button onclick="speakLast()" title="ਸੁਣੋ" style="background:#d3f9d8; border:1px solid #2b8a3e; border-radius:99px; padding:2px 10px; cursor:pointer; font-size:0.85rem;">🔊</button></div>' +
           (left <= 10 ? '<small style="color:#868e96;">ਅੱਜ ਬਾਕੀ ' + left + ' ਸਵਾਲ</small>' : '');
         inp.value = "";
       } else {
@@ -765,7 +786,27 @@
   window.checkPractice = function () {
     if (!PRACTICE || PRACTICE.checked) return;
     PRACTICE.checked = true;
+    /* ❌ ਗ਼ਲਤੀਆਂ ਕਾਪੀ ਵਿੱਚ ਜਮ੍ਹਾਂ ਕਰੋ */
+    try {
+      var warr = JSON.parse(localStorage.getItem("asp_wrong_qs") || "[]");
+      for (var w = 0; w < PRACTICE.list.length; w++) {
+        var wq = PRACTICE.list[w];
+        if (PRACTICE.sel[w] !== wq.a) {
+          warr.push({
+            q: String(wq.q).slice(0, 300),
+            ok: String(wq.o[wq.a]).slice(0, 200),
+            mine: (PRACTICE.sel[w] !== undefined && PRACTICE.sel[w] !== null) ? String(wq.o[PRACTICE.sel[w]]).slice(0, 200) : "",
+            at: Date.now()
+          });
+        }
+      }
+      while (warr.length > 200) warr.shift();
+      localStorage.setItem("asp_wrong_qs", JSON.stringify(warr));
+    } catch (e) {}
+    /* 🎯 ਟੀਚਾ ਗਿਣਤੀ */
+    addTgt(PRACTICE.list.length);
     renderPractice();
+    updateWrongBtn();
     var box = document.getElementById("prOut");
     if (box) { box.scrollIntoView({ behavior: "smooth", block: "start" }); }
   };
@@ -808,10 +849,255 @@
     if (!PRACTICE.checked) {
       h += '<button onclick="checkPractice()" class="btn btn-primary" style="width:100%;">✅ ਜਾਂਚੋ ਜਵਾਬ</button>';
     } else {
-      h += '<button onclick="genPractice()" class="btn btn-primary" style="width:100%;">🔄 ਇਸੇ topic ਦਾ ਹੋਰ ਟੈਸਟ</button>';
+      h += '<div style="display:flex; gap:8px; margin-top:4px;">' +
+        '<button onclick="sharePractice()" class="btn btn-primary" style="flex:1;">📤 Score Card ਭੇਜੋ</button>' +
+        '<button onclick="genPractice()" style="flex:1; background:#fff; color:#1971c2; border:2px solid #1971c2; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer;">🔄 ਹੋਰ ਟੈਸਟ</button>' +
+        '</div>';
     }
     out.innerHTML = h;
   }
+
+  /* ═══ 🔊 SPEAK — AI jawaab bol ke sunaao ═══ */
+  var LAST_ANS = "";
+  window.speakLast = function () {
+    try {
+      var synth = window.speechSynthesis;
+      if (!synth) { alert("⚠️ ਤੁਹਾਡੇ browser ਵਿੱਚ ਬੋਲਣਾ ਨਹੀਂ ਚੱਲਦਾ।"); return; }
+      if (synth.speaking || synth.pending) { synth.cancel(); return; }
+      if (!LAST_ANS) return;
+      var u = new SpeechSynthesisUtterance(LAST_ANS.slice(0, 600));
+      u.lang = "pa-IN";
+      u.rate = 0.95;
+      var vs = synth.getVoices ? synth.getVoices() : [];
+      for (var vi = 0; vi < vs.length; vi++) {
+        if (/pa/i.test(vs[vi].lang || "")) { u.voice = vs[vi]; break; }
+      }
+      synth.speak(u);
+    } catch (e) {
+      alert("⚠️ ਬੋਲਣ ਵਿੱਚ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    }
+  };
+
+  /* ═══ 🎯 DAILY TARGET — ajj de 50 swal da target ═══ */
+  function tgtKey() { return "asp_tgt_" + new Date().toDateString(); }
+  function tgtVal() {
+    try { return parseInt(localStorage.getItem(tgtKey()) || "0", 10) || 0; } catch (e) { return 0; }
+  }
+  function addTgt(nv) {
+    try { localStorage.setItem(tgtKey(), String(tgtVal() + nv)); } catch (e) {}
+    updateTgtCard();
+  }
+  function updateTgtCard() {
+    var el = document.getElementById("tgtCard");
+    if (!el) return;
+    var v = tgtVal(), T = 50;
+    var pct = Math.min(100, Math.round((v * 100) / T));
+    el.innerHTML =
+      '<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><b>🎯 ਅੱਜ ਦਾ ਟੀਚਾ</b><span style="font-weight:700; color:' + (v >= T ? "#2b8a3e" : "#9c36b5") + '">' + (v >= T ? "ਪੂਰਾ! 🎉" : v + "/" + T + " ਸਵਾਲ") + '</span></div>' +
+      '<div style="background:#fff; border-radius:99px; height:10px; overflow:hidden;"><div style="width:' + pct + '%; height:100%; background:linear-gradient(90deg,#e599f7,#9c36b5);"></div></div>';
+  }
+
+  /* ═══ ❌ WRONG NOTEBOOK — galat swal di kapi ═══ */
+  function getWrong() {
+    try {
+      var a = JSON.parse(localStorage.getItem("asp_wrong_qs") || "[]");
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function updateWrongBtn() {
+    var b = document.getElementById("wrongBtn");
+    if (!b) return;
+    var n = getWrong().length;
+    b.innerText = n ? ("❌ ਮੇਰੀ ਗ਼ਲਤੀਆਂ ਦੀ ਕਾਪੀ (" + n + " ਸਵਾਲ)") : "❌ ਮੇਰੀ ਗ਼ਲਤੀਆਂ ਦੀ ਕਾਪੀ (ਖ਼ਾਲੀ)";
+  }
+  window.toggleWrongBook = function () {
+    var box = document.getElementById("wrongBox");
+    if (!box) return;
+    if (box.style.display === "none") {
+      var arr = getWrong();
+      if (!arr.length) {
+        box.innerHTML = '<div style="background:#f8f9fa; border-radius:10px; padding:12px; font-size:0.88rem; color:#495057;">ਹਾਲੇ ਕੋਈ ਗ਼ਲਤ ਸਵਾਲ ਨਹੀਂ — AI Practice ਟੈਸਟ ਦਿਓ, ਗ਼ਲਤ ਸਵਾਲ ਆਪੇ ਇੱਥੇ ਜਮ੍ਹਾਂ ਹੋਣਗੇ ✍️</div>';
+      } else {
+        var h = "";
+        for (var i = arr.length - 1; i >= 0 && i >= arr.length - 30; i--) {
+          var w = arr[i];
+          var dt = w.at ? new Date(w.at).toLocaleDateString() : "";
+          h += '<div style="border:1px solid #ffc9c9; border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff;">' +
+            '<div style="font-weight:700; font-size:0.88rem; margin-bottom:5px; line-height:1.4;">' + esc(w.q) + '</div>' +
+            '<div style="font-size:0.82rem; color:#2b8a3e; margin-bottom:2px;">✓ ਸਹੀ ਜਵਾਬ: <b>' + esc(w.ok) + '</b></div>' +
+            (w.mine ? '<div style="font-size:0.82rem; color:#c92a2a;">✗ ਤੁਸੀਂ ਚੁਣਿਆ: ' + esc(w.mine) + '</div>' : '<div style="font-size:0.82rem; color:#868e96;">✗ ਛੱਡ ਦਿੱਤਾ</div>') +
+            (dt ? '<small style="color:#adb5bd;">' + dt + '</small>' : '') +
+            '</div>';
+        }
+        h += '<button onclick="clearWrongBook()" style="width:100%; background:#ffe3e3; color:#c92a2a; border:2px solid #ffa8a8; border-radius:10px; padding:10px; font-weight:700; cursor:pointer;">🗑 ਪੂਰੀ ਕਾਪੀ ਸਾਫ਼ ਕਰੋ</button>';
+        box.innerHTML = h;
+      }
+      box.style.display = "block";
+    } else {
+      box.style.display = "none";
+    }
+  };
+  window.clearWrongBook = function () {
+    if (!confirm("ਪੂਰੀ ਗ਼ਲਤੀਆਂ ਦੀ ਕਾਪੀ ਸਾਫ਼ ਕਰਨੀ ਹੈ?")) return;
+    try { localStorage.removeItem("asp_wrong_qs"); } catch (e) {}
+    updateWrongBtn();
+    var box = document.getElementById("wrongBox");
+    if (box) box.style.display = "none";
+  };
+
+  /* ═══ 📤 SHARE CARD — practice score card WhatsApp ═══ */
+  window.sharePractice = async function () {
+    if (!PRACTICE || !PRACTICE.checked) return;
+    var sc = 0, k;
+    for (k = 0; k < PRACTICE.list.length; k++) {
+      if (PRACTICE.sel[k] === PRACTICE.list[k].a) sc++;
+    }
+    var total = PRACTICE.list.length;
+    var pct = Math.round((sc * 100) / total);
+    var topic = "";
+    var tinp = document.getElementById("prTopic");
+    if (tinp) topic = String(tinp.value || "Practice").trim().slice(0, 40) || "Practice";
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = 900; cv.height = 1200;
+      var x = cv.getContext("2d");
+      var g = x.createLinearGradient(0, 0, 0, 1200);
+      g.addColorStop(0, "#6741d9"); g.addColorStop(1, "#1c7ed6");
+      x.fillStyle = g; x.fillRect(0, 0, 900, 1200);
+      x.fillStyle = "#ffffff";
+      if (x.roundRect) { x.beginPath(); x.roundRect(60, 160, 780, 880, 36); x.fill(); }
+      else { x.fillRect(60, 160, 780, 880); }
+      x.textAlign = "center";
+      x.fillStyle = "#5f3dc4"; x.font = "bold 46px sans-serif";
+      x.fillText("AMAN STUDY POINT", 450, 265);
+      x.font = "58px sans-serif"; x.fillText("📝", 450, 370);
+      x.fillStyle = "#343a40"; x.font = "bold 42px sans-serif";
+      x.fillText("AI Practice ਟੈਸਟ", 450, 450);
+      x.fillStyle = "#495057"; x.font = "32px sans-serif";
+      x.fillText(topic, 450, 510);
+      x.fillStyle = "#2b8a3e"; x.font = "bold 130px sans-serif";
+      x.fillText(sc + "/" + total, 450, 680);
+      x.font = "bold 54px sans-serif";
+      x.fillText(pct + "%", 450, 755);
+      x.fillStyle = "#868e96"; x.font = "28px sans-serif";
+      var dd = new Date();
+      x.fillText(dd.getDate() + "/" + (dd.getMonth() + 1) + "/" + dd.getFullYear(), 450, 830);
+      x.fillStyle = "#ffffff"; x.font = "bold 36px sans-serif";
+      x.fillText("amanstudypoint.vercel.app", 450, 1105);
+      x.font = "27px sans-serif";
+      x.fillText("ਮੁਫ਼ਤ ਟੈਸਟ • ਨੋਟਸ • AI ਜਵਾਬ • ਮੁਕਾਬਲਾ", 450, 1150);
+      var dataUrl = cv.toDataURL("image/png");
+      var shareTxt = "ਮੈਂ Aman Study Point ਤੇ AI Practice ਟੈਸਟ ਦਿੱਤਾ — ਸਕੋਰ " + sc + "/" + total + " (" + pct + "%)! 📝 ਤੁਸੀਂ ਵੀ ਮੁਫ਼ਤ try ਕਰੋ 👉 amanstudypoint.vercel.app";
+      try {
+        var blob = await (await fetch(dataUrl)).blob();
+        var file = new File([blob], "score.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: shareTxt });
+          return;
+        }
+      } catch (e) { /* share cancel ya unsupported — fallback neeche */ }
+      var box = document.getElementById("prOut");
+      if (box) {
+        box.innerHTML = '<img src="' + dataUrl + '" alt="Score Card" style="max-width:100%; border-radius:12px; margin-bottom:8px; border:1px solid #e9ecef;">' +
+          '<a href="https://wa.me/?text=' + encodeURIComponent(shareTxt) + '" target="_blank" style="display:block; text-align:center; background:#25D366; color:#fff; border-radius:10px; padding:12px; font-weight:700; text-decoration:none; margin-bottom:6px;">📲 WhatsApp ਤੇ ਭੇਜੋ</a>' +
+          '<small style="color:#868e96;">Image ਨੂੰ ਦੇਰ ਤੱਕ ਦਬਾ ਕੇ save ਕਰੋ, ਫੇਰ gallery ਤੋਂ ਭੇਜ ਸਕਦੇ ਹੋ</small>' +
+          '<button onclick="renderPractice()" class="btn btn-primary" style="width:100%; margin-top:8px;">↩ ਵਾਪਸ ਨਤੀਜੇ ਤੇ</button>';
+      }
+    } catch (e) {
+      alert("⚠️ Card ਨਹੀਂ ਬਣ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।");
+    }
+  };
+  window.renderPractice = renderPractice;
+
+  /* ═══ 🏆 LEADERBOARD + 📈 REPORT CARD loaders ═══ */
+  async function getIdTokenSafe() {
+    try {
+      if (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) {
+        return await firebase.auth().currentUser.getIdToken();
+      }
+    } catch (e) {}
+    return "";
+  }
+  window.loadLeaderboard = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var out = document.getElementById("rankOut");
+    if (!out) return;
+    out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;">🏆 ਲੋਡ ਹੋ ਰਿਹਆ ਹੈ... ⏳</div>';
+    try {
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "leaderboard", idToken: await getIdTokenSafe() })
+      });
+      var d = await r.json();
+      if (d && d.success && d.list && d.list.length) {
+        var medals = ["🥇", "🥈", "🥉"];
+        var h = "";
+        for (var i = 0; i < d.list.length; i++) {
+          var e = d.list[i];
+          var rk = i < 3 ? medals[i] : (i + 1) + ".";
+          h += '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e9ecef; padding:9px 4px;">' +
+            '<span style="font-size:1rem;">' + rk + ' <b>' + esc(e.name) + '</b></span>' +
+            '<span style="font-weight:800; color:' + (i < 3 ? "#e8590c" : "#1971c2") + ';">' + e.pct + '% <small style="color:#868e96; font-weight:600;">(' + e.score + '/' + e.total + ')</small></span></div>';
+        }
+        h += '<small style="color:#868e96;">ਹਫ਼ਤੇ ਭਰ ਦੇ ਸਭ ਤੋਂ ਵੱਧ % ਵਾਲੇ — ਹਰ ਹਫ਼ਤੇ ਨਵੀਂ ਲਿਸਟ</small>';
+        out.innerHTML = h;
+      } else if (d && d.success) {
+        out.innerHTML = '<div style="background:#f8f9fa; border-radius:10px; padding:12px; font-size:0.88rem;">ਹਾਲੇ ਇਸ ਹਫ਼ਤੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਹੋਇਆ — ਪਹਿਲਾ ਤੁਸੀਂ ਬਣ ਜਾਓ! 🚀</div>';
+      } else {
+        out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "ਲੋਡ ਨਹੀਂ ਹੋਇਆ") + '</div>';
+      }
+    } catch (e) {
+      out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</div>';
+    }
+  };
+  window.loadMyReport = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var out = document.getElementById("rankOut");
+    if (!out) return;
+    out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;">📈 ਤੁਹਾਡੀ report ਬਣ ਰਹੀ ਹੈ... ⏳</div>';
+    try {
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "report", idToken: await getIdTokenSafe() })
+      });
+      var d = await r.json();
+      if (d && d.success && d.stats && d.stats.attempts) {
+        var s = d.stats;
+        var msg = s.avg >= 80 ? "ਕਮਾਲ! ਤੁਸੀਂ topper material ਹੋ 🏆" : (s.avg >= 60 ? "ਚੰਗਾ ਚੱਲ ਰਿਹਆ — ਹੋਰ ਸੁਧਾਈਏ 💪" : "ਮਿਹਨਤ ਵਧਾਓ — ਗ਼ਲਤੀਆਂ ਦੀ ਕਾਪੀ ਵਰਤੋ 📚");
+        var h = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">' +
+          '<div style="background:#e7f5ff; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.3rem; color:#1971c2;">' + s.attempts + '</b><br><small>ਟੈਸਟ ਦਿੱਤੇ</small></div>' +
+          '<div style="background:#fff3bf; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.3rem; color:#e8590c;">' + s.avg + '%</b><br><small>ਔਸਤ ਸਕੋਰ</small></div>' +
+          '<div style="background:#ebfbee; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.3rem; color:#2b8a3e;">' + s.best + '%</b><br><small>ਸਭ ਤੋਂ ਵਧੀਆ</small></div>' +
+          '<div style="background:#f8f0fc; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.3rem; color:#9c36b5;">' + s.questions + '</b><br><small>ਕੁੱਲ ਸਵਾਲ</small></div>' +
+          '</div><div style="text-align:center; margin-bottom:10px; font-weight:700;">' + msg + '</div>';
+        if (s.recent && s.recent.length) {
+          h += '<div style="font-weight:800; margin-bottom:6px;">🕐 ਹਾਲੀਆ ਟੈਸਟ:</div>';
+          for (var i = 0; i < s.recent.length; i++) {
+            var rc = s.recent[i];
+            var dt = rc.at ? new Date(rc.at).toLocaleDateString() : "";
+            h += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid #e9ecef; padding:8px 4px; font-size:0.86rem;">' +
+              '<span>' + esc(rc.title || "ਟੈਸਟ") + '</span>' +
+              '<span><b>' + rc.pct + '%</b> <small style="color:#868e96;">(' + rc.score + '/' + rc.total + (dt ? " • " + dt : "") + ')</small></span></div>';
+          }
+        }
+        out.innerHTML = h;
+      } else if (d && d.success) {
+        out.innerHTML = '<div style="background:#f8f9fa; border-radius:10px; padding:12px; font-size:0.9rem;">ਹਾਲੇ ਕੋਈ ਟੈਸਟ ਨਹੀਂ ਦਿੱਤਾ — ਟੈਸਟ ਸੈਕਸ਼ਨ ਤੋਂ ਸ਼ੁਰੂਆਤ ਕਰੋ! 🚀</div>';
+      } else {
+        out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "report ਨਹੀਂ ਬਣੀ") + '</div>';
+      }
+    } catch (e) {
+      out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</div>';
+    }
+  };
+
+  /* init */
+  updateTgtCard();
+  updateWrongBtn();
 })();
 </script>
 

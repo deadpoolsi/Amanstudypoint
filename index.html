@@ -366,6 +366,16 @@
         <button onclick="loadMyReport()" style="flex:1; background:#fff; color:#1971c2; border:2px solid #1971c2; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer;">📈 ਮੇਰੀ Report</button>
       </div>
       <div id="rankOut"><small style="color:#868e96;">ਹਫ਼ਤੇ ਦੇ ਸਭ ਤੋਂ ਵੱਧ % ਵਾਲੇ 10 students। ਤੁਸੀਂ ਵੀ ਟੈਸਟ ਦਿਓ, ਲਿਸਟ ਵਿੱਚ ਆਓ! 🚀</small></div>
+      <div style="border-top:1px dashed #dee2e6; margin:16px 0 12px;"></div>
+      <div style="font-weight:800; margin-bottom:6px;">💰 Refer & Earn <small style="color:#868e96; font-weight:600;">— ਦੋਸਤ ਭੇਜੋ, 3 ਦਿਨ ਦਾ ਮੁਫ਼ਤ FULL pass ਲਵੋ</small></div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="text" id="refLink" readonly value="Login ਕਰੋ ਤਾਂ ਤੁਹਾਡਾ link ਬਣੇਗਾ..." style="flex:1; border:2px solid #e9ecef; border-radius:10px; padding:10px 12px; font-size:0.78rem; font-family:inherit; min-width:0; background:#f8f9fa; color:#495057;">
+        <button onclick="copyRefLink()" title="Copy" style="flex-shrink:0; background:#e7f5ff; color:#1971c2; border:2px solid #1971c2; border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer;">📋</button>
+      </div>
+      <button onclick="shareRefLink()" style="width:100%; background:#25D366; color:#fff; border:none; border-radius:10px; padding:11px; font-weight:800; font-size:0.85rem; cursor:pointer; margin-bottom:8px;">📲 WhatsApp ਤੇ ਭੇਜੋ</button>
+      <div id="refMsg"><small style="color:#868e96;">ਦੋਸਤ ਤੁਹਾਡੇ link ਤੋਂ ਆਏ, <b>5 ਟੈਸਟ + 3 ਦਿਨ</b> ਪੂਰੇ ਕਰੇ, admin approve ਕਰੇ → ਤੁਹਾਨੂੰ <b>3 ਦਿਨ ਮੁਫ਼ਤ FULL pass</b> (ਸਾਰੀਆਂ categories)। ਹੱਥ 2 ਦੋਸਤਾਂ ਤੱਕ। 🎁</small></div>
+      <button onclick="loadMyReferrals()" style="width:100%; background:#fff; color:#9c36b5; border:2px solid #9c36b5; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer; margin-top:8px;">🏆 ਮੇਰੇ Referrals ਵੇਖੋ</button>
+      <div id="refList" style="display:none; margin-top:10px;"></div>
     </div>
   </div>
 </section>
@@ -624,6 +634,16 @@
 <script>
 /* 🤖 AI STUDY HELPER — Gemini rahi one-line answers (fn:"ask" branch, get-ca.js) */
 (function () {
+  /* 💰 Referral link capture — site.com/?ref=98765xxxxx */
+  try {
+    var qp = new URLSearchParams(window.location.search);
+    var refCode = qp.get("ref");
+    if (refCode && /^\d{10}$/.test(refCode)) {
+      localStorage.setItem("asp_ref", refCode);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  } catch (e) {}
+
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -1098,9 +1118,103 @@
     }
   };
 
+  /* ═══ 💰 REFERRAL — link, share, status, sync ═══ */
+  function myRefLink() {
+    var phone = localStorage.getItem("pp_session");
+    return phone ? ("https://amanstudypoint.vercel.app/?ref=" + phone) : "";
+  }
+  function initRefLink() {
+    var ri = document.getElementById("refLink");
+    var lnk = myRefLink();
+    if (ri) { ri.value = lnk || "Login ਕਰੋ ਤਾਂ ਤੁਹਾਡਾ link ਬਣੇਗਾ..."; }
+  }
+  window.copyRefLink = function () {
+    var lnk = myRefLink();
+    if (!lnk) { alert("ਪਹਿਲਾਂ login ਕਰੋ ਜੀ।"); window.location.href = "login.html"; return; }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lnk).then(function () { alert("✅ Link copy ਹੋ ਗਿਆ — ਹੁਣ ਦੋਸਤਾਂ ਨੂੰ ਭੇਜੋ!"); }, function () { fallbackCopy(lnk); });
+        return;
+      }
+    } catch (e) {}
+    fallbackCopy(lnk);
+  };
+  function fallbackCopy(txt) {
+    var ri = document.getElementById("refLink");
+    if (ri) { ri.select(); try { document.execCommand("copy"); alert("✅ Link copy ਹੋ ਗਿਆ!"); } catch (e) { alert("Copy ਨਹੀਂ ਹੋਇਆ — link ਲਿਖ ਲਵੋ: " + txt); } }
+  }
+  window.shareRefLink = function () {
+    var lnk = myRefLink();
+    if (!lnk) { alert("ਪਹਿਲਾਂ login ਕਰੋ ਜੀ।"); window.location.href = "login.html"; return; }
+    var txt = "ਆ ਮੈਂ ਪੰਜਾਬ ਦੀਆਂ competitive exams (Police, Patwari, SSC...) ਦੀ ਮੁਫ਼ਤ ਤਿਆਰੀ ਇੱਥੇ ਕਰ ਰਿਹਾਂ ਹਾਂ — ਟੈਸਟ, ਨੋਟਸ, AI ਤੋਂ ਜਵਾਬ ਸਭ ਕੁਝ! 📚 ਤੂੰ ਵੀ ਜੁੜ: " + lnk;
+    if (navigator.share) {
+      try { navigator.share({ text: txt }); return; } catch (e) {}
+    }
+    window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
+  };
+  window.loadMyReferrals = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var box = document.getElementById("refList");
+    if (!box) return;
+    box.style.display = "block";
+    box.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;">⏳ ਲੋਡ ਹੋ ਰਿਹਆ...</div>';
+    try {
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "refstatus", idToken: await getIdTokenSafe() })
+      });
+      var d = await r.json();
+      if (d && d.success) {
+        var h = '<div style="font-size:0.85rem; margin-bottom:6px;">🎁 Rewards ਮਿਲੇ: <b>' + d.approved + "/" + d.cap + '</b></div>';
+        if (!d.mine || !d.mine.length) {
+          h += '<div style="background:#f8f9fa; border-radius:10px; padding:10px; font-size:0.85rem;">ਹਾਲੇ ਕੋਈ ਦੋਸਤ ਨਹੀਂ ਆਇਆ — ਉੱਪਰੋਂ link ਭੇਜੋ! 📲</div>';
+        } else {
+          for (var i = 0; i < d.mine.length; i++) {
+            var m = d.mine[i];
+            var st = m.status === "approved" ? "✅ Reward ਮਿਲਿਆ" : (m.status === "rejected" ? "❌ Reject" : "⏳ Pending");
+            var dt = m.at ? new Date(m.at).toLocaleDateString() : "";
+            h += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid #e9ecef; padding:8px 4px; font-size:0.85rem;"><span>👤 ' + esc(m.nb) + '</span><span>' + st + ' <small style="color:#868e96;">' + dt + '</small></span></div>';
+          }
+        }
+        box.innerHTML = h;
+      } else {
+        box.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ' + esc((d && d.message) || "ਲੋਡ ਨਹੀਂ ਹੋਇਆ") + '</div>';
+      }
+    } catch (e) {
+      box.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ</div>';
+    }
+  };
+  async function attemptRefSync() {
+    var phone = localStorage.getItem("pp_session");
+    var ref = null;
+    try { ref = localStorage.getItem("asp_ref"); } catch (e) {}
+    if (!phone || !ref) return;
+    var idToken = await getIdTokenSafe();
+    if (!idToken) return;
+    try {
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "refsync", idToken: idToken, ref: ref })
+      });
+      var d = await r.json();
+      if (d && d.success) {
+        try { localStorage.removeItem("asp_ref"); } catch (e) {}
+        if (d.message) {
+          var rm = document.getElementById("refMsg");
+          if (rm) rm.innerHTML = '<div style="background:#fff3bf; border-radius:10px; padding:8px 12px; font-size:0.85rem;">' + esc(d.message) + '</div>';
+        }
+      }
+    } catch (e) {}
+  }
+
   /* init */
   updateTgtCard();
   updateWrongBtn();
+  initRefLink();
+  setTimeout(attemptRefSync, 3000);
 })();
 </script>
 

@@ -610,6 +610,42 @@ Ans: B"></textarea>
 
   <!-- TAB 5: ⚙️ SETTINGS & PYQ (Notice, Poster, Today's Day, PYQ) -->
   <div id="tab_settings" class="tab-content-panel">
+    <!-- 📅 Daily Tools: ਅੱਜ ਦਾ ਸਵਾਲ + Countdown + WhatsApp Channel -->
+    <div class="card-admin" style="border:2px solid #1971c2; background:#f5f9ff;">
+      <h3 style="color:#1971c2; margin-top:0;">📅 Daily Tools (ਅੱਜ ਦਾ ਸਵਾਲ + ⏰ Countdown + 📢 WhatsApp)</h3>
+      <div style="font-size:0.78rem; color:#868e96; margin-bottom:10px;">ਅੱਜ ਦਾ ਸਵਾਲ ਰੋਜ਼ set ਕਰੋ — students ਰੋਜ਼ ਆਉਣਗੇ! ⏰ Countdown home 'ਤੇ ਵੱਡਾ ਬਾਕਸ ਬਣਾਉਂਦਾ ਹੈ।</div>
+      <div style="border:1px dashed #1971c2; border-radius:8px; padding:10px; margin-bottom:12px; background:#fff;">
+        <b style="font-size:0.85rem;">📅 ਅੱਜ ਦਾ ਸਵਾਲ:</b>
+        <input type="text" id="dqQ" placeholder="ਸਵਾਲ ਲਿਖੋ (ਜਿਵੇਂ: ਪੰਜਾਬ ਦੀ ਰਾਜਧਾਨੀ ਕੀ ਹੈ?)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; margin:6px 0;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <input type="text" id="dqO1" placeholder="ਜਵਾਬ A" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <input type="text" id="dqO2" placeholder="ਜਵਾਬ B" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <input type="text" id="dqO3" placeholder="ਜਵਾਬ C" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <input type="text" id="dqO4" placeholder="ਜਵਾਬ D" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;">
+          <label style="font-size:0.78rem; font-weight:700;">ਸਹੀ ਜਵਾਬ:</label>
+          <select id="dqA" style="padding:7px; border-radius:6px; border:1px solid #ccc;"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
+          <input type="date" id="dqDate" style="padding:6px; border-radius:6px; border:1px solid #ccc;">
+          <button onclick="saveDailyQ()" class="btn btn-primary btn-small">💾 Save</button>
+        </div>
+      </div>
+      <div style="border:1px dashed #fab005; border-radius:8px; padding:10px; margin-bottom:12px; background:#fff;">
+        <b style="font-size:0.85rem;">⏰ Exam Countdown:</b>
+        <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+          <input type="text" id="cdName" placeholder="ਪ੍ਰੀਖਿਆ ਦਾ ਨਾਮ (ਜਿਵੇਂ: Punjab Police)" style="flex:1; min-width:150px; padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <input type="date" id="cdDate" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <button onclick="saveCountdown()" class="btn btn-primary btn-small">💾 Save</button>
+        </div>
+      </div>
+      <div style="border:1px dashed #2b8a3e; border-radius:8px; padding:10px; background:#fff;">
+        <b style="font-size:0.85rem;">📢 WhatsApp Channel link:</b>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" id="waLink" placeholder="https://whatsapp.com/channel/..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+          <button onclick="saveWaLink()" class="btn btn-primary btn-small">💾 Save</button>
+        </div>
+      </div>
+    </div>
     <!-- 🔔 Job Alerts Manager (ਨੌਕਰੀ ਖ਼ਬਰਾਂ) -->
     <div class="card-admin" style="border: 2px solid #e8590c; background: #fff9f5;">
       <h3 style="color:#e8590c; margin-top:0;">🔔 ਨੌਕਰੀ ਖ਼ਬਰਾਂ (Job Alerts)</h3>
@@ -988,7 +1024,7 @@ const ADMIN_TAB_LOADERS = {
   tab_books: ["loadBooksSectionState", "loadAdminNotesList", "loadBooksCouponConfig", "loadSelectedBookData", "loadBookRequests"],
   tab_results: ["loadQuizResults", "loadReferrals"],
   tab_doubts: ["loadDoubtsAdmin"],
-  tab_settings: ["loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs"]
+  tab_settings: ["loadJobAlerts", "loadPopupPosterConfig", "loadTodayDayConfig", "loadAdminPYQs", "loadDailyTools"]
 };
 const _adminTabsLoaded = {};
 function ensureAdminTabLoaded(tabId) {
@@ -1921,6 +1957,64 @@ function saveTodayDayConfig() {
   if (!title) return alert("ਦਿਨ ਦਾ ਨਾਮ ਲਿਖੋ!");
   db.ref("siteSettings/todayDay").set({ title, why, theme, active, updatedAt: new Date().toLocaleDateString('pa-IN') })
     .then(() => alert("✅ ਅੱਜ ਦਾ ਦਿਨ ਅੱਪਡੇਟ ਹੋ ਗਿਆ!"));
+}
+
+/* ═══ 📅 Daily Tools: ਅੱਜ ਦਾ ਸਵਾਲ + ⏰ Countdown + 📢 WhatsApp Channel ═══ */
+function loadDailyTools() {
+  const t = new Date();
+  const tStr = t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+  const dqDateEl = document.getElementById("dqDate");
+  if (dqDateEl && !dqDateEl.value) dqDateEl.value = tStr;
+  db.ref("siteSettings/dailyQ").once("value").then(snap => {
+    const d = snap.val() || {};
+    if (document.getElementById("dqQ")) document.getElementById("dqQ").value = d.q || "";
+    if (document.getElementById("dqO1")) document.getElementById("dqO1").value = (d.o && d.o[0]) || "";
+    if (document.getElementById("dqO2")) document.getElementById("dqO2").value = (d.o && d.o[1]) || "";
+    if (document.getElementById("dqO3")) document.getElementById("dqO3").value = (d.o && d.o[2]) || "";
+    if (document.getElementById("dqO4")) document.getElementById("dqO4").value = (d.o && d.o[3]) || "";
+    if (document.getElementById("dqA")) document.getElementById("dqA").value = String(d.a || 0);
+    if (dqDateEl && d.date) dqDateEl.value = d.date;
+  }).catch(() => {});
+  db.ref("siteSettings/examCountdown").once("value").then(snap => {
+    const c = snap.val() || {};
+    if (document.getElementById("cdName")) document.getElementById("cdName").value = c.name || "";
+    if (document.getElementById("cdDate")) document.getElementById("cdDate").value = c.date || "";
+  }).catch(() => {});
+  db.ref("siteSettings/whatsappChannel").once("value").then(snap => {
+    if (document.getElementById("waLink")) document.getElementById("waLink").value = snap.val() || "";
+  }).catch(() => {});
+}
+
+function saveDailyQ() {
+  const q = document.getElementById("dqQ").value.trim();
+  const o = [1, 2, 3, 4].map(i => document.getElementById("dqO" + i).value.trim());
+  const a = parseInt(document.getElementById("dqA").value, 10);
+  const date = document.getElementById("dqDate").value || "";
+  if (!q || o.some(x => !x)) return alert("ਸਵਾਲ ਤੇ ਸਾਰੇ 4 ਜਵਾਬ ਲਿਖੋ!");
+  if (!date) return alert("ਤਾਰੀਖ਼ ਚੁਣੋ!");
+  db.ref("siteSettings/dailyQ").set({ q, o, a, date })
+    .then(() => alert("✅ ਅੱਜ ਦਾ ਸਵਾਲ save ਹੋ ਗਿਆ! Home 'ਤੇ ਦਿਸੇਗਾ।"))
+    .catch(err => alert("⚠️ " + err.message));
+}
+
+function saveCountdown() {
+  const name = document.getElementById("cdName").value.trim();
+  const date = document.getElementById("cdDate").value || "";
+  if (!name) return alert("ਪ੍ਰੀਖਿਆ ਦਾ ਨਾਮ ਲਿਖੋ!");
+  if (!date) return alert("ਤਾਰੀਖ਼ ਚੁਣੋ!");
+  if (new Date(date + "T23:59:59").getTime() < Date.now()) return alert("⚠️ ਬੀਤੀ ਤਾਰੀਖ਼ ਨਹੀਂ — ਭਵਿੱਖ ਦੀ ਚੁਣੋ!");
+  db.ref("siteSettings/examCountdown").set({ name, date })
+    .then(() => alert("✅ Countdown save! Home 'ਤੇ ਬੈਨਰ ਦਿਸੇਗਾ।"))
+    .catch(err => alert("⚠️ " + err.message));
+}
+
+function saveWaLink() {
+  const v = document.getElementById("waLink").value.trim();
+  if (v && !/^https?:\/\//.test(v)) return alert("⚠️ Link http/https ਨਾਲ ਸ਼ੁਰੂ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ!");
+  const ref = db.ref("siteSettings/whatsappChannel");
+  const done = ok => alert(ok ? "✅ WhatsApp link save!" : "✅ WhatsApp button ਹਟਾ ਦਿੱਤਾ।");
+  if (!v) ref.remove().then(() => done(false)).catch(err => alert("⚠️ " + err.message));
+  else ref.set(v).then(() => done(true)).catch(err => alert("⚠️ " + err.message));
 }
 
 /* ═══ 📚 Books Section Toggle (ON/OFF) ═══ */

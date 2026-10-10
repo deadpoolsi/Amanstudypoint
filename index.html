@@ -66,11 +66,86 @@
 </script>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://aman-study-point-default-rtdb.firebaseio.com">
+
+<!-- 🌙 ASP Dark Mode (shared) — toggle button bottom-left -->
+<style id="aspDarkCss">
+html.asp-dark, html.asp-dark body { background:#15171c !important; }
+html.asp-dark { color-scheme: dark; }
+html.asp-dark body, html.asp-dark p, html.asp-dark span, html.asp-dark div, html.asp-dark small,
+html.asp-dark label, html.asp-dark li, html.asp-dark td, html.asp-dark th, html.asp-dark a { color:#c9ced8; }
+html.asp-dark h1, html.asp-dark h2, html.asp-dark h3, html.asp-dark h4, html.asp-dark b { color:#e9edf4; }
+html.asp-dark .card, html.asp-dark .note-row, html.asp-dark .month-row, html.asp-dark .ca-bullet,
+html.asp-dark .modal-box, html.asp-dark .login-card, html.asp-dark .leaderboard-card,
+html.asp-dark .pass-plan-card, html.asp-dark .subtab, html.asp-dark .tab.active {
+  background:#1d2027 !important; border-color:#333946 !important; color:#d8dce4;
+}
+html.asp-dark .tabs { background:#1a1d23 !important; }
+html.asp-dark .btn-ghost { background:#22262e !important; border-color:#3a4150 !important; color:#c9ced8 !important; }
+html.asp-dark .topbar { background:#b3470c !important; }
+html.asp-dark [style*="background: #fff"], html.asp-dark [style*="background:#fff"],
+html.asp-dark [style*="background: #ffffff"], html.asp-dark [style*="background: white"],
+html.asp-dark [style*="background:#ffffff"] { background:#1d2027 !important; border-color:#333946 !important; }
+html.asp-dark [style*="background: #f8f9fa"], html.asp-dark [style*="background:#f8f9fa"],
+html.asp-dark [style*="background: #f4f6f8"], html.asp-dark [style*="background: #f4f5f7"],
+html.asp-dark [style*="background: #f1f3f5"], html.asp-dark [style*="background:#f1f3f5"] { background:#1a1d23 !important; }
+html.asp-dark [style*="#e7f5ff"] { background:#152536 !important; }
+html.asp-dark [style*="#ebfbee"] { background:#14251a !important; }
+html.asp-dark [style*="#fff3bf"] { background:#2a2410 !important; }
+html.asp-dark [style*="#ffe3e3"] { background:#2e1a1a !important; }
+html.asp-dark [style*="#f8f0fc"] { background:#231b29 !important; }
+html.asp-dark [style*="#fff4e6"] { background:#292015 !important; }
+html.asp-dark [style*="#e9ecef"], html.asp-dark [style*="#dee2e6"], html.asp-dark [style*="#edf2f7"] { border-color:#333946 !important; }
+html.asp-dark [style*="color: #495057"], html.asp-dark [style*="color:#495057"],
+html.asp-dark [style*="color: #343a40"], html.asp-dark [style*="color:#343a40"],
+html.asp-dark [style*="color: #212529"], html.asp-dark [style*="color: #333"] { color:#c9ced8 !important; }
+html.asp-dark [style*="color: #868e96"], html.asp-dark [style*="color:#868e96"],
+html.asp-dark [style*="color: #adb5bd"], html.asp-dark [style*="color: #888"] { color:#8b93a2 !important; }
+html.asp-dark [style*="color: #fff"], html.asp-dark [style*="color:#fff"],
+html.asp-dark [style*="color: #ffffff"] { color:#fff !important; }
+html.asp-dark input, html.asp-dark select, html.asp-dark textarea {
+  background:#22262e !important; border-color:#3a4150 !important; color:#d8dce4 !important;
+}
+html.asp-dark input::placeholder, html.asp-dark textarea::placeholder { color:#7c8494 !important; }
+#aspDarkBtn {
+  position:fixed; bottom:18px; left:18px; z-index:99999; width:46px; height:46px;
+  border-radius:50%; border:1.5px solid #dee2e6; background:rgba(255,255,255,0.94);
+  color:#343a40; font-size:1.2rem; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.25);
+  line-height:1; -webkit-tap-highlight-color:transparent;
+}
+html.asp-dark #aspDarkBtn { background:rgba(30,33,40,0.95); color:#fff; border-color:#3a4150; }
+</style>
+<script>
+(function () {
+  var on = false;
+  try { on = (localStorage.getItem("asp_dark") === "1"); } catch (e) {}
+  if (on) document.documentElement.classList.add("asp-dark");
+  function initBtn() {
+    if (on && document.body) document.body.classList.add("dark-mode");
+    if (document.getElementById("aspDarkBtn")) return;
+    var b = document.createElement("button");
+    b.id = "aspDarkBtn";
+    b.title = "Dark / Light mode";
+    b.innerHTML = on ? "\u2600\uFE0F" : "\uD83C\uDF19";
+    b.onclick = function () {
+      var r = document.documentElement;
+      r.classList.toggle("asp-dark");
+      if (document.body) document.body.classList.toggle("dark-mode");
+      on = r.classList.contains("asp-dark");
+      try { localStorage.setItem("asp_dark", on ? "1" : "0"); } catch (e) {}
+      b.innerHTML = on ? "\u2600\uFE0F" : "\uD83C\uDF19";
+    };
+    document.body.appendChild(b);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initBtn);
+  else initBtn();
+})();
+</script>
 </head>
 <body>
 
 <!-- Live Notice Bar -->
 <div class="top-announcement" id="topAnnouncement" style="display:none;"></div>
+<div id="examCountdown" style="display:none;"></div>
 
 <header>
   <div class="container header-inner" style="display: flex; align-items: center; justify-content: space-between;">
@@ -268,6 +343,17 @@
   </div>
 </section>
 
+<!-- 📅 ਅੱਜ ਦਾ ਸਵਾਲ (Daily Challenge — sab layi iko) -->
+<section class="container" id="dailyQSection" style="display:none; margin-top:18px; margin-bottom:15px;">
+  <div style="background: linear-gradient(135deg, #e7f5ff, #d0ebff); border: 2px solid #1971c2; border-radius: 14px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span style="background:#1971c2; color:#fff; font-size:0.75rem; font-weight:bold; padding:3px 10px; border-radius:20px;">📅 ਅੱਜ ਦਾ ਸਵਾਲ (ਸਭ ਲਈ ਇੱਕੋ)</span>
+      <span style="font-size:0.75rem; color:#1971c2; font-weight:700;">ਸਹੀ ਜਵਾਬ = +10 🪙</span>
+    </div>
+    <div id="dailyQBox"></div>
+  </div>
+</section>
+
 <!-- 🎯 Daily Quiz -->
 <section id="quiz" class="section" style="padding-top:15px; padding-bottom:30px;">
   <div class="container">
@@ -376,6 +462,12 @@
       <div id="refMsg"><small style="color:#868e96;">ਦੋਸਤ ਤੁਹਾਡੇ link ਤੋਂ ਆਏ, <b>5 ਟੈਸਟ + 3 ਦਿਨ</b> ਪੂਰੇ ਕਰੇ, admin approve ਕਰੇ → ਤੁਹਾਨੂੰ <b>3 ਦਿਨ ਮੁਫ਼ਤ FULL pass</b> (ਸਾਰੀਆਂ categories)। ਹੱਥ 2 ਦੋਸਤਾਂ ਤੱਕ। 🎁</small></div>
       <button onclick="loadMyReferrals()" style="width:100%; background:#fff; color:#9c36b5; border:2px solid #9c36b5; border-radius:10px; padding:10px; font-weight:700; font-size:0.85rem; cursor:pointer; margin-top:8px;">🏆 ਮੇਰੇ Referrals ਵੇਖੋ</button>
       <div id="refList" style="display:none; margin-top:10px;"></div>
+      <div style="border-top:1px dashed #dee2e6; margin:16px 0 12px;"></div>
+      <div style="font-weight:800; margin-bottom:6px;">🪙 ਮੇਰੇ Points + 🏅 Badges</div>
+      <div id="ptsCard"></div>
+      <div style="margin-top:14px; font-weight:800; margin-bottom:6px;">🎯 AI Study Plan <small style="color:#868e96; font-weight:600;">(ਤੁਹਾਡੀ Report Card ਦੇ ਹਿਸਾਬ ਨਾਲ)</small></div>
+      <button onclick="genStudyPlan()" class="btn btn-primary" style="width:100%;">🎯 ਮੇਰਾ 7-ਦਿਨ ਦਾ ਨਿੱਜੀ ਪਲਾਨ ਬਣਾਓ</button>
+      <div id="planOut" style="margin-top:10px;"></div>
     </div>
   </div>
 </section>
@@ -466,6 +558,7 @@
       <button class="btn btn-primary" onclick="shareReferralWhatsApp()" style="background:#25D366; color:#fff;">
         📲 Share on WhatsApp with Friends
       </button>
+      <a id="waChannelBtn" href="#" target="_blank" rel="noopener" style="display:none; margin-top:10px; background:#128C7E; color:#fff; border-radius:10px; padding:11px 20px; font-weight:700; text-decoration:none; font-size:0.9rem;">📢 Job Alerts — WhatsApp Channel 'ਤੇ ਜੁੜੋ</a>
     </div>
   </div>
 </section>
@@ -698,6 +791,7 @@
       if (d && d.success) {
         try { localStorage.setItem(dk, String(n + 1)); } catch (e) {}
         addTgt(1);
+        if (window.aspAward) window.aspAward("ask");
         LAST_ANS = String(d.a || "");
         var left = 100 - (n + 1);
         out.innerHTML =
@@ -823,8 +917,13 @@
       while (warr.length > 200) warr.shift();
       localStorage.setItem("asp_wrong_qs", JSON.stringify(warr));
     } catch (e) {}
-    /* 🎯 ਟੀਚਾ ਗਿਣਤੀ */
+    /* 🎯 ਟੀਚਾ ਗਿਣਤੀ + 🪙 points */
     addTgt(PRACTICE.list.length);
+    var psc = 0, pk2;
+    for (pk2 = 0; pk2 < PRACTICE.list.length; pk2++) {
+      if (PRACTICE.sel[pk2] === PRACTICE.list[pk2].a) psc++;
+    }
+    if (window.aspAward) window.aspAward("practice", psc, PRACTICE.list.length);
     renderPractice();
     updateWrongBtn();
     var box = document.getElementById("prOut");
@@ -1297,6 +1396,204 @@
 <script>
 /* ⚡ SPEED: Service Worker — pages cache honde, click te turant khulde */
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+<script>
+/* ═══🪙 POINTS + 🏅 BADGES + 📅 ਅੱਜ ਦਾ ਸਵਾਲ + ⏰ Countdown + 📢 WA Channel + 🎯 AI Plan ═══ */
+(function () {
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function g(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function s(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function pts() { return parseInt(g("asp_points") || "0", 10) || 0; }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function markActive() {
+    var arr = [];
+    try { arr = JSON.parse(g("asp_active_days") || "[]"); } catch (e) {}
+    var t = todayStr();
+    if (arr.indexOf(t) === -1) { arr.push(t); if (arr.length > 60) arr.shift(); s("asp_active_days", JSON.stringify(arr)); }
+  }
+  function calcStreak() {
+    var arr = [];
+    try { arr = JSON.parse(g("asp_active_days") || "[]"); } catch (e) {}
+    if (!arr.length) return 0;
+    function key(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+    var cur = new Date();
+    if (arr.indexOf(key(cur)) === -1) {
+      cur.setDate(cur.getDate() - 1);
+      if (arr.indexOf(key(cur)) === -1) return 0;
+    }
+    var st = 0;
+    while (arr.indexOf(key(cur)) !== -1) { st++; cur.setDate(cur.getDate() - 1); }
+    return st;
+  }
+
+  /* 🪙 awards — askAi/practice/dailyQ ton call hunda */
+  window.aspAward = function (kind, sc, total) {
+    var add = 0;
+    if (kind === "ask") {
+      add = 1;
+      s("asp_ask_total", String((parseInt(g("asp_ask_total") || "0", 10) || 0) + 1));
+    } else if (kind === "practice") {
+      add = 5;
+      s("asp_pr_total", String((parseInt(g("asp_pr_total") || "0", 10) || 0) + 1));
+      if (typeof sc === "number" && typeof total === "number" && total > 0 && sc === total) s("asp_badge_100", "1");
+    } else if (kind === "dailyq") {
+      add = 10;
+    } else if (kind === "dailyq0") {
+      add = 2;
+    }
+    if (add > 0) { s("asp_points", String(pts() + add)); markActive(); }
+    renderPtsCard();
+  };
+
+  function badgesList() {
+    var streak = calcStreak();
+    return [
+      { i: "🥉", n: "ਪਹਿਲਾ ਕਦਮ", got: pts() >= 1 },
+      { i: "🧠", n: "50 AI ਸਵਾਲ", got: (parseInt(g("asp_ask_total") || "0", 10) || 0) >= 50 },
+      { i: "📝", n: "10 Practice ਟੈਸਟ", got: (parseInt(g("asp_pr_total") || "0", 10) || 0) >= 10 },
+      { i: "🎯", n: "Perfect ਸਕੋਰ", got: g("asp_badge_100") === "1" },
+      { i: "🔥", n: "5-ਦਿਨ ਸਟ੍ਰੀਕ", got: streak >= 5 },
+      { i: "👑", n: "500 Points", got: pts() >= 500 }
+    ];
+  }
+  function renderPtsCard() {
+    var el = document.getElementById("ptsCard");
+    if (!el) return;
+    var streak = calcStreak();
+    var h = '<div style="display:flex; gap:8px; margin-bottom:10px;">' +
+      '<div style="flex:1; background:#fff3bf; border:2px solid #fab005; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.4rem; color:#e8590c;">' + pts() + '</b><br><small>🪙 Points</small></div>' +
+      '<div style="flex:1; background:#ffe8cc; border:2px solid #ff922b; border-radius:10px; padding:10px; text-align:center;"><b style="font-size:1.4rem; color:#d9480f;">' + streak + '</b><br><small>🔥 ਦਿਨ ਸਟ੍ਰੀਕ</small></div>' +
+      '</div><div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;">';
+    var bs = badgesList();
+    for (var i = 0; i < bs.length; i++) {
+      h += '<div style="text-align:center; border:1.5px solid ' + (bs[i].got ? "#2b8a3e" : "#e9ecef") + '; background:' + (bs[i].got ? "#ebfbee" : "#f8f9fa") + '; border-radius:10px; padding:8px 4px; ' + (bs[i].got ? "" : "opacity:0.55;") + '">' +
+        '<div style="font-size:1.3rem;">' + bs[i].i + '</div><small style="font-size:0.68rem; font-weight:700;">' + bs[i].n + '</small></div>';
+    }
+    h += '</div>';
+    el.innerHTML = h;
+  }
+  window.renderPtsCard = renderPtsCard;
+
+  /* 📅 ਅੱਜ ਦਾ ਸਵਾਲ */
+  function initDailyQ() {
+    var sec = document.getElementById("dailyQSection");
+    var box = document.getElementById("dailyQBox");
+    if (!sec || !box) return;
+    try {
+      if (typeof db === "undefined" || !db.ref) return;
+      db.ref("siteSettings/dailyQ").once("value").then(function (snap) {
+        var q = snap.val();
+        var today = todayStr();
+        if (!q || !q.q || !Array.isArray(q.o) || q.o.length < 4 || q.date !== today) return;
+        var dk = "asp_dq_" + today;
+        var answered = g(dk);
+        function render(sel) {
+          var h = '<div style="font-weight:800; font-size:1.05rem; margin-bottom:10px; line-height:1.45;">' + esc(q.q) + '</div>';
+          for (var j = 0; j < 4; j++) {
+            var st = "display:block; border:2px solid #dee2e6; background:#fff; border-radius:10px; padding:10px 12px; margin-bottom:7px; font-size:0.92rem; line-height:1.4;";
+            if (sel === null || sel === undefined) { st += "cursor:pointer;"; }
+            else if (j === Number(q.a)) { st += "border-color:#2b8a3e; background:#ebfbee; font-weight:700;"; }
+            else if (sel === j) { st += "border-color:#e03131; background:#ffe3e3;"; }
+            h += '<div onclick="pickDailyQ(' + j + ')" style="' + st + '">' + String.fromCharCode(65 + j) + ') ' + esc(q.o[j]) + '</div>';
+          }
+          if (sel !== null && sel !== undefined) {
+            var ok = (sel === Number(q.a));
+            h += '<div style="background:' + (ok ? "#ebfbee" : "#fff3bf") + '; border-radius:10px; padding:10px 12px; font-weight:700; margin-top:4px;">' +
+              (ok ? "✅ ਸਹੀ! +10 points 🎉" : "❌ ਸਹੀ ਜਵਾਬ: " + esc(q.o[Number(q.a)]) + " (+2 ਕੋਸ਼ਿਸ਼ ਦੇ)") + '</div>';
+          }
+          box.innerHTML = h;
+        }
+        window.pickDailyQ = function (j) {
+          if (g(dk)) return;
+          s(dk, String(j + 1));
+          var ok = (j === Number(q.a));
+          if (window.aspAward) window.aspAward(ok ? "dailyq" : "dailyq0");
+          render(j);
+        };
+        render(answered ? (parseInt(answered, 10) - 1) : null);
+        sec.style.display = "block";
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  /* ⏰ Exam Countdown */
+  function initCountdown() {
+    var el = document.getElementById("examCountdown");
+    if (!el) return;
+    try {
+      if (typeof db === "undefined" || !db.ref) return;
+      db.ref("siteSettings/examCountdown").once("value").then(function (snap) {
+        var c = snap.val();
+        if (!c || !c.date || !c.name) return;
+        var d = new Date(String(c.date) + "T23:59:59");
+        var days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+        if (isNaN(days) || days < 0) return;
+        el.style.display = "block";
+        el.innerHTML = '<div style="max-width:1100px; margin:10px auto 0; background:linear-gradient(135deg,#fff3bf,#ffe8cc); border:2px solid #fab005; border-radius:12px; padding:10px 16px; text-align:center; font-weight:800; color:#d9480f; font-size:0.95rem;">⏰ ' + esc(c.name) + ' ਵਿੱਚ ' + (days === 0 ? "<span style=\"font-size:1.15rem;\">ਅੱਜ ਹੈ!</span>" : days + " ਦਿਨ ਬਾਕੀ!") + ' — ਹਰ ਦਿਨ ਪੂਰਾ ਦਿਓ 📚</div>';
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  /* 📢 WhatsApp Channel */
+  function initWaChannel() {
+    var a = document.getElementById("waChannelBtn");
+    if (!a) return;
+    try {
+      if (typeof db === "undefined" || !db.ref) return;
+      db.ref("siteSettings/whatsappChannel").once("value").then(function (snap) {
+        var v = snap.val();
+        if (v && String(v).indexOf("http") === 0) { a.href = String(v); a.style.display = "inline-block"; }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  /* 🎯 AI Study Plan */
+  window.genStudyPlan = async function () {
+    var phone = localStorage.getItem("pp_session");
+    if (!phone) { window.location.href = "login.html"; return; }
+    var out = document.getElementById("planOut");
+    if (!out) return;
+    var pk = "asp_plan_" + new Date().toDateString();
+    var pn = parseInt(g(pk) || "0", 10) || 0;
+    if (pn >= 5) { alert("⚠️ ਅੱਜ ਦੀ limit (5 ਪਲਾਨ) ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਜੀ।"); return; }
+    out.innerHTML = '<div style="background:#e7f5ff; border-radius:10px; padding:10px 12px; font-size:0.9rem;">🎯 ਤੁਹਾਡਾ ਪਲਾਨ ਬਣ ਰਿਹਆ ਹੈ... ⏳</div>';
+    try {
+      var idToken = "";
+      if (typeof firebase !== "undefined" && firebase.auth && firebase.auth().currentUser) {
+        idToken = await firebase.auth().currentUser.getIdToken();
+      }
+      var r = await fetch("/api/get-ca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "plan", idToken: idToken })
+      });
+      var d = await r.json();
+      if (d && d.success && d.plan) {
+        s(pk, String(pn + 1));
+        var lines = String(d.plan).split("\n").filter(function (l) { return l.trim(); });
+        var h = '<div style="background:#f8f0fc; border:2px solid #9c36b5; border-radius:12px; padding:14px;">';
+        for (var i = 0; i < lines.length; i++) {
+          h += '<div style="font-size:0.9rem; line-height:1.7; padding:3px 0; border-bottom:' + (i < lines.length - 1 ? "1px dashed #e599f7" : "none") + ';">' + esc(lines[i]) + '</div>';
+        }
+        h += '</div><small style="color:#868e96;">ਰੋਜ਼ ਦੀ ਪਾਲਣਾ ਕਰੋ — 7 ਦਿਨ ਬਾਅਦ ਫਰਕ ਦਿਸੇਗਾ 💪</small>';
+        out.innerHTML = h;
+      } else {
+        out.innerHTML = '<div style="background:#fff3bf; border-radius:10px; padding:10px 12px; font-size:0.88rem;">' + esc((d && d.message) || "ਪਲਾਨ ਨਹੀਂ ਬਣਿਆ") + '</div>';
+      }
+    } catch (e) {
+      out.innerHTML = '<div style="background:#ffe3e3; border-radius:10px; padding:10px 12px; font-size:0.88rem;">⚠️ ਇੰਟਰਨੈੱਟ ਸਮੱਸਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</div>';
+    }
+  };
+
+  function init() { renderPtsCard(); initDailyQ(); initCountdown(); initWaChannel(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
 </script>
 </body>
 </html>

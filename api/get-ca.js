@@ -177,9 +177,12 @@ module.exports = async (req, res) => {
         return r.json().catch(() => null);
       };
       const pickText = function (d) {
-        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
-          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
-          d.candidates[0].content.parts[0].text;
+        if (!d || !d.candidates || !d.candidates[0] || !d.candidates[0].content || !Array.isArray(d.candidates[0].content.parts)) return "";
+        let t = "";
+        d.candidates[0].content.parts.forEach(function (p) {
+          if (p && typeof p.text === "string" && !p.thought) t += p.text;
+        });
+        return t;
       };
 
       let text = "";
@@ -271,9 +274,12 @@ module.exports = async (req, res) => {
         return r.json().catch(() => null);
       };
       const pickTextP = function (d) {
-        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
-          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
-          d.candidates[0].content.parts[0].text;
+        if (!d || !d.candidates || !d.candidates[0] || !d.candidates[0].content || !Array.isArray(d.candidates[0].content.parts)) return "";
+        let t = "";
+        d.candidates[0].content.parts.forEach(function (p) {
+          if (p && typeof p.text === "string" && !p.thought) t += p.text;
+        });
+        return t;
       };
 
       let text = "";
@@ -391,9 +397,12 @@ module.exports = async (req, res) => {
         return r.json().catch(() => null);
       };
       const pickTextPh = function (d) {
-        return d && d.candidates && d.candidates[0] && d.candidates[0].content &&
-          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
-          d.candidates[0].content.parts[0].text;
+        if (!d || !d.candidates || !d.candidates[0] || !d.candidates[0].content || !Array.isArray(d.candidates[0].content.parts)) return "";
+        let t = "";
+        d.candidates[0].content.parts.forEach(function (p) {
+          if (p && typeof p.text === "string" && !p.thought) t += p.text;
+        });
+        return t;
       };
 
       let text = "";
@@ -645,8 +654,7 @@ module.exports = async (req, res) => {
       Object.keys(subj).forEach(function (t) {
         parts.push(t + " (ਔਸਤ " + Math.round(subj[t].sum / subj[t].n) + "%)");
       });
-      const prompt = "ਮੇਰੀ ਟੈਸਟ performance: " + parts.join(", ") + "। ਕੁੱਲ ਔਸਤ " + Math.round(sum / n) + "%। " +
-        "ਮੈਨੂੰ ਅਗਲੇ 7 ਦਿਨਾਂ ਦਾ study plan ਬਣਾਓ — ਹਰ ਦਿਨ ਇੱਕ ਲਾਈਨ (ਦਿਨ + ਕੀ ਕਰਨਾ ਹੈ + ਕਿੰਨੇ ਸਵਾਲ/ਟੈਸਟ), ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਵਿੱਚ। ਕਮਜ਼ੋਰ ਵਿਸ਼ਿਆਂ 'ਤੇ ਵੱਧ ਫ਼ੋਕਸ। ਵੱਧ ਤੋਂ ਵੱਧ 9 ਲਾਈਨਾਂ। ਸਿਰਫ਼ ਪਲਾਨ, ਕੋਈ ਹੋਰ ਗੱਲ ਨਹੀਂ।";
+      const prompt = "ਮੇਰੀ ਟੈਸਟ performance: " + parts.join(", ") + "। ਕੁੱਲ ਔਸਤ " + Math.round(sum / n) + "%। ਮੇਰਾ 7-ਦਿਨਾਂ ਦਾ ਪੱਕਾ study plan ਲਿਖੋ — ਹਰ ਦਿਨ ਇੱਕ ਲਾਈਨ ('ਦਿਨ 1:' ਤੋਂ ਸ਼ੁਰੂ), ਹਰ ਲਾਈਨ ਵਿੱਚ ਕੀ ਪੜ੍ਹਨਾ ਹੈ + ਕਿੰਨੇ ਸਵਾਲ/ਟੈਸਟ ਕਰਨੇ ਹਨ।";
 
       let text = "";
       let lastErr = "";
@@ -658,16 +666,19 @@ module.exports = async (req, res) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              system_instruction: { parts: [{ text: "ਤੂੰ ਪੰਜਾਬ competitive exams ਦਾ ਤਜਰਬੇਕਾਰ study planner ਹੈਂ — ਛੋਟੇ, ਪੱਕੇ, ਕਰਨ ਯੋਗ ਪਲਾਨ ਬਣਾਉਂਦਾ ਹੈਂ।" }] },
+              system_instruction: { parts: [{ text: "ਤੂੰ ਪੰਜਾਬ competitive exams (Police, Clerk, Patwari, SSC) ਦਾ ਤਜਰਬੇਕਾਰ study planner ਹੈਂ। ਤੂੰ ਸਿਰਫ਼ 7-ਦਿਨਾਂ ਦਾ ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਪਲਾਨ ਲਿਖਦਾ ਹੈਂ — ਕਮਜ਼ੋਰ ਵਿਸ਼ਿਆਂ 'ਤੇ ਵੱਧ ਫ਼ੋਕਸ। ਕੋਈ ਜਾਣ-ਪਛਾਣ, ਧੰਨਵਾਦ, ਸਵਾਲ ਜਾਂ ਵਾਧੂ ਗੱਲ ਬਿਲਕੁੱਲ ਨਹੀਂ — ਸਿੱਧਾ 'ਦਿਨ 1:' ਤੋਂ ਪਲਾਨ ਸ਼ੁਰੂ।" }] },
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { maxOutputTokens: 900, temperature: 0.4 }
+              generationConfig: { maxOutputTokens: 2048, temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } }
             })
           }
         );
         const d = await r.json().catch(() => null);
-        text = d && d.candidates && d.candidates[0] && d.candidates[0].content &&
-          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
-          d.candidates[0].content.parts[0].text;
+        text = "";
+        if (d && d.candidates && d.candidates[0] && d.candidates[0].content && Array.isArray(d.candidates[0].content.parts)) {
+          d.candidates[0].content.parts.forEach(function (p) {
+            if (p && typeof p.text === "string" && !p.thought) text += p.text;
+          });
+        }
         if (!text) {
           lastErr = d && d.error ? String(d.error.status || "") + " " + String(d.error.message || "") : "no response";
           console.error("AI plan fail (" + model + "): " + lastErr.slice(0, 250));

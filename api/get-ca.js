@@ -611,6 +611,83 @@ module.exports = async (req, res) => {
     }
   }
 
+  /* ═══════════ 🎯 AI STUDY PLAN BRANCH — { fn: "plan", idToken }
+     (userAttempts de hisaab nal 7-din da personal plan) ═══════════ */
+  if (body.fn === "plan") {
+    const payload = await verifyIdToken(String(body.idToken || ""));
+    if (!payload || !payload.email)
+      return res.status(401).json({ success: false, message: "ਲੌਗਿਨ ਸੈਸ਼ਨ ਗ਼ਲਤ ਹੈ — page refresh ਕਰੋ।" });
+    const mPl = String(payload.email).match(/^(\d{10})@amanstudypoint\.student$/);
+    if (!mPl)
+      return res.status(401).json({ success: false, message: "ਸਿਰਫ਼ ਵਿਦਿਆਰਥੀ ਵਰਤ ਸਕਦੇ ਹਨ।" });
+    if (!GEMINI_API_KEY)
+      return res.status(500).json({ success: false, message: "AI service ਹਾਲੇ off ਹੈ — admin ਨੂੰ ਦੱਸੋ।" });
+    const phone = mPl[1];
+    try {
+      let n = 0, sum = 0;
+      const subj = {};
+      try {
+        const att = (await fbGet("userAttempts/" + encodeURIComponent(phone))) || {};
+        Object.keys(att).forEach(function (k) {
+          const a = att[k];
+          if (!a) return;
+          const tt = Number(a.total) || 0, sc = Number(a.score) || 0;
+          const pct = tt > 0 ? Math.round((sc * 100) / tt) : 0;
+          n++; sum += pct;
+          const t = (String(a.title || "Test").split(" ")[0] || "Test").slice(0, 24);
+          if (!subj[t]) subj[t] = { n: 0, sum: 0 };
+          subj[t].n++; subj[t].sum += pct;
+        });
+      } catch (e2) {}
+      if (n < 3)
+        return res.status(400).json({ success: false, message: "ਪਹਿਲਾਂ 3+ ਟੈਸਟ ਦਿਓ — ਫੇਰ ਮੈਂ ਪੱਕਾ ਪਲਾਨ ਬਣਾ ਸਕਾਂਗਾ 📝" });
+      const parts = [];
+      Object.keys(subj).forEach(function (t) {
+        parts.push(t + " (ਔਸਤ " + Math.round(subj[t].sum / subj[t].n) + "%)");
+      });
+      const prompt = "ਮੇਰੀ ਟੈਸਟ performance: " + parts.join(", ") + "। ਕੁੱਲ ਔਸਤ " + Math.round(sum / n) + "%। " +
+        "ਮੈਨੂੰ ਅਗਲੇ 7 ਦਿਨਾਂ ਦਾ study plan ਬਣਾਓ — ਹਰ ਦਿਨ ਇੱਕ ਲਾਈਨ (ਦਿਨ + ਕੀ ਕਰਨਾ ਹੈ + ਕਿੰਨੇ ਸਵਾਲ/ਟੈਸਟ), ਪੰਜਾਬੀ (ਗੁਰਮੁਖੀ) ਵਿੱਚ। ਕਮਜ਼ੋਰ ਵਿਸ਼ਿਆਂ 'ਤੇ ਵੱਧ ਫ਼ੋਕਸ। ਵੱਧ ਤੋਂ ਵੱਧ 9 ਲਾਈਨਾਂ। ਸਿਰਫ਼ ਪਲਾਨ, ਕੋਈ ਹੋਰ ਗੱਲ ਨਹੀਂ।";
+
+      let text = "";
+      let lastErr = "";
+      for (let i = 0; i < GEMINI_MODELS.length && !text; i++) {
+        const model = GEMINI_MODELS[i];
+        const r = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + GEMINI_API_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: "ਤੂੰ ਪੰਜਾਬ competitive exams ਦਾ ਤਜਰਬੇਕਾਰ study planner ਹੈਂ — ਛੋਟੇ, ਪੱਕੇ, ਕਰਨ ਯੋਗ ਪਲਾਨ ਬਣਾਉਂਦਾ ਹੈਂ।" }] },
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { maxOutputTokens: 900, temperature: 0.4 }
+            })
+          }
+        );
+        const d = await r.json().catch(() => null);
+        text = d && d.candidates && d.candidates[0] && d.candidates[0].content &&
+          d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+          d.candidates[0].content.parts[0].text;
+        if (!text) {
+          lastErr = d && d.error ? String(d.error.status || "") + " " + String(d.error.message || "") : "no response";
+          console.error("AI plan fail (" + model + "): " + lastErr.slice(0, 250));
+          if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastErr)) break;
+        }
+      }
+      if (!text) {
+        const quotaHit = /quota|429|RESOURCE_EXHAUSTED/i.test(lastErr);
+        return res.status(quotaHit ? 429 : 502).json({
+          success: false,
+          message: quotaHit ? "ਅੱਜ ਦੀ AI limit ਪੂਰੀ — ਕੱਲ੍ਹ ਫੇਰ ਜੀ।" : "ਪਲਾਨ ਨਹੀਂ ਬਣ ਸਕਿਆ — ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+        });
+      }
+      return res.status(200).json({ success: true, plan: String(text).trim().slice(0, 1600) });
+    } catch (e) {
+      console.error("AI plan branch crash:", e);
+      return res.status(502).json({ success: false, message: "AI service ਨਾਲ ਸੰਪਰਕ ਨਹੀਂ — ਥੋੜ੍ਹੀ ਉਡੀਕ ਪਿੱਛੋਂ ਦੁਬਾਰਾ।" });
+    }
+  }
+
   /* ═══════════ 🏆 LEADERBOARD BRANCH — { fn: "leaderboard", idToken }
      (hafte de top-10 — quizResults ton, server-side read, rules bypass) ═══════════ */
   if (body.fn === "leaderboard") {
